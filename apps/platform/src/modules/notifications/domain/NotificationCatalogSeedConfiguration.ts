@@ -10,6 +10,13 @@ export type NotificationCatalogSeed = {
 
 export const notificationCatalogSeeds: readonly NotificationCatalogSeed[] = [
   {
+    key: "CHATBOT",
+    displayName: "Chatbot",
+    description: "Protected programme guidance follow-up.",
+    id: "00000000-0000-4000-8000-000000000406",
+    sortOrder: 35,
+  },
+  {
     description: "Report generation and delivery lifecycle.",
     displayName: "Reporting",
     id: "00000000-0000-4000-8000-000000000405",

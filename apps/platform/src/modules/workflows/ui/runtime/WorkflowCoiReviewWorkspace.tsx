@@ -13,7 +13,11 @@ import { useWorkflowCoiReviews } from "./useWorkflowCoiReviews";
 
 const PAGE_SIZE = 25;
 
-export function WorkflowCoiReviewWorkspace() {
+export function WorkflowCoiReviewWorkspace({
+  eyebrow = "My Queue",
+}: {
+  eyebrow?: "My Queue" | "Process Monitor";
+}) {
   const [draftSearch, setDraftSearch] = useState("");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -45,7 +49,7 @@ export function WorkflowCoiReviewWorkspace() {
   return (
     <PageShell
       description="Independently assess disclosed conflicts of interest before reviewers can continue."
-      eyebrow="My work"
+      eyebrow={eyebrow}
       icon={<ShieldCheck aria-hidden="true" />}
       title="Conflict of Interest reviews"
     >

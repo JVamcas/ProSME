@@ -3,11 +3,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { HeatmapBatch } from "@/modules/reporting/domain/WebsiteHeatmap";
 
 let browser: Window;
+let HttpError: typeof import("@/lib/client-http").ClientRequestError;
 let cancel: (() => void) | undefined;
-const upload = vi.fn<(batch: HeatmapBatch, final: boolean) => void>();
+const upload =
+  vi.fn<(batch: HeatmapBatch, final: boolean) => Promise<void> | void>();
 
-beforeEach(() => {
+beforeEach(async () => {
   vi.resetModules();
+  HttpError = (await import("@/lib/client-http")).ClientRequestError;
   vi.clearAllMocks();
   browser = new Window({ url: "https://example.test/" });
   for (const key of [
@@ -39,7 +42,6 @@ beforeEach(() => {
     value: 2000,
     configurable: true,
   });
-  document.cookie = "smefund_analytics_consent=accepted; Path=/";
   document.body.innerHTML =
     '<main>Personal text <button>Click me</button></main><form><input value="secret" /><button>Submit</button></form>';
   vi.spyOn(
@@ -66,12 +68,12 @@ afterEach(async () => {
   vi.unstubAllGlobals();
 });
 
-async function start(enabled = true, accepted = true) {
+async function start(enabled = true) {
   const collector = (
     await import("@/modules/reporting/ClientWebsiteHeatmapCaptureService")
   ).clientWebsiteHeatmapCaptureService;
   cancel = collector.stop;
-  collector.start(enabled, accepted, upload);
+  collector.start(enabled, upload);
   return collector;
 }
 
@@ -85,7 +87,57 @@ function click(target: Element, trusted = true) {
   target.dispatchEvent(event);
 }
 
-describe("bounded, consent-controlled heatmap capture", () => {
+describe("bounded anonymous public-page heatmap capture", () => {
+  it.each([400, 403])(
+    "stops a permanently rejected view (%s) and allows the next view",
+    async (status) => {
+      upload.mockRejectedValueOnce(new HttpError("Rejected batch", status));
+      const collector = await start();
+      await vi.advanceTimersByTimeAsync(1000);
+      click(document.querySelector("main button")!);
+      await vi.advanceTimersByTimeAsync(60000);
+      expect(upload).toHaveBeenCalledOnce();
+      collector.stop(true);
+      expect(upload).toHaveBeenCalledOnce();
+      collector.start(true, upload);
+      await vi.advanceTimersByTimeAsync(1000);
+      expect(upload).toHaveBeenCalledTimes(2);
+    },
+  );
+
+  it.each([408, 429, 500])(
+    "retries transient failures (%s) with the original view identity",
+    async (status) => {
+      upload.mockRejectedValueOnce(new HttpError("Temporary failure", status));
+      await start();
+      await vi.advanceTimersByTimeAsync(12000);
+      expect(upload).toHaveBeenCalledTimes(2);
+      expect(upload.mock.calls[0][0].viewId).toBe(
+        upload.mock.calls[1][0].viewId,
+      );
+    },
+  );
+
+  it("does not stop a new view when an earlier upload is rejected", async () => {
+    let rejectPrevious!: (reason: unknown) => void;
+    upload.mockImplementationOnce(
+      () =>
+        new Promise<void>((_, reject) => {
+          rejectPrevious = reject;
+        }),
+    );
+    const collector = await start();
+    await vi.advanceTimersByTimeAsync(1000);
+    collector.start(true, upload);
+    await vi.advanceTimersByTimeAsync(1000);
+    rejectPrevious(new HttpError("Old batch rejected", 400));
+    await vi.advanceTimersByTimeAsync(0);
+    click(document.querySelector("main button")!);
+    await vi.advanceTimersByTimeAsync(11000);
+    expect(upload).toHaveBeenCalledTimes(3);
+    expect(upload.mock.calls[2][0].viewId).toBe(upload.mock.calls[1][0].viewId);
+  });
+
   it("retries a failed initial batch without creating another view", async () => {
     upload.mockImplementationOnce(() => {
       throw new Error("Temporary upload failure");
@@ -126,16 +178,21 @@ describe("bounded, consent-controlled heatmap capture", () => {
     expect(upload).not.toHaveBeenCalled();
   });
 
-  it.each(["disabled", "declined", "stale UI", "late withdrawal"])(
-    "requires consent throughout startup (%s)",
-    async (scenario) => {
-      if (scenario === "stale UI")
-        document.cookie = "smefund_analytics_consent=declined; Path=/";
-      await start(scenario !== "disabled", scenario !== "declined");
-      if (scenario === "late withdrawal")
-        document.cookie = "smefund_analytics_consent=declined; Path=/";
+  it("does not capture when collection is disabled", async () => {
+    await start(false);
+    await vi.advanceTimersByTimeAsync(20000);
+    expect(upload).not.toHaveBeenCalled();
+  });
+
+  it.each(["", "declined", "accepted", "unexpected"])(
+    "captures without depending on analytics consent (%s)",
+    async (consent) => {
+      if (consent) {
+        document.cookie = `smefund_analytics_consent=${consent}; Path=/`;
+      }
+      await start();
       await vi.advanceTimersByTimeAsync(20000);
-      expect(upload).not.toHaveBeenCalled();
+      expect(upload).toHaveBeenCalledOnce();
     },
   );
 
@@ -174,14 +231,14 @@ describe("bounded, consent-controlled heatmap capture", () => {
     expect(upload).toHaveBeenCalledTimes(2);
   });
 
-  it("drops unsent events immediately after consent withdrawal", async () => {
-    const collector = await start();
+  it("continues recording when Google Analytics consent changes", async () => {
+    await start();
     await vi.advanceTimersByTimeAsync(1000);
     click(document.querySelector("main button")!);
     document.cookie = "smefund_analytics_consent=declined; Path=/";
-    collector.stop();
-    await vi.advanceTimersByTimeAsync(30000);
-    expect(upload).toHaveBeenCalledOnce();
+    await vi.advanceTimersByTimeAsync(11000);
+    expect(upload).toHaveBeenCalledTimes(2);
+    expect(upload.mock.calls.at(-1)![0].clicks).toHaveLength(1);
   });
 
   it("records an outgoing public-page click and stops before private navigation", async () => {

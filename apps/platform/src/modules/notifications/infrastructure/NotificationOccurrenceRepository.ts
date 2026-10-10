@@ -1,3 +1,4 @@
+import { authorizedChatbotRecipientIds } from "./ChatbotNotificationRecipientRepository";
 import "server-only";
 
 import { and, eq, sql } from "drizzle-orm";
@@ -199,7 +200,24 @@ export async function insertNotificationOccurrence<
     throw new Error(`Notification event is not configured: ${input.eventKey}`);
   }
 
-  const bindings = enabledBindings(configuration);
+  let bindings = enabledBindings(configuration);
+  if (input.eventKey === "chatbot.case.created" && "caseId" in input.context) {
+    const ids = bindings.flatMap((binding) =>
+      binding.targetUserId ? [binding.targetUserId] : [],
+    );
+    const allowed = await authorizedChatbotRecipientIds(
+      input.context.caseId,
+      ids,
+      transaction,
+    );
+    const configured = input.context.recipientUserIds;
+    bindings = bindings.filter(
+      (binding) =>
+        binding.targetUserId &&
+        allowed.has(binding.targetUserId) &&
+        (!configured.length || configured.includes(binding.targetUserId)),
+    );
+  }
   const excludedRecipientUserIds = new Set(
     "excludedRecipientUserIds" in input.context &&
       Array.isArray(input.context.excludedRecipientUserIds)

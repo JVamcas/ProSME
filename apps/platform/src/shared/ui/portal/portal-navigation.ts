@@ -1,3 +1,5 @@
+import { chatbotPortalRoutes } from "./ChatbotPortalRoutes";
+import { processMonitorPortalRoutes } from "./ProcessMonitorPortalRoutes";
 import type { LucideIcon } from "lucide-react";
 import {
   Bell,
@@ -106,6 +108,37 @@ export const operationsPortalRoutes: readonly PortalRoute[] = [
     requiredAnyPermissions: operationsScopePermissions,
   },
   {
+    id: "admin-work-queue",
+    section: "queue",
+    href: "/admin/work-queue",
+    label: "Assigned tasks",
+    icon: ListTodo,
+    space: "operations",
+    requiredPermission: permissionCodes.workflowTaskAssignedRead,
+  },
+  {
+    id: "admin-conflict-reviews",
+    section: "queue",
+    href: "/admin/conflict-reviews",
+    label: "Conflict reviews",
+    icon: ShieldCheck,
+    space: "operations",
+    requiredPermission: permissionCodes.workflowCoiAllReview,
+  },
+  {
+    id: "admin-my-escalated-cases",
+    section: "queue",
+    href: "/admin/my-queue/escalated-cases",
+    label: "Escalated cases",
+    icon: BadgeQuestionMark,
+    space: "operations",
+    requiredAnyPermissions: [
+      permissionCodes.chatbotEscalationReadAssigned,
+      permissionCodes.chatbotEscalationReadAll,
+    ],
+  },
+  ...processMonitorPortalRoutes,
+  {
     id: "website-analytics",
     href: "/admin/analytics/website",
     label: "Website analytics",
@@ -145,36 +178,6 @@ export const operationsPortalRoutes: readonly PortalRoute[] = [
     requiredPermission: permissionCodes.fundingCallRead,
   },
   {
-    id: "admin-my-work",
-    section: "applications",
-    href: "/admin/my-work",
-    label: "My work",
-    icon: ListTodo,
-    space: "operations",
-    requiredAnyPermissions: [
-      permissionCodes.workflowTaskAssignedRead,
-      permissionCodes.workflowCoiAllReview,
-    ],
-    children: [
-      {
-        id: "admin-work-queue",
-        href: "/admin/work-queue",
-        label: "Assigned tasks",
-        icon: ListTodo,
-        space: "operations",
-        requiredPermission: permissionCodes.workflowTaskAssignedRead,
-      },
-      {
-        id: "admin-conflict-reviews",
-        href: "/admin/conflict-reviews",
-        label: "Conflict reviews",
-        icon: ShieldCheck,
-        space: "operations",
-        requiredPermission: permissionCodes.workflowCoiAllReview,
-      },
-    ],
-  },
-  {
     id: "admin-applications",
     section: "applications",
     href: "/admin/applications",
@@ -186,6 +189,7 @@ export const operationsPortalRoutes: readonly PortalRoute[] = [
       permissionCodes.fundingApplicationAllRead,
     ],
   },
+  ...chatbotPortalRoutes,
   {
     id: "admin-settings",
     section: "administration",

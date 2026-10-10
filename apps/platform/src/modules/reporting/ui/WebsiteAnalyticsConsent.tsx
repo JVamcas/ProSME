@@ -2,9 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { GeneralButton } from "@/components/ui/button";
-import { clientWebsiteHeatmapCaptureService } from "../ClientWebsiteHeatmapCaptureService";
-import { useWebsiteHeatmapCollection } from "./useWebsiteHeatmapCollection";
+import { GeneralButton } from "@/shared/ui/Button";
 import {
   clientWebsiteAnalyticsService,
   type WebsiteAnalyticsConsent as Consent,
@@ -12,19 +10,12 @@ import {
 
 export function WebsiteAnalyticsConsent({
   measurementId,
-  heatmapEnabled = false,
 }: {
   measurementId?: string | null;
-  heatmapEnabled?: boolean;
 }) {
   const pathname = usePathname();
   const [consent, setConsent] = useState<Consent>(null);
   const [ready, setReady] = useState(false);
-  useWebsiteHeatmapCollection(
-    heatmapEnabled,
-    ready && consent === "accepted",
-    pathname,
-  );
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -45,14 +36,11 @@ export function WebsiteAnalyticsConsent({
   }, [consent, measurementId, pathname, ready]);
 
   function choose(value: Exclude<Consent, null>) {
-    if (value === "declined") {
-      clientWebsiteHeatmapCaptureService.stop();
-    }
     clientWebsiteAnalyticsService.chooseConsent(value);
     setConsent(value);
   }
 
-  if (!ready || (!measurementId && !heatmapEnabled)) {
+  if (!ready || !measurementId) {
     return null;
   }
   if (consent !== null) {
@@ -62,7 +50,6 @@ export function WebsiteAnalyticsConsent({
         size="sm"
         variant="navy"
         onClick={() => {
-          clientWebsiteHeatmapCaptureService.stop();
           clientWebsiteAnalyticsService.chooseConsent("declined");
           setConsent(null);
         }}
@@ -80,9 +67,7 @@ export function WebsiteAnalyticsConsent({
         <p className="flex-1 text-sm leading-6 text-white/80">
           <strong className="text-white">Cookies on this website.</strong> We
           use optional cookies to understand how you use our website and improve
-          your experience. If you accept, we also record masked clicks and
-          scrolling on approved public pages. Applicant, staff and CMS forms are
-          excluded.
+          your experience.
         </p>
         <div className="flex gap-2">
           <GeneralButton

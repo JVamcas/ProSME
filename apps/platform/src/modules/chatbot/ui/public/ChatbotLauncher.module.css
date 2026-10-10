@@ -1,0 +1,33 @@
+.label {
+  min-width: 0;
+  max-width: 0;
+  overflow: hidden;
+  transition: max-width 500ms ease-out;
+}
+
+.label[data-expanded="true"] {
+  max-width: 12rem;
+}
+
+.content {
+  position: relative;
+  display: block;
+  white-space: nowrap;
+}
+
+.measure {
+  visibility: hidden;
+  padding-left: 0.5rem;
+}
+
+.typed {
+  position: absolute;
+  top: 0;
+  left: 0.5rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .label {
+    transition: none;
+  }
+}

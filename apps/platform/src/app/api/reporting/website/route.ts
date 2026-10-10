@@ -1,7 +1,7 @@
 import { resolveUserFromHeaders } from "@/auth/authorization/current-user";
 import { createCorrelationId, portalRouteError, portalRouteSuccess } from "@/lib/api/PortalApiResponse";
 import { websiteAnalyticsQuerySchema } from "@/modules/reporting/api/WebsiteAnalyticsSchemas";
-import { getWebsiteAnalytics } from "@/modules/reporting/ServerReportingService";
+import { getWebsiteAnalytics } from "@/modules/reporting/application/ServerReportingService";
 
 export async function GET(request: Request) {
   const correlationId = createCorrelationId();

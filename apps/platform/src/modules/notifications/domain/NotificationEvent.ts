@@ -1,3 +1,9 @@
+import { fundingCallLifecycleContextSchema } from "./NotificationFundingCallEvent";
+export { fundingCallLifecycleContextSchema } from "./NotificationFundingCallEvent";
+import {
+  chatbotCaseEventSchema,
+  type ChatbotCaseEvent,
+} from "./NotificationChatbotEvent";
 import {
   reportingEventKeys,
   reportingEventCatalogue,
@@ -88,21 +94,6 @@ export const informationRequestExpiredContextSchema =
     })
     .strict();
 
-export const fundingCallLifecycleContextSchema = z
-  .object({
-    correlationId: identifierSchema,
-    excludedRecipientUserIds: z.array(uuidSchema),
-    fundingCallId: uuidSchema,
-    fundingCallReference: z.string().trim().min(1).max(100),
-    fundingCallTitle: z.string().trim().min(1).max(300),
-    occurredAt: timestampSchema,
-    reason: z.string().trim().min(1).max(1_000).nullable(),
-    sourceIdempotencyKey: identifierSchema,
-    sourceStatus: z.string().trim().min(1).max(50),
-    targetStatus: z.string().trim().min(1).max(50),
-  })
-  .strict();
-
 export const authenticationEventContextSchema = z
   .object({
     firebaseUid: z.string().min(1).max(128),
@@ -116,6 +107,7 @@ export type NotificationRuleEligibility = "CONFIGURABLE" | "SYSTEM_ONLY";
 
 export const notificationEventKeys = [
   ...reportingEventKeys,
+  "chatbot.case.created",
   "auth.email.verification",
   "auth.password.reset",
   "application.submitted",
@@ -147,6 +139,7 @@ export const notificationEventKeys = [
 export type NotificationEventKey = (typeof notificationEventKeys)[number];
 export const notificationCatalogKeys = [
   "REPORTING",
+  "CHATBOT",
   "AUTHENTICATION",
   "APPLICATIONS",
   "FUNDING_CALLS",
@@ -176,6 +169,7 @@ export type FundingCallLifecycleContext = z.infer<
 >;
 
 export type NotificationEventContextByKey = {
+  "chatbot.case.created": ChatbotCaseEvent;
   "reporting.generation.started": ReportingEventContext;
   "reporting.generation.completed": ReportingEventContext;
   "reporting.generation.failed": ReportingEventContext;
@@ -220,6 +214,12 @@ type NotificationEventDefinition<Key extends NotificationEventKey> = {
 
 export const notificationEventCatalogue = {
   ...reportingEventCatalogue,
+  "chatbot.case.created": {
+    catalogKey: "CHATBOT",
+    ruleEligibility: "CONFIGURABLE",
+    contextSchema: chatbotCaseEventSchema,
+    key: "chatbot.case.created",
+  },
   "workflow.hold.resumed": {
     catalogKey: "WORKFLOW",
     ruleEligibility: "CONFIGURABLE",

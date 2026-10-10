@@ -32,6 +32,7 @@ vi.mock("@/modules/reporting/ui/website/useWebsiteHeatmap", () => ({
     },
     error: null,
     isFetching: false,
+    refetch: vi.fn(),
   }),
 }));
 
@@ -48,6 +49,8 @@ describe("D1 presentation contracts", () => {
     );
     expect(markup).not.toContain("<a");
     expect(markup).not.toContain("<iframe");
+    expect(markup).not.toContain("Consenting");
+    expect(markup).toContain("Visit a public page, then refresh");
   });
 
   it("keeps the empty Namibia chart and its no-data caption visible", () => {

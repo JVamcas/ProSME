@@ -40,3 +40,10 @@ export * from "@/modules/workflows/infrastructure/workflow-deadline.schema";
 export { authEmailRateLimits } from "@/modules/users/infrastructure/auth-email.schema";
 export { userSessions } from "@/modules/users/infrastructure/user-session.schema";
 export * from "@/modules/funding-calls/infrastructure/funding-call-version.schema";
+export * from "@/modules/chatbot/infrastructure/chatbot-knowledge.schema";
+export * from "@/modules/chatbot/infrastructure/chatbot-resource.schema";
+
+export * from "@/modules/chatbot/infrastructure/chatbot-release.schema";
+export * from "@/modules/chatbot/infrastructure/chatbot-conversation.schema";
+export * from "@/modules/chatbot/infrastructure/chatbot-case.schema";
+export * from "@/modules/chatbot/infrastructure/chatbot-settings.schema";

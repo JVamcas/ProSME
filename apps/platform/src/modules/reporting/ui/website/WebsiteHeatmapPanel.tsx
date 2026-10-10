@@ -51,8 +51,8 @@ export function WebsiteHeatmapPanel({
   const details = (
     <div className="space-y-1">
       <p>
-        Consenting approved public pages only. Forms and private pages are
-        excluded.
+        Anonymous capture on approved public pages only. Forms and private
+        pages are excluded.
       </p>
       <p>
         Each viewport size and captured layout is reported separately. Counts
@@ -147,12 +147,19 @@ export function WebsiteHeatmapPanel({
               )}
             </div>
           ) : (
-            <p
+            <div
               role="status"
-              className="flex min-h-[280px] items-center justify-center text-sm text-brand-navy/70"
+              className="flex min-h-[280px] flex-col items-center justify-center gap-3 text-sm text-brand-navy/70"
             >
-              No recorded public-page views for this selection.
-            </p>
+              <p>No recorded public-page views for this selection.</p>
+              {data.collectionEnabled ? (
+                <p>Visit a public page, then refresh to check for recordings.</p>
+              ) : null}
+              <QueryRefreshButton
+                refreshing={query.isFetching}
+                onRefresh={() => void query.refetch()}
+              />
+            </div>
           )}
         </div>
       ) : null}

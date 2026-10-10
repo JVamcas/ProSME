@@ -29,6 +29,7 @@ type QueueEnvelope = {
 
 async function list(input: WorkQueueListInput): Promise<WorkQueuePage> {
   const query = new URLSearchParams({
+    assignmentScope: input.assignmentScope ?? "assigned",
     limit: String(input.limit),
     scope: input.scope,
   });

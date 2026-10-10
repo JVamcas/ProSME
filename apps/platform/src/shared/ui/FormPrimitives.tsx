@@ -3,12 +3,13 @@ import { cn } from "@/lib/utils";
 
 export function Label({
   className,
+  unstyled = false,
   ...props
-}: React.LabelHTMLAttributes<HTMLLabelElement>) {
+}: React.LabelHTMLAttributes<HTMLLabelElement> & { unstyled?: boolean }) {
   return (
     <label
       className={cn(
-        "mb-2 block text-sm font-semibold text-brand-navy",
+        !unstyled && "mb-2 block text-sm font-semibold text-brand-navy",
         className,
       )}
       {...props}

@@ -1,6 +1,6 @@
 "use client";
 
-import { clientWebsiteAnalyticsService } from "./ClientWebsiteAnalyticsService";
+import { ClientRequestError } from "@/lib/client-http";
 import {
   captureHeatmapLayout,
   heatmapScrollDepth,
@@ -23,16 +23,12 @@ let cleanup: (() => void) | null = null;
 let cancelPending: (() => void) | null = null;
 let navigationInstalled = false;
 
-function accepted() {
-  return clientWebsiteAnalyticsService.readConsent() === "accepted";
-}
-
 function flush(final = false) {
-  if (active && accepted()) {
+  if (active) {
     if (
       active.href === location.href &&
       document.documentElement.scrollHeight ===
-      active.batch.layout.documentHeight
+        active.batch.layout.documentHeight
     ) {
       active.batch.maxDepth = Math.max(
         active.batch.maxDepth,
@@ -51,10 +47,28 @@ function flush(final = false) {
           );
           session.sentDepth = Math.max(session.sentDepth, snapshot.maxDepth);
         })
-        .catch(() => undefined);
-    } catch {
-      // Analytics failures must not interrupt a visitor interaction.
+        .catch((error: unknown) => handleUploadFailure(error, session));
+    } catch (error) {
+      handleUploadFailure(error, session);
     }
+  }
+}
+
+function handleUploadFailure(
+  error: unknown,
+  session: NonNullable<typeof active>,
+) {
+  if (
+    active === session &&
+    error instanceof ClientRequestError &&
+    error.status >= 400 &&
+    error.status < 500 &&
+    error.status !== 408 &&
+    error.status !== 429
+  ) {
+    // Retrying the same invalid or forbidden batch cannot succeed. Stop this
+    // view without another final upload; transient failures remain retryable.
+    stop();
   }
 }
 
@@ -88,25 +102,28 @@ function installNavigation() {
   }
 }
 
-function start(enabled: boolean, consent: boolean, upload: Upload) {
+function start(enabled: boolean, upload: Upload) {
   stop();
   const url = new URL(location.href);
   if (
     !enabled ||
-    !consent ||
-    !accepted() ||
     url.search ||
     url.hash ||
     !isHeatmapPublicPath(url.pathname)
-  )
+  ) {
     return;
+  }
   installNavigation();
   const href = url.href;
   cancelPending = idle(() => {
     cancelPending = null;
-    if (!accepted() || location.href !== href) return;
+    if (location.href !== href) {
+      return;
+    }
     const layout = captureHeatmapLayout(url.pathname);
-    if (!layout) return;
+    if (!layout) {
+      return;
+    }
     active = {
       href,
       upload,
@@ -119,16 +136,16 @@ function start(enabled: boolean, consent: boolean, upload: Upload) {
         maxDepth: heatmapScrollDepth(layout.documentHeight),
       },
     };
-    installCapture(enabled, consent, upload);
+    installCapture(enabled, upload);
     flush();
   });
 }
 
-function installCapture(enabled: boolean, consent: boolean, upload: Upload) {
+function installCapture(enabled: boolean, upload: Upload) {
   let scrollTimer: number | null = null;
   let cancelUpload: (() => void) | null = null;
   const valid = () => {
-    if (!accepted() || active?.href !== location.href) {
+    if (active?.href !== location.href) {
       stop();
       return false;
     }
@@ -138,20 +155,23 @@ function installCapture(enabled: boolean, consent: boolean, upload: Upload) {
         active.batch.layout.documentHeight
     ) {
       stop(true);
-      start(enabled, consent, upload);
+      start(enabled, upload);
       return false;
     }
     return true;
   };
   const click = (event: MouseEvent) => {
-    if (!valid() || !active || !event.isTrusted) return;
+    if (!valid() || !active || !event.isTrusted) {
+      return;
+    }
     const element = event.target instanceof Element ? event.target : null;
     if (
       !element ||
       element.closest(heatmapFormSelector) ||
       active.batch.clicks.length >= 200
-    )
+    ) {
       return;
+    }
     const x = Math.floor(
       (event.clientX / active.batch.layout.viewportWidth) * 100,
     );
@@ -159,29 +179,37 @@ function installCapture(enabled: boolean, consent: boolean, upload: Upload) {
       ((event.clientY + window.scrollY) / active.batch.layout.documentHeight) *
         100,
     );
-    if (x < 0 || x > 99 || y < 0 || y > 99) return;
+    if (x < 0 || x > 99 || y < 0 || y > 99) {
+      return;
+    }
     active.batch.clicks.push({ sequence: active.batch.clicks.length, x, y });
     const anchor = element.closest("a");
     if (
       anchor?.href &&
       new URL(anchor.href, hrefForActive()).href !== location.href
-    )
+    ) {
       stop(true);
+    }
   };
   const depth = () => {
     scrollTimer = null;
-    if (!valid() || !active) return;
+    if (!valid() || !active) {
+      return;
+    }
     const max = heatmapScrollDepth(active.batch.layout.documentHeight);
     if (max > active.batch.maxDepth) {
       active.batch.maxDepth = max;
     }
   };
   const scroll = () => {
-    if (scrollTimer === null) scrollTimer = window.setTimeout(depth, 250);
+    if (scrollTimer === null) {
+      scrollTimer = window.setTimeout(depth, 250);
+    }
   };
   const visibility = () => {
-    if (!accepted()) stop();
-    else if (document.visibilityState === "hidden") flush(true);
+    if (document.visibilityState === "hidden") {
+      flush(true);
+    }
   };
   const exit = () => stop(true);
   const interval = window.setInterval(() => {
@@ -202,18 +230,22 @@ function installCapture(enabled: boolean, consent: boolean, upload: Upload) {
   window.addEventListener("scroll", scroll, { passive: true });
   window.addEventListener("resize", depth, { passive: true });
   document.addEventListener("visibilitychange", visibility);
-  for (const event of ["pagehide", "popstate", "hashchange"])
+  for (const event of ["pagehide", "popstate", "hashchange"]) {
     window.addEventListener(event, exit, true);
+  }
   cleanup = () => {
     cancelUpload?.();
     window.clearInterval(interval);
-    if (scrollTimer !== null) window.clearTimeout(scrollTimer);
+    if (scrollTimer !== null) {
+      window.clearTimeout(scrollTimer);
+    }
     document.removeEventListener("click", click, true);
     window.removeEventListener("scroll", scroll);
     window.removeEventListener("resize", depth);
     document.removeEventListener("visibilitychange", visibility);
-    for (const event of ["pagehide", "popstate", "hashchange"])
+    for (const event of ["pagehide", "popstate", "hashchange"]) {
       window.removeEventListener(event, exit, true);
+    }
   };
 }
 

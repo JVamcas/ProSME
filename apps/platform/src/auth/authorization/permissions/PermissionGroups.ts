@@ -19,7 +19,11 @@ export type PermissionGroupId =
   | "notifications"
   | "content-management"
   | "integrations"
-  | "reporting";
+  | "reporting"
+  | "chatbot-knowledge"
+  | "chatbot-settings"
+  | "chatbot-follow-up";
+// Knowledge and protected follow-up permissions remain separately assignable.
 
 export type PermissionGroup = {
   id: PermissionGroupId;
@@ -29,6 +33,39 @@ export type PermissionGroup = {
 };
 
 export const permissionGroups: readonly PermissionGroup[] = [
+  {
+    id: "chatbot-settings",
+    label: "Chatbot settings",
+    permissionCodes: [
+      permissionCodes.chatbotSettingsReadAll,
+      permissionCodes.chatbotSettingsUpdateAll,
+    ],
+  },
+  {
+    id: "chatbot-knowledge",
+    label: "Chatbot knowledge",
+    permissionCodes: [
+      permissionCodes.chatbotKnowledgeReadAll,
+      permissionCodes.chatbotKnowledgeActivateAll,
+      permissionCodes.chatbotKnowledgeDeactivateAll,
+      permissionCodes.chatbotKnowledgePrepareAll,
+      permissionCodes.chatbotKnowledgeApproveAll,
+      permissionCodes.chatbotKnowledgePublishAll,
+      permissionCodes.chatbotKnowledgeWithdrawAll,
+    ],
+  },
+  {
+    id: "chatbot-follow-up",
+    label: "Protected chatbot follow-up",
+    permissionCodes: [
+      permissionCodes.chatbotEscalationReadAssigned,
+      permissionCodes.chatbotEscalationReadAll,
+      permissionCodes.chatbotEscalationAssignAll,
+      permissionCodes.chatbotEscalationResolveAssigned,
+      permissionCodes.chatbotEscalationResolveAll,
+      permissionCodes.chatbotRetentionUpdateAll,
+    ],
+  },
   {
     id: "reporting",
     label: "Website Analytics and Reporting",

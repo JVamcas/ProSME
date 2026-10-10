@@ -1,0 +1,86 @@
+.support-marquee {
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent,
+    var(--color-brand-navy) 4%,
+    var(--color-brand-navy) 96%,
+    transparent
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    var(--color-brand-navy) 4%,
+    var(--color-brand-navy) 96%,
+    transparent
+  );
+}
+
+.support-track {
+  display: flex;
+  width: max-content;
+  animation: support-scroll 32s linear infinite;
+}
+
+.support-group {
+  display: flex;
+  gap: 0.75rem;
+  padding-right: 0.75rem;
+}
+
+.support-card {
+  width: clamp(275px, 23vw, 360px);
+  flex: none;
+}
+
+.support-marquee:hover .support-track,
+.support-marquee:focus-within .support-track {
+  animation-play-state: paused;
+}
+
+@keyframes support-scroll {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@media (max-width: 767px) {
+  .support-marquee {
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity;
+    scroll-padding-inline: 1rem;
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+
+  .support-track {
+    animation: none;
+    padding-inline: 1rem;
+  }
+
+  .support-group {
+    padding-right: 0;
+  }
+
+  .support-group[aria-hidden="true"] {
+    display: none;
+  }
+
+  .support-card {
+    width: min(82vw, 360px);
+    scroll-snap-align: start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .support-marquee {
+    overflow-x: auto;
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+
+  .support-track {
+    animation: none;
+  }
+}

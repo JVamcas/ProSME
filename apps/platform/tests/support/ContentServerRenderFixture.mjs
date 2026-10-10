@@ -71,7 +71,7 @@ async function verifyPublication() {
   assert.equal(await render(() => content.getHomepage()), null);
   assert.equal(await render(() => resources.getResource("about")), null);
   assert.deepEqual(await render(() => content.getNews()), []);
-  assert.deepEqual(await render(() => content.getHomeNewsAndResources()), { news: [], resources: [] });
+  assert.deepEqual(await render(() => content.getHomeNewsAndResources()), []);
   const homePreview = await render(
     () => content.getHomepage(),
     true,

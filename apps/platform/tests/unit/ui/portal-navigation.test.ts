@@ -119,7 +119,7 @@ describe("P3.1 capability-aware portal navigation", () => {
     );
   });
 
-  it("exposes assigned tasks beneath My work", () => {
+  it("exposes assigned tasks in the My Queue section", () => {
     const routes = filterPortalRoutes(
       portalRoutes,
       "operations",
@@ -127,12 +127,15 @@ describe("P3.1 capability-aware portal navigation", () => {
     );
     expect(routes.map((route) => route.href)).toEqual([
       "/admin",
-      "/admin/my-work",
+      "/admin/work-queue",
       "/admin/applications",
     ]);
     expect(
-      routes.find((route) => route.id === "admin-my-work")?.children,
-    ).toMatchObject([{ href: "/admin/work-queue", label: "Assigned tasks" }]);
+      groupNavigationRoutes(routes).find((group) => group.id === "queue"),
+    ).toMatchObject({
+      label: "My Queue",
+      routes: [{ href: "/admin/work-queue", label: "Assigned tasks" }],
+    });
   });
 
   it("exposes only independent conflict reviews to a COI reviewer", () => {
@@ -141,9 +144,66 @@ describe("P3.1 capability-aware portal navigation", () => {
       "operations",
       new Set([permissionCodes.workflowCoiAllReview]),
     );
-    const myWork = routes.find((route) => route.id === "admin-my-work");
-    expect(myWork?.children).toMatchObject([
+    const queue = groupNavigationRoutes(routes).find(
+      (group) => group.id === "queue",
+    );
+    expect(queue?.routes).toMatchObject([
       { href: "/admin/conflict-reviews", label: "Conflict reviews" },
+    ]);
+    const monitor = groupNavigationRoutes(routes).find(
+      (group) => group.id === "process-monitor",
+    );
+    expect(monitor?.routes).toMatchObject([
+      { href: "/admin/process-monitor/conflict-reviews", label: "Conflict reviews" },
+    ]);
+  });
+
+  it("places Process Monitor immediately below My Queue and above Analytics", () => {
+    const routes = filterPortalRoutes(
+      portalRoutes,
+      "operations",
+      new Set([
+        permissionCodes.workflowTaskAssignedRead,
+        permissionCodes.workflowCoiAllReview,
+        permissionCodes.workflowTaskAllRead,
+        permissionCodes.chatbotEscalationReadAll,
+        permissionCodes.reportingWebsiteReadAll,
+      ]),
+    );
+    const groups = groupNavigationRoutes(routes);
+    const queueIndex = groups.findIndex((group) => group.id === "queue");
+
+    expect(groups[queueIndex + 1]?.label).toBe("Process Monitor");
+    expect(groups[queueIndex + 2]?.label).toBe("Analytics");
+    expect(groups[queueIndex]?.routes.map((route) => route.label)).toEqual([
+      "Assigned tasks",
+      "Conflict reviews",
+      "Escalated cases",
+    ]);
+    expect(groups[queueIndex + 1]?.routes.map((route) => route.label)).toEqual([
+      "Assigned tasks",
+      "Conflict reviews",
+      "Escalated reviews",
+    ]);
+    expect(routes.some((route) => route.id === "admin-my-work")).toBe(false);
+  });
+
+  it("keeps assigned-only grants out of the all-record monitoring views", () => {
+    const routes = filterPortalRoutes(
+      portalRoutes,
+      "operations",
+      new Set([
+        permissionCodes.workflowTaskAssignedRead,
+        permissionCodes.chatbotEscalationReadAssigned,
+      ]),
+    );
+    const groups = groupNavigationRoutes(routes);
+    expect(groups.some((group) => group.id === "process-monitor")).toBe(false);
+    expect(groups.find((group) => group.id === "queue")?.routes.map(
+      (route) => route.href,
+    )).toEqual([
+      "/admin/work-queue",
+      "/admin/my-queue/escalated-cases",
     ]);
   });
 

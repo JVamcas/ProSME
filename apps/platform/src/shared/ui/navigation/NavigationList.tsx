@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { useId, useState } from "react";
 
 import { cn } from "@/lib/utils";
+import { GeneralButton } from "@/shared/ui/Button";
 import {
   sidebarItemClassName,
   sidebarIconClassName,
@@ -110,10 +111,13 @@ function NavigationRouteItem({
   return (
     <li className="grid gap-1">
       {hasChildren ? (
-        <button
+        <GeneralButton
           aria-controls={childListId}
           aria-expanded={childrenVisible}
-          className={itemClassName}
+          className={cn(
+            itemClassName,
+            "h-auto rounded-[10px] focus-visible:ring-0",
+          )}
           onClick={() => {
             if (collapsed) {
               setExpansionOverride({ expanded: true, pathname });
@@ -128,6 +132,8 @@ function NavigationRouteItem({
           }}
           title={collapsed ? route.label : undefined}
           type="button"
+          size={null}
+          variant={null}
         >
           {content}
           {!collapsed ? (
@@ -139,7 +145,7 @@ function NavigationRouteItem({
               )}
             />
           ) : null}
-        </button>
+        </GeneralButton>
       ) : (
         <Link
           aria-current={active ? "page" : undefined}
@@ -179,6 +185,86 @@ function NavigationRouteItem({
   );
 }
 
+function NavigationSectionItem({
+  collapsed,
+  dark,
+  group,
+  onRequestExpand,
+  onNavigate,
+  pathname,
+}: {
+  collapsed: boolean;
+  dark: boolean;
+  group: { id: string; label?: string; routes: NavigationRoute[] };
+  onRequestExpand?: () => void;
+  onNavigate?: (href: string) => void;
+  pathname: string;
+}) {
+  const generatedId = useId();
+  const listId = `${group.id}-routes-${generatedId}`;
+  const [expansionOverride, setExpansionOverride] =
+    useState<ExpansionOverride | null>(null);
+  const expanded =
+    expansionOverride?.pathname === pathname
+      ? expansionOverride.expanded
+      : true;
+  const routesVisible = collapsed || !group.label || expanded;
+
+  return (
+    <li className={styles.section} aria-label={group.label}>
+      {group.label && !collapsed ? (
+        <GeneralButton
+          aria-controls={listId}
+          aria-expanded={expanded}
+          className={cn(
+            styles.heading,
+            "h-auto rounded-lg font-bold focus-visible:ring-0",
+          )}
+          onClick={() => {
+            setExpansionOverride({ expanded: !expanded, pathname });
+          }}
+          type="button"
+          size={null}
+          variant={null}
+        >
+          <span>{group.label}</span>
+          <ChevronDown
+            aria-hidden="true"
+            className={cn(
+              "size-3.5 shrink-0 transition-transform",
+              expanded && "rotate-180",
+            )}
+          />
+        </GeneralButton>
+      ) : null}
+      {group.label && collapsed ? (
+        <p className={sidebarHiddenLabelClassName}>{group.label}</p>
+      ) : null}
+      <ul
+        className={cn(
+          styles.list,
+          group.label && !collapsed && styles.sectionChildren,
+        )}
+        hidden={!routesVisible}
+        id={listId}
+      >
+        {group.routes.map((route) => (
+          <NavigationRouteItem
+            collapsed={collapsed}
+            dark={dark}
+            depth={0}
+            key={route.id}
+            onRequestExpand={onRequestExpand}
+            onNavigate={onNavigate}
+            pathname={pathname}
+            route={route}
+          />
+        ))}
+      </ul>
+    </li>
+  );
+}
+
 export function NavigationList({
   collapsed = false,
   dark = false,
@@ -200,33 +286,15 @@ export function NavigationList({
     <nav aria-label={label}>
       <ul className={styles.list}>
         {groupNavigationRoutes(routes).map((group) => (
-          <li className={styles.section} key={group.id} aria-label={group.label}>
-            {group.label ? (
-              <p
-                className={
-                  collapsed
-                    ? sidebarHiddenLabelClassName
-                    : styles.heading
-                }
-              >
-                {group.label}
-              </p>
-            ) : null}
-            <ul className={styles.list}>
-              {group.routes.map((route) => (
-                <NavigationRouteItem
-                  collapsed={collapsed}
-                  dark={dark}
-                  depth={0}
-                  key={route.id}
-                  onRequestExpand={onRequestExpand}
-                  onNavigate={onNavigate}
-                  pathname={pathname}
-                  route={route}
-                />
-              ))}
-            </ul>
-          </li>
+          <NavigationSectionItem
+            collapsed={collapsed}
+            dark={dark}
+            group={group}
+            key={group.id}
+            onRequestExpand={onRequestExpand}
+            onNavigate={onNavigate}
+            pathname={pathname}
+          />
         ))}
       </ul>
     </nav>

@@ -46,6 +46,7 @@ export type WorkQueuePage = {
 };
 
 export type WorkQueueListInput = {
+  assignmentScope?: "assigned" | "all";
   after?: string;
   limit: number;
   search?: string;

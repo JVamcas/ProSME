@@ -10,17 +10,7 @@ export async function HomeFunding({
   heading: string;
   introduction?: string;
 }) {
-  const { news, resources } = await getHomeNewsAndResources();
-  const items = [
-    ...news.map((item) => ({
-      ...item,
-      kind: "news" as const,
-    })),
-    ...resources.map((item) => ({
-      ...item,
-      kind: "resource" as const,
-    })),
-  ];
+  const items = await getHomeNewsAndResources();
 
   return (
     <section className="container py-14">
@@ -38,7 +28,7 @@ export async function HomeFunding({
           />
         </div>
       ) : null}
-      <div className="mt-6 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
+      <div className="mt-6 grid gap-5 md:grid-cols-2">
         {items.map((item) => (
           <ContentListingCard
             item={item}

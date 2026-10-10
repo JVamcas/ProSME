@@ -10,31 +10,29 @@ vi.mock("@/modules/content/ServerContentQueries", () => ({
 }));
 
 beforeEach(() => {
-  vi.mocked(getHomeNewsAndResources).mockResolvedValue({
-    news: [],
-    resources: [
-      {
-        category: "Application guide",
-        href: "/documents/sme-fund-first-call-funding-criteria.pdf",
-        id: 1,
-        image: {
-          alt: "First Call for Applications funding criteria guide",
-          height: 1404,
-          url: "/api/media/file/funding-guide.png",
-          width: 993,
-          sizes: {
-            thumbnail: {
-              url: "/api/media/file/funding-guide-320.webp",
-              width: 320,
-            },
+  vi.mocked(getHomeNewsAndResources).mockResolvedValue([
+    {
+      kind: "resource",
+      category: "Application guide",
+      href: "/documents/sme-fund-first-call-funding-criteria.pdf",
+      id: 1,
+      image: {
+        alt: "First Call for Applications funding criteria guide",
+        height: 1404,
+        url: "/api/media/file/funding-guide.png",
+        width: 993,
+        sizes: {
+          thumbnail: {
+            url: "/api/media/file/funding-guide-320.webp",
+            width: 320,
           },
         },
-        slug: "first-call-funding-criteria",
-        summary: "Approved application criteria.",
-        title: "First Call funding criteria",
       },
-    ],
-  });
+      slug: "first-call-funding-criteria",
+      summary: "Approved application criteria.",
+      title: "First Call funding criteria",
+    },
+  ]);
 });
 
 describe("homepage news and resources", () => {
@@ -56,15 +54,15 @@ describe("homepage news and resources", () => {
   });
 
   it("keeps news links in the current tab when sharing the card presentation", async () => {
-    vi.mocked(getHomeNewsAndResources).mockResolvedValue({
-      news: [{
+    vi.mocked(getHomeNewsAndResources).mockResolvedValue([
+      {
+        kind: "news",
         id: 2,
         slug: "programme-update",
         title: "Programme update",
         summary: "Latest programme news.",
-      }],
-      resources: [],
-    });
+      },
+    ]);
     const markup = renderToStaticMarkup(
       await HomeFunding({ heading: "Latest News & Resources" }),
     );
@@ -73,11 +71,36 @@ describe("homepage news and resources", () => {
     expect(markup).toContain("Read update");
     expect(markup).not.toContain('target="_blank"');
   });
+
+  it("preserves the combined feed order when rendering news and resource cards", async () => {
+    vi.mocked(getHomeNewsAndResources).mockResolvedValue([
+      {
+        kind: "resource",
+        id: 1,
+        slug: "new-resource",
+        title: "New resource",
+        summary: "Recent guidance.",
+      },
+      {
+        kind: "news",
+        id: 1,
+        slug: "older-news",
+        title: "Older news",
+        summary: "Earlier update.",
+      },
+    ]);
+
+    const markup = renderToStaticMarkup(
+      await HomeFunding({ heading: "Latest News & Resources" }),
+    );
+
+    expect(markup.indexOf("New resource")).toBeLessThan(markup.indexOf("Older news"));
+  });
 });
 
 describe("Resource Centre cards", () => {
   it("shows the document preview, metadata and direct document action", async () => {
-    const { resources } = await getHomeNewsAndResources();
+    const resources = await getHomeNewsAndResources();
     const markup = renderToStaticMarkup(
       <ResourceCard item={{ ...resources[0], date: "2026-10-07T12:00:00Z" }} />,
     );

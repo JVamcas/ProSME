@@ -2,7 +2,28 @@
 
 import { useMemo } from "react";
 import { EChart } from "@/shared/ui/EChart";
+import { DataTable, type DataTableColumn } from "@/shared/ui/DataTable";
 import type { WebsiteHeatmapReport } from "../../domain/WebsiteHeatmap";
+
+type ScrollDepth = WebsiteHeatmapReport["scroll"][number];
+
+const columns: DataTableColumn<ScrollDepth>[] = [
+  {
+    accessorKey: "depth",
+    header: "Page depth",
+    cell: ({ row }) => `${row.original.depth}%`,
+  },
+  {
+    accessorKey: "views",
+    header: "Views reaching depth",
+    cell: ({ row }) => row.original.views.toLocaleString(),
+  },
+  {
+    accessorKey: "share",
+    header: "Share",
+    cell: ({ row }) => `${(row.original.share * 100).toFixed(1)}%`,
+  },
+];
 
 export function WebsiteScrollDepthChart({
   data,
@@ -48,29 +69,20 @@ export function WebsiteScrollDepthChart({
       <EChart
         option={option}
         height={320}
-        label="Percentage of consenting page-layout views reaching each scroll depth"
+        label="Percentage of recorded page-layout views reaching each scroll depth"
       />
-      <table className="mt-3 w-full text-sm">
-        <caption className="sr-only">
-          Recorded views by scroll-depth milestone
-        </caption>
-        <thead>
-          <tr>
-            <th scope="col">Page depth</th>
-            <th scope="col">Views reaching depth</th>
-            <th scope="col">Share</th>
-          </tr>
-        </thead>
-        <tbody>
-          {data.map((row) => (
-            <tr key={row.depth} className="border-t border-brand-blue/20">
-              <td className="py-1 text-center">{row.depth}%</td>
-              <td className="text-center">{row.views.toLocaleString()}</td>
-              <td className="text-center">{(row.share * 100).toFixed(1)}%</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <div
+        className="mt-3"
+        role="region"
+        aria-label="Recorded views by scroll-depth milestone"
+      >
+        <DataTable
+          columns={columns}
+          data={data}
+          density="compact"
+          rowKey={(row) => String(row.depth)}
+        />
+      </div>
     </div>
   );
 }

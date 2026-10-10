@@ -4,7 +4,7 @@ vi.mock("@/auth/authorization/current-user", () => ({
   resolveUserFromHeaders: vi.fn().mockResolvedValue(null),
 }));
 const services = vi.hoisted(() => ({ collect: vi.fn(), report: vi.fn() }));
-vi.mock("@/modules/reporting/ServerWebsiteHeatmapService", () => ({
+vi.mock("@/modules/reporting/application/ServerWebsiteHeatmapService", () => ({
   collectWebsiteHeatmap: services.collect,
   getWebsiteHeatmap: services.report,
 }));
@@ -38,7 +38,7 @@ describe("heatmap HTTP boundaries", () => {
     expect(services.collect).toHaveBeenCalledWith(
       heatmapBatch(),
       request.headers,
-      "https://example.test",
+      request.url,
     );
   });
   it.each(["malformed", "oversized", "wrong content type", "private page"])(
@@ -87,7 +87,7 @@ describe("heatmap HTTP boundaries", () => {
 
 describe("nonblocking heatmap upload service", () => {
   it("allows only one regular upload in flight and bounds the request duration", async () => {
-    vi.stubGlobal("document", { cookie: "smefund_analytics_consent=accepted" });
+    vi.stubGlobal("document", { cookie: "" });
     let resolve: (response: Response) => void = () => undefined;
     const fetch = vi.fn<typeof globalThis.fetch>(
       () =>
@@ -111,7 +111,13 @@ describe("nonblocking heatmap upload service", () => {
     );
     await pending;
     vi.stubGlobal("document", { cookie: "smefund_analytics_consent=declined" });
-    await clientWebsiteHeatmapService.collect(heatmapBatch(), false);
-    expect(fetch).toHaveBeenCalledOnce();
+    const declined = clientWebsiteHeatmapService.collect(heatmapBatch(), false);
+    expect(fetch).toHaveBeenCalledTimes(2);
+    resolve(
+      new Response(JSON.stringify({ data: { accepted: true } }), {
+        status: 200,
+      }),
+    );
+    await declined;
   });
 });

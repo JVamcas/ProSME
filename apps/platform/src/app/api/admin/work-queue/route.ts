@@ -5,7 +5,7 @@ import {
   portalRouteError,
 } from "@/lib/api/PortalApiResponse";
 import { workQueueListSchema } from "@/modules/work-queue/WorkQueueSchemas";
-import { getWorkQueue } from "@/modules/work-queue/ServerWorkQueueService";
+import { getWorkQueue } from "@/modules/work-queue/application/ServerWorkQueueService";
 
 
 

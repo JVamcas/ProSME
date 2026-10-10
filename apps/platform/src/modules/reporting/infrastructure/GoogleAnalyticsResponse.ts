@@ -138,15 +138,16 @@ export function funnelCounts(
   ) {
     throw new Error("Invalid analytics funnel headers.");
   }
-  const rows = report.rows ?? [];
-  return events.map((event, step) => {
-    const matching = rows.filter(
-      (row) => row.dimensionValues?.[index]?.value === `${step + 1}. ${event}`,
-    );
-    if (matching.length !== 1) {
-      if (rows.length === 0) return 0;
-      throw new Error("Incomplete analytics funnel.");
+  const labels = events.map((event, step) => `${step + 1}. ${event}`);
+  const expectedLabels = new Set(labels);
+  const counts = new Map<string, number>();
+  for (const row of report.rows ?? []) {
+    const label = stringDimension(report, row, "funnelStepName");
+    if (!expectedLabels.has(label) || counts.has(label)) {
+      throw new Error("Invalid analytics funnel step.");
     }
-    return countMetric(report, matching[0], "activeUsers");
-  });
+    counts.set(label, countMetric(report, row, "activeUsers"));
+  }
+  // Successful GA funnels omit stages with no activity, even after populated stages.
+  return labels.map((label) => counts.get(label) ?? 0);
 }

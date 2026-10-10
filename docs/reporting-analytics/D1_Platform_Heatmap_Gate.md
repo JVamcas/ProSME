@@ -1,5 +1,40 @@
 # D1 platform-owned click and scroll heatmaps
 
+## Update: automatic anonymous heatmap capture, 10 October 2026
+
+At the user's request, heatmap recording no longer requires analytics consent.
+This update supersedes the consent and withdrawal requirements in the original
+7 October record below. Google Analytics retains its own existing cookie choice.
+
+The public layout mounts heatmap recording independently of the consent banner.
+Browser capture, uploads and the public API accept recordings without a consent
+cookie, including when Google Analytics is declined. The approved-public-route
+allowlist, form masking, geometry-only payload, feature flag, same-origin checks,
+bounded requests and staff report permission remain enforced. The dashboard
+tooltip and scroll chart describe recorded views; the empty panel provides a
+Refresh button and instructions for checking new public-page recordings.
+
+The changed heatmap/reporting backend services now live in the module's
+`application` directory, and the scroll-depth count table uses shared `DataTable`.
+No database migration is required. No production build was requested or run.
+Browser and deployed-runtime verification have not been performed for this update.
+
+Validation: 89 distinct focused tests across 12 files passed, covering browser
+capture, upload transport, no/declined consent, public-route and form exclusions,
+same-origin/feature-flag enforcement, staff permissions, charts, presentation,
+and retained Google Analytics/eligibility consent. The final rerun used a
+30-second test timeout because two dynamic-import tests exceeded five seconds
+under local memory pressure. Type checking, architecture/form boundaries,
+component reuse, file-size limits, changed-file lint and whitespace checks passed. Full-repository
+lint reports one unrelated error at
+`modules/chatbot/ui/public/useVisitorChatbot.ts:110` (`react-hooks/purity`);
+that existing chatbot work was preserved.
+
+Engineering review: Codex, 10 October 2026. The focused implementation and
+regression evidence are accepted; deployed/browser acceptance remains pending.
+
+## Original implementation record
+
 Date: 2026-10-07.
 Status: implementation and local PostgreSQL verification complete; browser,
 deployed application and performance acceptance remain pending.

@@ -30,6 +30,10 @@ export const applicantScopePermissions = [
 ] as const;
 
 export const operationsScopePermissions = [
+  permissionCodes.chatbotSettingsReadAll,
+  permissionCodes.chatbotKnowledgeReadAll,
+  permissionCodes.chatbotEscalationReadAssigned,
+  permissionCodes.chatbotEscalationReadAll,
   permissionCodes.reportingDatasetReadAll,
   permissionCodes.reportingQueryExecuteAll,
   permissionCodes.reportingWebsiteReadAll,
