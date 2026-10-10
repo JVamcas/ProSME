@@ -64,7 +64,10 @@ describe("funding call version routes", () => {
     );
     const request = new Request(`${url}/versions`, {
       method: "POST",
-      body: JSON.stringify({ expectedRowVersion: 1 }),
+      body: JSON.stringify({
+        expectedRowVersion: 1,
+        sourceVersionId: versionId,
+      }),
     });
     expect((await POST(request, context)).status).toBe(403);
     expect(createFundingCallReplacement).not.toHaveBeenCalled();
@@ -75,15 +78,56 @@ describe("funding call version routes", () => {
     vi.mocked(resolveUserFromHeaders).mockResolvedValue(actor);
     const request = new Request(`${url}/versions`, {
       method: "POST",
-      body: JSON.stringify({ expectedRowVersion: 1 }),
+      body: JSON.stringify({
+        expectedRowVersion: 1,
+        sourceVersionId: versionId,
+      }),
     });
     expect((await POST(request, context)).status).toBe(200);
     expect(createFundingCallReplacement).toHaveBeenCalledWith(
       actor.id,
       callId,
       1,
+      versionId,
     );
   });
+
+  it("passes the selected publication instead of selecting the latest", async () => {
+    const actor = user([permissionCodes.fundingCallEditDraft]);
+    vi.mocked(resolveUserFromHeaders).mockResolvedValue(actor);
+    const request = new Request(`${url}/versions`, {
+      method: "POST",
+      body: JSON.stringify({
+        expectedRowVersion: 1,
+        sourceVersionId: versionId,
+      }),
+    });
+    expect((await POST(request, context)).status).toBe(200);
+    expect(createFundingCallReplacement).toHaveBeenCalledWith(
+      actor.id,
+      callId,
+      1,
+      versionId,
+    );
+  });
+
+  it.each(["invalid", undefined])(
+    "rejects invalid or missing publication ID %s",
+    async (sourceVersionId) => {
+      vi.mocked(resolveUserFromHeaders).mockResolvedValue(
+        user([permissionCodes.fundingCallEditDraft]),
+      );
+      const request = new Request(`${url}/versions`, {
+        method: "POST",
+        body: JSON.stringify({
+          expectedRowVersion: 1,
+          sourceVersionId,
+        }),
+      });
+      expect((await POST(request, context)).status).toBe(400);
+      expect(createFundingCallReplacement).not.toHaveBeenCalled();
+    },
+  );
 
   it.each([0, -1, "invalid"])(
     "rejects invalid history page %s",
@@ -128,7 +172,10 @@ describe("funding call version routes", () => {
     vi.mocked(createFundingCallReplacement).mockResolvedValue(null);
     const request = new Request(`${url}/versions`, {
       method: "POST",
-      body: JSON.stringify({ expectedRowVersion: 1 }),
+      body: JSON.stringify({
+        expectedRowVersion: 1,
+        sourceVersionId: versionId,
+      }),
     });
     expect((await POST(request, context)).status).toBe(409);
   });

@@ -26,6 +26,7 @@ import {
   workflowTransitionFormSchema,
 } from "./WorkflowTransitionFormSchema";
 import { WorkflowConditionEditor } from "./WorkflowConditionEditor";
+import { WorkflowRouteStageField } from "./WorkflowRouteStageField";
 import { useWorkflowConditionFields } from "./useWorkflowConditionFields";
 
 import {
@@ -131,10 +132,6 @@ export function WorkflowActionRouteEditor({
     });
   }, [form, terminalOutcome]);
   const targetType = useWatch({ control: form.control, name: "targetType" });
-  const targetStageKeys = useWatch({
-    control: form.control,
-    name: "targetStageKeys",
-  });
   const terminalOutcomeItems = [
     ...new Set([
       ...standardTerminalOutcomes,
@@ -184,35 +181,7 @@ export function WorkflowActionRouteEditor({
           required
         />
         {targetType === "STAGE" ? (
-          <FormSelect
-            containerClassName="sm:col-span-2"
-            items={targetStages.map((item) => ({
-              label: item.name,
-              value: item.stableKey,
-            }))}
-            label={isReturn ? "Previous stage" : "Target stages"}
-            multiple={!isReturn}
-            name="targetStageKeys"
-            onChange={(event) => {
-              form.setValue("targetStageKeys", [event.target.value], {
-                shouldDirty: true,
-                shouldValidate: true,
-              });
-            }}
-            onMultipleChange={(values) =>
-              form.setValue("targetStageKeys", values, {
-                shouldDirty: true,
-                shouldValidate: true,
-              })
-            }
-            placeholder={
-              isReturn
-                ? "Select the previous stage"
-                : "Select one or more stages"
-            }
-            required
-            value={isReturn ? (targetStageKeys[0] ?? "") : targetStageKeys}
-          />
+          <WorkflowRouteStageField isReturn={isReturn} stages={targetStages} />
         ) : (
           <FormSelect
             containerClassName="sm:col-span-2"

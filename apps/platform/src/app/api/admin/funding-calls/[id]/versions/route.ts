@@ -11,7 +11,10 @@ import {
 } from "@/modules/funding-calls/application/ServerFundingCallVersionService";
 
 const commandSchema = z
-  .object({ expectedRowVersion: z.number().int().positive() })
+  .object({
+    expectedRowVersion: z.number().int().positive(),
+    sourceVersionId: z.uuid(),
+  })
   .strict();
 const pageSchema = z.coerce.number().int().positive().default(1);
 type RouteContext = { params: Promise<{ id: string }> };
@@ -46,6 +49,7 @@ export async function POST(request: Request, context: RouteContext) {
         await resolveUserFromHeaders(request.headers),
         id,
         input.expectedRowVersion,
+        input.sourceVersionId,
       ),
       correlationId,
     );

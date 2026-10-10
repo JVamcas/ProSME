@@ -11,17 +11,21 @@ beforeEach(() => {
 });
 
 describe("workflow template page repository", () => {
-  it("limits and offsets version rows in SQL and counts all active versions", async () => {
+  it("limits and offsets template groups in SQL and counts active definitions", async () => {
     const offset = vi.fn().mockResolvedValue([{ currentVersionNumber: 2 }]);
     const limit = vi.fn().mockReturnValue({ offset });
     const orderBy = vi.fn().mockReturnValue({ limit });
     const rowsWhere = vi.fn().mockReturnValue({ orderBy });
     const countWhere = vi.fn().mockResolvedValue([{ total: 23 }]);
     const rowsJoin = vi.fn().mockReturnValue({ where: rowsWhere });
-    const countJoin = vi.fn().mockReturnValue({ where: countWhere });
-    const select = vi.fn()
+    const existsWhere = vi.fn().mockReturnValue({});
+    const latestWhere = vi.fn().mockReturnValue({});
+    const select = vi
+      .fn()
+      .mockReturnValueOnce({ from: () => ({ where: latestWhere }) })
+      .mockReturnValueOnce({ from: () => ({ where: existsWhere }) })
       .mockReturnValueOnce({ from: () => ({ innerJoin: rowsJoin }) })
-      .mockReturnValueOnce({ from: () => ({ innerJoin: countJoin }) });
+      .mockReturnValueOnce({ from: () => ({ where: countWhere }) });
     vi.mocked(getDatabase).mockReturnValue({ select } as never);
 
     const result = await listWorkflowTemplatePage(3, 10);

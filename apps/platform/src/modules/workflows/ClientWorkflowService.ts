@@ -18,8 +18,15 @@ import type {
   WorkflowOpportunityAssignment,
   WorkflowValidation,
 } from "@/modules/workflows/domain/definitions/WorkflowTypes";
-import type { CreateWorkflowTemplateInput } from "@/modules/workflows/api/WorkflowTemplateSchemas";
-import type { WorkflowTemplateListItem, WorkflowTemplatePage } from "@/modules/workflows/domain/definitions/WorkflowTemplate";
+import type {
+  CreateWorkflowTemplateInput,
+  WorkflowTemplateCopyInput,
+  WorkflowTemplateDefinitionUpdateInput,
+} from "@/modules/workflows/api/WorkflowTemplateSchemas";
+import type {
+  WorkflowTemplateListItem,
+  WorkflowTemplatePage,
+} from "@/modules/workflows/domain/definitions/WorkflowTemplate";
 import type { WorkflowActionAvailability } from "@/modules/workflows/domain/actions/WorkflowActionAvailability";
 
 export type WorkflowActionAvailabilityQuery = {
@@ -63,6 +70,46 @@ function createTemplate(input: CreateWorkflowTemplateInput) {
   });
 }
 
+function listTemplateVersions(
+  definitionId: string,
+  page: number,
+  pageSize: number,
+) {
+  const query = new URLSearchParams({
+    page: String(page),
+    pageSize: String(pageSize),
+  });
+  return requestData<WorkflowTemplatePage>(
+    `/api/workflows/${definitionId}/versions?${query}`,
+    { cache: "no-store" },
+  );
+}
+
+function updateTemplateDefinition(
+  definitionId: string,
+  input: WorkflowTemplateDefinitionUpdateInput,
+) {
+  return requestData<{ id: string; updatedAt: string }>(
+    `/api/workflows/${definitionId}/definition`,
+    {
+      method: "PATCH",
+      headers: jsonHeaders,
+      body: JSON.stringify(input),
+    },
+  );
+}
+
+function copyTemplate(definitionId: string, input: WorkflowTemplateCopyInput) {
+  return requestData<WorkflowEditorView>(
+    `/api/workflows/${definitionId}/templates`,
+    {
+      method: "POST",
+      headers: jsonHeaders,
+      body: JSON.stringify(input),
+    },
+  );
+}
+
 function listDefinitions() {
   return requestData<WorkflowDefinitionSummary[]>(
     "/api/admin/workflow-definitions",
@@ -104,7 +151,10 @@ function updateDraft(definitionId: string, input: UpdateWorkflowDraftInput) {
   );
 }
 
-function deleteAction(definitionId: string, input: WorkflowActionDeletionInput) {
+function deleteAction(
+  definitionId: string,
+  input: WorkflowActionDeletionInput,
+) {
   return requestData<WorkflowEditorView>(
     `/api/workflows/${definitionId}/definition-actions`,
     {
@@ -188,7 +238,10 @@ function listAssignments() {
   );
 }
 
-async function getEligibilityFormPreviews(definitionId: string, versionId: string) {
+async function getEligibilityFormPreviews(
+  definitionId: string,
+  versionId: string,
+) {
   const query = new URLSearchParams({ versionId });
   const data = await requestData<unknown>(
     `/api/workflows/${definitionId}/eligibility-forms?${query}`,
@@ -216,6 +269,9 @@ function assignOpportunity(input: OpportunityAssignmentInput) {
 }
 
 export const clientWorkflowService = {
+  copyTemplate,
+  listTemplateVersions,
+  updateTemplateDefinition,
   assignOpportunity,
   cloneDefinition,
   createTemplate,

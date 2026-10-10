@@ -29,6 +29,7 @@ export const version = {
   definitionId: templateId,
   status: "DRAFT" as WorkflowTemplateStatus,
   versionNumber: 1,
+  sourceVersionId: null,
   rowVersion: 1,
   metadata,
   createdBy: actor.id,

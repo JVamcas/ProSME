@@ -105,7 +105,7 @@ export function EligibilityRuleSetHeaderActions({
           onClick={() => void runLifecycle("CLONE")}
         >
           {status === "PUBLISHED"
-            ? "Edit published version"
+            ? "Edit"
             : "Create draft version"}
         </GeneralButton>
       ) : null}

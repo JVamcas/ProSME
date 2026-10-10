@@ -5,13 +5,20 @@ vi.mock(
   "@/modules/workflows/infrastructure/WorkflowTemplateRepository",
   () => ({
     listWorkflowTemplatePage: vi.fn(),
+    listWorkflowTemplateVersionPage: vi.fn(),
   }),
 );
 
 import { permissionCodes } from "@/auth/authorization/permissions/PermissionCodes";
 import { PermissionDeniedError } from "@/auth/authorization/policy";
-import { getWorkflowTemplates } from "@/modules/workflows/application/definitions/ServerWorkflowTemplateService";
-import { listWorkflowTemplatePage } from "@/modules/workflows/infrastructure/WorkflowTemplateRepository";
+import {
+  getWorkflowTemplates,
+  getWorkflowTemplateVersionPage,
+} from "@/modules/workflows/application/definitions/ServerWorkflowTemplateService";
+import {
+  listWorkflowTemplatePage,
+  listWorkflowTemplateVersionPage,
+} from "@/modules/workflows/infrastructure/WorkflowTemplateRepository";
 import { actor } from "./WorkflowTemplateFixtures";
 
 const reader = {
@@ -24,7 +31,42 @@ beforeEach(() => {
 });
 
 describe("workflow template admin list service", () => {
-  it("returns every version in the requested page with pagination metadata", async () => {
+  it("reads version pages only within the requested definition", async () => {
+    vi.mocked(listWorkflowTemplateVersionPage).mockResolvedValue({
+      items: [],
+      total: 12,
+    });
+    await expect(
+      getWorkflowTemplateVersionPage(reader, actor.id, 2, 10),
+    ).resolves.toEqual({
+      items: [],
+      total: 12,
+      page: 2,
+      pageSize: 10,
+      totalPages: 2,
+    });
+    expect(listWorkflowTemplateVersionPage).toHaveBeenCalledWith(
+      actor.id,
+      2,
+      10,
+    );
+  });
+
+  it("denies version reads without permission and rejects invalid definition IDs", async () => {
+    await expect(
+      getWorkflowTemplateVersionPage(
+        { ...reader, capabilities: new Set() },
+        actor.id,
+        1,
+        10,
+      ),
+    ).rejects.toBeInstanceOf(PermissionDeniedError);
+    await expect(
+      getWorkflowTemplateVersionPage(reader, "invalid", 1, 10),
+    ).rejects.toThrow();
+    expect(listWorkflowTemplateVersionPage).not.toHaveBeenCalled();
+  });
+  it("returns template groups in the requested page with pagination metadata", async () => {
     vi.mocked(listWorkflowTemplatePage).mockResolvedValue({
       items: [
         {

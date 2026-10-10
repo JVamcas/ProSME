@@ -18,12 +18,14 @@ export async function prepareFundingCallReplacement(
   user: AuthenticatedUser | null,
   id: string,
   expectedRowVersion: number,
+  sourceVersionId: string,
 ) {
   const actor = requirePermission(user, permissionCodes.fundingCallEditDraft);
   const draft = await createFundingCallReplacement(
     actor.id,
     id,
     expectedRowVersion,
+    sourceVersionId,
   );
   if (!draft)
     throw new ResourceConflictError(

@@ -84,7 +84,7 @@ export function WorkflowEditorWorkspace({
                   })
                 }
               >
-                Edit published version
+                Edit
               </GeneralButton>
             ) : null}
             {canPublishVersion ? (

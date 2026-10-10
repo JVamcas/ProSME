@@ -10,6 +10,7 @@ import {
   timestamp,
   uniqueIndex,
   uuid,
+  type AnyPgColumn,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
@@ -63,6 +64,10 @@ export const workflowDefinitionVersions = pgTable(
       .notNull()
       .references(() => workflowDefinitions.id, { onDelete: "restrict" }),
     versionNumber: integer("version_number").notNull(),
+    sourceVersionId: uuid("source_version_id").references(
+      (): AnyPgColumn => workflowDefinitionVersions.id,
+      { onDelete: "restrict" },
+    ),
     status: text("status").$type<WorkflowStatus>().notNull().default("DRAFT"),
     metadata: jsonb("metadata")
       .$type<WorkflowTemplateDetails>()
@@ -93,6 +98,9 @@ export const workflowDefinitionVersions = pgTable(
       table.definitionId,
       table.status,
     ),
+    uniqueIndex("app_workflow_versions_source_draft_unique")
+      .on(table.definitionId, table.sourceVersionId)
+      .where(sql`${table.status} = 'DRAFT'`),
   ],
 );
 

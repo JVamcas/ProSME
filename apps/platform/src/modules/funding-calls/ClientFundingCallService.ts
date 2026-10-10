@@ -198,13 +198,17 @@ function listBindableWorkflowTemplateVersions() {
   );
 }
 
-function prepareReplacement(id: string, expectedRowVersion: number) {
+function prepareReplacement(
+  id: string,
+  expectedRowVersion: number,
+  sourceVersionId: string,
+) {
   return requestData<FundingCallView>(
     `/api/admin/funding-calls/${id}/versions`,
     {
       method: "POST",
       headers: jsonHeaders,
-      body: JSON.stringify({ expectedRowVersion }),
+      body: JSON.stringify({ expectedRowVersion, sourceVersionId }),
     },
   );
 }

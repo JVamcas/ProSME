@@ -102,7 +102,10 @@ describe("funding call header action dropdown", () => {
     ]);
     await select(items[0]);
     expect(state.prepare.mutate).toHaveBeenCalledWith(
-      call.rowVersion,
+      {
+        expectedRowVersion: call.rowVersion,
+        sourceVersionId: call.currentPublishedVersionId,
+      },
       expect.any(Object),
     );
   });

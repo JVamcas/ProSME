@@ -11,6 +11,7 @@ import {
   timestamp,
   uniqueIndex,
   uuid,
+  type AnyPgColumn,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
@@ -61,6 +62,10 @@ export const formVersions = pgTable(
       .notNull()
       .references(() => formDefinitions.id, { onDelete: "restrict" }),
     versionNumber: integer("version_number").notNull(),
+    sourceVersionId: uuid("source_version_id").references(
+      (): AnyPgColumn => formVersions.id,
+      { onDelete: "restrict" },
+    ),
     status: text("status").$type<FormStatus>().notNull().default("DRAFT"),
     metadata: jsonb("metadata")
       .$type<Partial<{ code: string; name: string; description: string }>>()
@@ -101,8 +106,8 @@ export const formVersions = pgTable(
       table.formDefinitionId,
       table.status,
     ),
-    uniqueIndex("app_form_versions_one_draft_unique")
-      .on(table.formDefinitionId)
+    uniqueIndex("app_form_versions_source_draft_unique")
+      .on(table.formDefinitionId, table.sourceVersionId)
       .where(sql`${table.status} = 'DRAFT'`),
     check(
       "app_form_versions_status_check",

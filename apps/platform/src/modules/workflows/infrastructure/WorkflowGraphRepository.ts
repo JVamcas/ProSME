@@ -1,316 +1,112 @@
 import "server-only";
 
-import { asc, eq } from "drizzle-orm";
-
-import { getDatabase } from "@/db/client";
-import {
-  stageTaskActionBindings,
-  stageTaskDefinitions,
-  stageTaskFormBindings,
-  workflowActionDefinitions,
-  workflowDefinitionVersions,
-  workflowDefinitions,
-  workflowStageDefinitions,
-  workflowStageJoinPredecessors,
-  workflowTransitionDefinitions,
-  workflowTransitionTargets,
-} from "@/db/schema";
-import type { WorkflowGraphInput } from "@/modules/workflows/domain/definitions/WorkflowTypes";
-import { workflowActionDefinitionSchema } from "@/modules/workflows/domain/actions/WorkflowActionSchemas";
+import type { WorkflowGraphInput } from "../domain/definitions/WorkflowTypes";
+import { workflowActionDefinitionSchema } from "../domain/actions/WorkflowActionSchemas";
+import { readWorkflowGraphRows } from "./WorkflowGraphReadRepository";
 import {
   attachWorkflowStageRequirements,
   loadWorkflowStageRequirements,
 } from "./WorkflowStageRequirementsReadRepository";
 
-const graphSelection = {
-  definition: {
-    active: workflowDefinitions.active,
-    id: workflowDefinitions.id,
-    code: workflowDefinitions.code,
-    name: workflowDefinitions.name,
-    description: workflowDefinitions.description,
-  },
-  version: {
-    id: workflowDefinitionVersions.id,
-    versionNumber: workflowDefinitionVersions.versionNumber,
-    metadata: workflowDefinitionVersions.metadata,
-    status: workflowDefinitionVersions.status,
-    rowVersion: workflowDefinitionVersions.rowVersion,
-    createdAt: workflowDefinitionVersions.createdAt,
-    publishedAt: workflowDefinitionVersions.publishedAt,
-    retiredAt: workflowDefinitionVersions.retiredAt,
-  },
-  stage: {
-    id: workflowStageDefinitions.id,
-    stableKey: workflowStageDefinitions.code,
-    name: workflowStageDefinitions.name,
-    description: workflowStageDefinitions.description,
-    enabled: workflowStageDefinitions.enabled,
-    optional: workflowStageDefinitions.optional,
-    displayOrder: workflowStageDefinitions.sequence,
-    initial: workflowStageDefinitions.initial,
-    publicStatus: workflowStageDefinitions.applicantStatus,
-    publicLabel: workflowStageDefinitions.applicantLabel,
-    publicDescription: workflowStageDefinitions.applicantDescription,
-    repeatable: workflowStageDefinitions.repeatable,
-    allowApplicantWithdrawal: workflowStageDefinitions.allowApplicantWithdrawal,
-    coiGated: workflowStageDefinitions.coiGated,
-    coiFormVersionId: workflowStageDefinitions.coiFormVersionId,
-    slaHours: workflowStageDefinitions.slaHours,
-    entryCondition: workflowStageDefinitions.entryCondition,
-    exitCondition: workflowStageDefinitions.exitCondition,
-  },
-  action: {
-    id: workflowActionDefinitions.id,
-    stableKey: workflowActionDefinitions.stableKey,
-    label: workflowActionDefinitions.label,
-    actionType: workflowActionDefinitions.actionType,
-    condition: workflowActionDefinitions.condition,
-    configuration: workflowActionDefinitions.configuration,
-    enabled: workflowActionDefinitions.enabled,
-    reasonRequired: workflowActionDefinitions.reasonRequired,
-    displayOrder: workflowActionDefinitions.displayOrder,
-  },
-  task: {
-    id: stageTaskDefinitions.id,
-    stableKey: stageTaskDefinitions.stableKey,
-    name: stageTaskDefinitions.name,
-    description: stageTaskDefinitions.description,
-    displayOrder: stageTaskDefinitions.displayOrder,
-    required: stageTaskDefinitions.required,
-    roleId: stageTaskDefinitions.roleId,
-    namedUserOverrideId: stageTaskDefinitions.namedUserOverrideId,
-    assignmentMode: stageTaskDefinitions.assignmentMode,
-    reviewerCount: stageTaskDefinitions.reviewerCount,
-    reviewRelease: stageTaskDefinitions.reviewRelease,
-    submittedReplacementPolicy: stageTaskDefinitions.submittedReplacementPolicy,
-    taskType: stageTaskDefinitions.taskType,
-    requiredCompletionCount: stageTaskDefinitions.requiredCompletionCount,
-    completionMode: stageTaskDefinitions.completionMode,
-    completionPercentage: stageTaskDefinitions.completionPercentage,
-    quorum: stageTaskDefinitions.quorum,
-    quorumRule: stageTaskDefinitions.quorumRule,
-    config: stageTaskDefinitions.config,
-    permissions: stageTaskDefinitions.permissions,
-  },
-  formBinding: {
-    contextFields: stageTaskFormBindings.contextFields,
-    formVersionId: stageTaskFormBindings.formVersionId,
-  },
-  taskAction: {
-    actionKey: stageTaskActionBindings.actionKey,
-    taskDefinitionId: stageTaskActionBindings.taskDefinitionId,
-  },
-  transition: {
-    id: workflowTransitionDefinitions.id,
-    fromStageId: workflowTransitionDefinitions.fromStageId,
-    actionKey: workflowTransitionDefinitions.actionKey,
-    terminalOutcome: workflowTransitionDefinitions.terminalOutcome,
-    terminalApplicantStatus:
-      workflowTransitionDefinitions.terminalApplicantStatus,
-    priority: workflowTransitionDefinitions.priority,
-    condition: workflowTransitionDefinitions.condition,
-  },
-  transitionTarget: {
-    targetStageId: workflowTransitionTargets.targetStageId,
-  },
-  joinPredecessor: {
-    predecessorStageId: workflowStageJoinPredecessors.predecessorStageId,
-  },
-};
+type GraphRows = Awaited<ReturnType<typeof readWorkflowGraphRows>>;
 
-function loadGraphRows(versionId: string) {
-  return getDatabase()
-    .select(graphSelection)
-    .from(workflowDefinitionVersions)
-    .innerJoin(
-      workflowDefinitions,
-      eq(workflowDefinitions.id, workflowDefinitionVersions.definitionId),
-    )
-    .leftJoin(
-      workflowStageDefinitions,
-      eq(workflowStageDefinitions.versionId, workflowDefinitionVersions.id),
-    )
-    .leftJoin(
-      workflowActionDefinitions,
-      eq(workflowActionDefinitions.stageId, workflowStageDefinitions.id),
-    )
-    .leftJoin(
-      stageTaskDefinitions,
-      eq(stageTaskDefinitions.stageId, workflowStageDefinitions.id),
-    )
-    .leftJoin(
-      stageTaskFormBindings,
-      eq(stageTaskFormBindings.taskDefinitionId, stageTaskDefinitions.id),
-    )
-    .leftJoin(
-      stageTaskActionBindings,
-      eq(stageTaskActionBindings.taskDefinitionId, stageTaskDefinitions.id),
-    )
-    .leftJoin(
-      workflowTransitionDefinitions,
-      eq(
-        workflowTransitionDefinitions.versionId,
-        workflowDefinitionVersions.id,
-      ),
-    )
-    .leftJoin(
-      workflowTransitionTargets,
-      eq(
-        workflowTransitionTargets.transitionId,
-        workflowTransitionDefinitions.id,
-      ),
-    )
-    .leftJoin(
-      workflowStageJoinPredecessors,
-      eq(workflowStageJoinPredecessors.stageId, workflowStageDefinitions.id),
-    )
-    .where(eq(workflowDefinitionVersions.id, versionId))
-    .orderBy(
-      asc(workflowStageDefinitions.sequence),
-      asc(workflowActionDefinitions.displayOrder),
-      asc(stageTaskDefinitions.displayOrder),
-      asc(workflowTransitionDefinitions.priority),
-    );
-}
-
-function assembleGraph(rows: Awaited<ReturnType<typeof loadGraphRows>>) {
+function assembleGraph(rows: GraphRows) {
   const stages = new Map<string, WorkflowGraphInput["stages"][number]>();
+  for (const stage of rows.stages) {
+    stages.set(stage.id, {
+      id: stage.id,
+      stableKey: stage.stableKey,
+      name: stage.name,
+      description: stage.description,
+      enabled: stage.enabled,
+      optional: stage.optional,
+      displayOrder: stage.displayOrder,
+      publicStatusMapping: {
+        status: stage.publicStatus,
+        label: stage.publicLabel,
+        description: stage.publicDescription,
+      },
+      repeatable: stage.repeatable,
+      allowApplicantWithdrawal: stage.allowApplicantWithdrawal,
+      coiGated: stage.coiGated,
+      coiFormVersionId: stage.coiFormVersionId,
+      entryCondition: stage.entryCondition,
+      exitCondition: stage.exitCondition,
+      joinPredecessorStageKeys: [],
+      checklistItems: [],
+      commentFields: [],
+      documentRequirements: [],
+      scoring: null,
+      initial: stage.initial,
+      slaHours: stage.slaHours,
+      actions: [],
+      tasks: [],
+    });
+  }
+  for (const { stageId, ...action } of rows.actions) {
+    stages
+      .get(stageId)
+      ?.actions.push(workflowActionDefinitionSchema.parse(action));
+  }
+  const tasks = new Map<
+    string,
+    WorkflowGraphInput["stages"][number]["tasks"][number]
+  >();
+  for (const {
+    task: { stageId, ...task },
+    formBinding,
+  } of rows.tasks) {
+    const assembled: WorkflowGraphInput["stages"][number]["tasks"][number] = {
+      ...task,
+      actionKeys: [],
+      formBinding: formBinding?.formVersionId ? formBinding : null,
+    };
+    tasks.set(task.id, assembled);
+    stages.get(stageId)?.tasks.push(assembled);
+  }
+  for (const binding of rows.taskActions) {
+    tasks.get(binding.taskDefinitionId)?.actionKeys.push(binding.actionKey);
+  }
+  for (const { stageId, predecessorStageId } of rows.predecessors) {
+    const predecessor = stages.get(predecessorStageId);
+    if (predecessor) {
+      stages.get(stageId)?.joinPredecessorStageKeys.push(predecessor.stableKey);
+    }
+  }
   const transitions = new Map<
     string,
     WorkflowGraphInput["transitions"][number]
   >();
-  const codes = new Map(
-    rows.flatMap((row) =>
-      row.stage?.id ? [[row.stage.id, row.stage.stableKey] as const] : [],
-    ),
-  );
-  rows.forEach(
-    ({
-      action,
-      formBinding,
-      joinPredecessor,
-      stage,
-      task,
-      taskAction,
-      transition,
-      transitionTarget,
-    }) => {
-      if (stage?.id && !stages.has(stage.id))
-        stages.set(stage.id, {
-          id: stage.id,
-          stableKey: stage.stableKey,
-          name: stage.name,
-          description: stage.description,
-          enabled: stage.enabled,
-          optional: stage.optional,
-          displayOrder: stage.displayOrder,
-          publicStatusMapping: {
-            status: stage.publicStatus,
-            label: stage.publicLabel,
-            description: stage.publicDescription,
-          },
-          repeatable: stage.repeatable,
-          allowApplicantWithdrawal: stage.allowApplicantWithdrawal,
-          coiGated: stage.coiGated,
-          coiFormVersionId: stage.coiFormVersionId,
-          entryCondition: stage.entryCondition,
-          exitCondition: stage.exitCondition,
-          joinPredecessorStageKeys: [],
-          checklistItems: [],
-          commentFields: [],
-          documentRequirements: [],
-          scoring: null,
-          initial: stage.initial,
-          slaHours: stage.slaHours,
-          actions: [],
-          tasks: [],
-        });
-      const target = stage?.id ? stages.get(stage.id) : undefined;
-      if (
-        target &&
-        action?.id &&
-        !target.actions.some((item) => item.id === action.id)
-      ) {
-        target.actions.push(workflowActionDefinitionSchema.parse(action));
-      }
-      if (target && joinPredecessor?.predecessorStageId) {
-        const predecessorKey = codes.get(joinPredecessor.predecessorStageId);
-        if (
-          predecessorKey &&
-          !target.joinPredecessorStageKeys.includes(predecessorKey)
-        ) {
-          target.joinPredecessorStageKeys.push(predecessorKey);
-        }
-      }
-      if (
-        target &&
-        task?.id &&
-        !target.tasks.some((item) => item.id === task.id)
-      ) {
-        target.tasks.push({
-          ...task,
-          actionKeys: [],
-          formBinding: formBinding?.formVersionId
-            ? {
-                contextFields: formBinding.contextFields,
-                formVersionId: formBinding.formVersionId,
-              }
-            : null,
-        });
-      }
-      const targetTask = target?.tasks.find(
-        (item) => item.id === taskAction?.taskDefinitionId,
-      );
-      if (
-        targetTask &&
-        taskAction?.actionKey &&
-        !targetTask.actionKeys.includes(taskAction.actionKey)
-      ) {
-        targetTask.actionKeys.push(taskAction.actionKey);
-      }
-      if (transition?.id && !transitions.has(transition.id)) {
-        transitions.set(transition.id, {
-          id: transition.id,
-          actionKey: transition.actionKey,
-          sourceStageKey: codes.get(transition.fromStageId) ?? "",
-          priority: transition.priority,
-          terminalOutcome: transition.terminalOutcome,
-          terminalApplicantStatus: transition.terminalApplicantStatus,
-          condition: transition.condition,
-          targetStageKeys: [],
-        });
-      }
-      if (transition?.id && transitionTarget?.targetStageId) {
-        const targetStageKey = codes.get(transitionTarget.targetStageId);
-        const assembledTransition = transitions.get(transition.id);
-        if (
-          targetStageKey &&
-          assembledTransition &&
-          !assembledTransition.targetStageKeys.includes(targetStageKey)
-        ) {
-          assembledTransition.targetStageKeys.push(targetStageKey);
-        }
-      }
-    },
-  );
+  for (const { fromStageId, ...transition } of rows.transitions) {
+    transitions.set(transition.id, {
+      ...transition,
+      sourceStageKey: stages.get(fromStageId)?.stableKey ?? "",
+      targetStageKeys: [],
+    });
+  }
+  for (const { transitionId, targetStageId } of rows.targets) {
+    const target = stages.get(targetStageId);
+    if (target) {
+      transitions.get(transitionId)?.targetStageKeys.push(target.stableKey);
+    }
+  }
   return {
-    definition: { ...rows[0].definition, ...rows[0].version.metadata },
-    graph: {
-      stages: [...stages.values()],
-      transitions: [...transitions.values()],
-    },
-    version: rows[0].version,
+    stages: [...stages.values()],
+    transitions: [...transitions.values()],
   };
 }
 
 export async function findWorkflowGraph(versionId: string) {
   const [rows, requirements] = await Promise.all([
-    loadGraphRows(versionId),
+    readWorkflowGraphRows(versionId),
     loadWorkflowStageRequirements(versionId),
   ]);
-  if (!rows[0]) return null;
-  const assembled = assembleGraph(rows);
-  attachWorkflowStageRequirements(assembled.graph.stages, requirements);
-  return assembled;
+  if (!rows.header) return null;
+  const graph = assembleGraph(rows);
+  attachWorkflowStageRequirements(graph.stages, requirements);
+  return {
+    definition: { ...rows.header.definition, ...rows.header.version.metadata },
+    graph,
+    version: rows.header.version,
+  };
 }

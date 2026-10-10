@@ -263,7 +263,7 @@ import { cloneEligibilityRuleSetVersion } from "@/modules/eligibility/infrastruc
             [binding.workflowId],
           )
         ).rows[0].name,
-      ).toBe("Replacement workflow");
+      ).toBe("Synthetic workflow");
     });
   },
 );

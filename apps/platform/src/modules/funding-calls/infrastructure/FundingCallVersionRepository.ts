@@ -3,6 +3,7 @@ import "server-only";
 import { and, count, desc, eq, sql } from "drizzle-orm";
 import { getDatabase, type DatabaseTransaction } from "@/db/client";
 import { authorizationAuditEntries } from "@/db/schema";
+import { ResourceConflictError } from "@/lib/resource-errors";
 import { copyCallIntegrationBindings } from "@/modules/eligibility/infrastructure/EligibilityIntegrationVersionBindingRepository";
 import type { FundingCall } from "../domain/FundingCall";
 import { captureFundingCallPublication } from "../domain/FundingCallPublication";
@@ -35,6 +36,7 @@ export async function createFundingCallReplacement(
   actorId: string,
   id: string,
   expectedRowVersion: number,
+  sourceVersionId?: string,
 ) {
   return getDatabase().transaction(async (transaction) => {
     const [effective] = await transaction
@@ -44,17 +46,38 @@ export async function createFundingCallReplacement(
       .for("update")
       .limit(1);
     if (!effective || effective.rowVersion !== expectedRowVersion) return null;
+    const sourceId = sourceVersionId ?? effective.currentPublishedVersionId;
+    if (!sourceId) return null;
+    const [source] = await transaction
+      .select({ snapshot: fundingCallPublicationRevisions.snapshot })
+      .from(fundingCallPublicationRevisions)
+      .where(
+        and(
+          eq(fundingCallPublicationRevisions.id, sourceId),
+          eq(fundingCallPublicationRevisions.fundingCallId, id),
+        ),
+      )
+      .limit(1);
+    if (!source) return null;
     const { call, draft } = await readWorkingFundingCall(
       transaction,
       effective,
     );
-    if (draft) return call;
+    if (draft) {
+      if (draft.sourceVersionId !== sourceId) {
+        throw new ResourceConflictError(
+          "This call already has a replacement based on another published version. Complete that replacement before editing a different version.",
+        );
+      }
+      return call;
+    }
     if (!canPrepareFundingCallReplacement(effective)) return null;
     const [created] = await transaction
       .insert(fundingCallDraftVersions)
       .values({
         fundingCallId: id,
-        snapshot: captureFundingCallPublication(effective, []),
+        sourceVersionId: sourceId,
+        snapshot: source.snapshot,
         createdBy: actorId,
         updatedBy: actorId,
       })
@@ -62,7 +85,7 @@ export async function createFundingCallReplacement(
     await copyCallIntegrationBindings(
       transaction,
       id,
-      effective.currentPublishedVersionId!,
+      sourceId,
       created.id,
       actorId,
     );
@@ -79,7 +102,7 @@ export async function createFundingCallReplacement(
       changes: {
         fundingCallId: id,
         versionId: created.id,
-        sourceVersionId: effective.currentPublishedVersionId,
+        sourceVersionId: sourceId,
       },
     });
     return fundingCallWorkingView(updated, created);

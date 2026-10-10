@@ -4,7 +4,7 @@ import { and, desc, eq, ne, sql } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
 import { ResourceConflictError } from "@/lib/resource-errors";
-import { formDefinitions, formSections, formVersions } from "@/db/schema";
+import { formDefinitions, formSections, formVersions } from "./form.schema";
 import type {
   FormDisplayMode,
   FormPurpose,
@@ -80,6 +80,7 @@ export async function cloneFormVersion(input: {
           and(
             eq(formVersions.formDefinitionId, input.definitionId),
             eq(formVersions.status, "DRAFT"),
+            eq(formVersions.sourceVersionId, input.sourceVersionId),
           ),
         )
         .orderBy(desc(formVersions.versionNumber))
@@ -112,6 +113,7 @@ export async function cloneFormVersion(input: {
         createdBy: input.actorId,
         displayMode: source.displayMode,
         formDefinitionId: input.definitionId,
+        sourceVersionId: source.id,
         instructions: source.instructions,
         metadata: source.metadata,
         submissionMode: source.submissionMode,
@@ -140,6 +142,22 @@ export async function saveFormDraft(input: {
   versionId?: string;
 }) {
   return getDatabase().transaction(async (transaction) => {
+    let versionId = input.versionId;
+    if (!versionId) {
+      const [latestDraft] = await transaction
+        .select({ id: formVersions.id })
+        .from(formVersions)
+        .where(
+          and(
+            eq(formVersions.formDefinitionId, input.definitionId),
+            eq(formVersions.status, "DRAFT"),
+          ),
+        )
+        .orderBy(desc(formVersions.versionNumber))
+        .limit(1);
+      if (!latestDraft) return null;
+      versionId = latestDraft.id;
+    }
     if (input.purpose) {
       const [definition] = await transaction
         .select({ purpose: formDefinitions.purpose })
@@ -186,7 +204,7 @@ export async function saveFormDraft(input: {
           eq(formVersions.formDefinitionId, input.definitionId),
           eq(formVersions.status, "DRAFT"),
           eq(formVersions.rowVersion, input.expectedRowVersion),
-          input.versionId ? eq(formVersions.id, input.versionId) : undefined,
+          eq(formVersions.id, versionId),
         ),
       )
       .returning();
