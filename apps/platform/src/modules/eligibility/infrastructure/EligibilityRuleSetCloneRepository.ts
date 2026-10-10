@@ -32,6 +32,10 @@ export async function cloneEligibilityRuleSetVersion(input: {
           and(
             eq(eligibilityRuleSetVersions.ruleSetId, input.ruleSetId),
             eq(eligibilityRuleSetVersions.status, "DRAFT"),
+            eq(
+              eligibilityRuleSetVersions.sourceVersionId,
+              input.sourceVersionId,
+            ),
           ),
         )
         .orderBy(desc(eligibilityRuleSetVersions.versionNumber))
@@ -60,6 +64,7 @@ export async function cloneEligibilityRuleSetVersion(input: {
       .values({
         createdBy: input.actorId,
         ruleSetId: input.ruleSetId,
+        sourceVersionId: input.sourceVersionId,
         metadata: source[0].metadata,
         versionNumber: Number(latest[0]?.versionNumber ?? 0) + 1,
       })

@@ -134,6 +134,7 @@ export async function updateDraftFundingCall(
         .insert(fundingCallDraftVersions)
         .values({
           fundingCallId: id,
+          sourceVersionId: effective.currentPublishedVersionId,
           snapshot: captureFundingCallPublication(effective, []),
           createdBy: actorId,
           updatedBy: actorId,

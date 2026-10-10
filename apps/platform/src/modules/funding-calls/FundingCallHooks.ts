@@ -232,8 +232,12 @@ export function usePreviewFundingCallReadiness(id: string) {
 export function usePrepareFundingCallReplacement(id: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (expectedRowVersion: number) =>
-      clientFundingCallService.prepareReplacement(id, expectedRowVersion),
+    mutationFn: (input: { expectedRowVersion: number; sourceVersionId: string }) =>
+      clientFundingCallService.prepareReplacement(
+        id,
+        input.expectedRowVersion,
+        input.sourceVersionId,
+      ),
     onSuccess: (call) => {
       queryClient.setQueryData(fundingCallQueryKeys.detail(id), call);
       void queryClient.invalidateQueries({

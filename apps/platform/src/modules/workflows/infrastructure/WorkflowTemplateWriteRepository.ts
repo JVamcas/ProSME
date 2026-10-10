@@ -7,20 +7,24 @@ import {
   stageTaskActionBindings,
   stageTaskDefinitions,
   stageTaskFormBindings,
-  workflowAuditEntries,
   workflowDefinitionVersions,
   workflowDefinitions,
   workflowActionDefinitions,
   workflowStageDefinitions,
+  workflowTransitionDefinitions,
+} from "./workflow.schema";
+import { workflowAuditEntries } from "./workflow-audit.schema";
+import {
   workflowStageJoinPredecessors,
+  workflowTransitionTargets,
+} from "./workflow-parallel.schema";
+import {
   workflowStageChecklistDefinitions,
   workflowStageCommentFields,
   workflowStageDocumentRequirements,
   workflowStageScoringConfigurations,
   workflowStageScoringCriteria,
-  workflowTransitionDefinitions,
-  workflowTransitionTargets,
-} from "@/db/schema";
+} from "./workflow-stage-requirements.schema";
 import type { WorkflowGraphInput } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 import { insertWorkflowGraph } from "./WorkflowGraphWriteRepository";
 
@@ -52,6 +56,7 @@ export async function createWorkflowDefinition(input: {
   description: string;
   graph: WorkflowGraphInput;
   name: string;
+  copiedFrom?: { definitionId: string; versionId: string };
 }) {
   return getDatabase().transaction(async (transaction) => {
     const [definition] = await transaction
@@ -84,6 +89,7 @@ export async function createWorkflowDefinition(input: {
         version: 1,
         versionId: version.id,
         status: "DRAFT",
+        ...(input.copiedFrom ? { copiedFrom: input.copiedFrom } : {}),
       },
       correlationId: input.correlationId,
       targetId: definition.id,
@@ -223,6 +229,10 @@ export async function cloneWorkflowVersion(input: {
           and(
             eq(workflowDefinitionVersions.definitionId, input.definitionId),
             eq(workflowDefinitionVersions.status, "DRAFT"),
+            eq(
+              workflowDefinitionVersions.sourceVersionId,
+              input.sourceVersionId,
+            ),
           ),
         )
         .orderBy(desc(workflowDefinitionVersions.versionNumber))
@@ -240,6 +250,7 @@ export async function cloneWorkflowVersion(input: {
       .values({
         createdBy: input.actorId,
         definitionId: input.definitionId,
+        sourceVersionId: input.sourceVersionId,
         versionNumber: (latest?.value ?? 0) + 1,
         metadata: sourceRows[0].metadata.code
           ? sourceRows[0].metadata

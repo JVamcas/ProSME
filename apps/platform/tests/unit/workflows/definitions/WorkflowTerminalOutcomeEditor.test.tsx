@@ -156,6 +156,10 @@ it("offers only the immediate predecessor for Return and saves one stage", async
     ).toEqual(["FINANCE_REVIEW"]);
     expect(destinations.multiple).toBe(false);
     expect(destinations.value).toBe("FINANCE_REVIEW");
+    await act(async () => {
+      destinations.dispatchEvent(new Event("change", { bubbles: true }));
+      destinations.dispatchEvent(new FocusEvent("focusout", { bubbles: true }));
+    });
     const types = container.querySelector<HTMLSelectElement>(
       '[name="targetType"]',
     )!;
@@ -166,9 +170,97 @@ it("offers only the immediate predecessor for Return and saves one stage", async
       (button) => button.textContent === "Save route",
     )!;
     await act(async () => save.click());
+    expect(container.textContent).not.toContain("expected array");
     expect(onSave).toHaveBeenCalledWith(
       expect.objectContaining({ targetStageKeys: ["FINANCE_REVIEW"] }),
     );
+  } finally {
+    await act(async () => root.unmount());
+    container.remove();
+  }
+});
+
+it("changes a saved Return destination, validates empty selection and reopens it", async () => {
+  const editor = {
+    graph: structuredClone(referenceWorkflow),
+  } as WorkflowEditorView;
+  editor.graph.transitions.push({
+    sourceStageKey: "TECHNICAL_ASSESSMENT",
+    actionKey: "ADVANCE",
+    targetStageKeys: ["COMMITTEE_DECISION"],
+    terminalOutcome: null,
+    priority: 2,
+    condition: null,
+  });
+  const stage = editor.graph.stages.find(
+    (item) => item.stableKey === "COMMITTEE_DECISION",
+  )!;
+  const onSave = vi.fn();
+  const container = document.createElement("div");
+  document.body.append(container);
+  const root = createRoot(container);
+  const render = (
+    route: Parameters<typeof WorkflowActionRouteEditor>[0]["route"],
+  ) => (
+    <WorkflowActionRouteEditor
+      actionType="RETURN"
+      actionKey="RETURN_REVIEW"
+      editor={editor}
+      stage={stage}
+      route={route}
+      onSave={onSave}
+      onCancel={vi.fn()}
+      priority={1}
+      priorityInUse={() => false}
+    />
+  );
+  try {
+    await act(async () =>
+      root.render(render({
+        id: "saved-return-route",
+        sourceStageKey: stage.stableKey,
+        actionKey: "RETURN_REVIEW",
+        targetStageKeys: ["FINANCE_REVIEW"],
+        terminalOutcome: null,
+        priority: 1,
+        condition: null,
+      })),
+    );
+    const destinations = container.querySelector<HTMLSelectElement>(
+      '[name="targetStageKeys"]',
+    )!;
+    expect(destinations.value).toBe("FINANCE_REVIEW");
+    const selectDestination = async (value: string) => {
+      await act(async () => {
+        destinations.value = value;
+        destinations.dispatchEvent(new Event("change", { bubbles: true }));
+        destinations.dispatchEvent(new FocusEvent("focusout", { bubbles: true }));
+      });
+    };
+    const save = [...container.querySelectorAll("button")].find(
+      (button) => button.textContent === "Save route",
+    )!;
+    await selectDestination("");
+    await act(async () => save.click());
+    expect(onSave).not.toHaveBeenCalled();
+    expect(container.textContent).toContain("Select a target stage.");
+    expect(container.textContent).not.toContain("expected array");
+    await selectDestination("TECHNICAL_ASSESSMENT");
+    expect(destinations.value).toBe("TECHNICAL_ASSESSMENT");
+    await act(async () => save.click());
+    expect(onSave).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({
+        id: "saved-return-route",
+        targetStageKeys: ["TECHNICAL_ASSESSMENT"],
+      }),
+    );
+    await act(async () => root.render(null));
+    await act(async () => root.render(render(onSave.mock.calls[0][0])));
+    expect(
+      container.querySelector<HTMLSelectElement>(
+        '[name="targetStageKeys"]',
+      )!.value,
+    ).toBe("TECHNICAL_ASSESSMENT");
   } finally {
     await act(async () => root.unmount());
     container.remove();

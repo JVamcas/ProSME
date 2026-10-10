@@ -2,15 +2,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 vi.mock(
-  "@/modules/workflows/infrastructure/WorkflowTemplateRepository",
+  "@/modules/workflows/infrastructure/WorkflowActionDeletionRepository",
   () => ({
-    findWorkflowTemplateVersion: vi.fn(),
-  }),
-);
-vi.mock(
-  "@/modules/workflows/infrastructure/WorkflowTemplateWriteRepository",
-  () => ({
-    replaceWorkflowDraft: vi.fn(),
+    deleteDraftWorkflowAction: vi.fn(),
   }),
 );
 vi.mock(
@@ -19,9 +13,14 @@ vi.mock(
     const { ResourceConflictError, ResourceNotFoundError } =
       await import("@/lib/resource-errors");
     return {
-      loadWorkflowEditor: vi.fn(),
       workflowEditorView: vi.fn(),
-      WorkflowConflictError: ResourceConflictError,
+      WorkflowConflictError: class extends ResourceConflictError {
+        constructor(
+          message = "The workflow changed in another session. Reload it and try again.",
+        ) {
+          super(message);
+        }
+      },
       WorkflowNotFoundError: ResourceNotFoundError,
     };
   },
@@ -30,14 +29,9 @@ vi.mock(
 import { permissionCodes } from "@/auth/authorization/permissions";
 import type { AuthenticatedUser } from "@/auth/types";
 import { deleteWorkflowAction } from "@/modules/workflows/application/definitions/ServerWorkflowActionDeletionService";
-import {
-  loadWorkflowEditor,
-  workflowEditorView,
-} from "@/modules/workflows/application/definitions/ServerWorkflowSupport";
+import { workflowEditorView } from "@/modules/workflows/application/definitions/ServerWorkflowSupport";
+import { deleteDraftWorkflowAction } from "@/modules/workflows/infrastructure/WorkflowActionDeletionRepository";
 import { removeWorkflowAction } from "@/modules/workflows/domain/actions/WorkflowActionDeletion";
-import { validateWorkflowGraph } from "@/modules/workflows/WorkflowValidation";
-import { findWorkflowTemplateVersion } from "@/modules/workflows/infrastructure/WorkflowTemplateRepository";
-import { replaceWorkflowDraft } from "@/modules/workflows/infrastructure/WorkflowTemplateWriteRepository";
 import { referenceWorkflow } from "../../../support/ReferenceWorkflowFixture";
 
 const actor: AuthenticatedUser = {
@@ -60,144 +54,84 @@ const input = {
   versionId: "draft-id",
 };
 
-function graphWithLegacyActions() {
-  const graph = structuredClone(referenceWorkflow);
-  graph.stages[0].actions.push({
-    stableKey: "OLD_REFER",
-    label: "Legacy refer",
-    actionType: "REFER",
-    configuration: { returnToReferrer: true, sourceTaskBehavior: "BLOCKED" },
-    enabled: false,
-    reasonRequired: true,
-    displayOrder: 2,
-  });
-  graph.stages[1].actions.push({
-    ...graph.stages[0].actions[1],
-    stableKey: "ANOTHER_REFER",
-    displayOrder: graph.stages[1].actions.length + 1,
-  });
-  return graph;
-}
-
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.mocked(findWorkflowTemplateVersion).mockResolvedValue({
-    version: { id: input.versionId, status: "DRAFT" },
-  } as never);
-  vi.mocked(loadWorkflowEditor).mockResolvedValue({
-    graph: graphWithLegacyActions(),
-  } as never);
-  vi.mocked(replaceWorkflowDraft).mockResolvedValue(input.versionId);
+  vi.mocked(deleteDraftWorkflowAction).mockResolvedValue({
+    kind: "deleted",
+    versionId: input.versionId,
+  });
   vi.mocked(workflowEditorView).mockResolvedValue({
     version: { rowVersion: 3 },
   } as never);
 });
 
 describe("generic workflow action deletion", () => {
-  it("removes every selected route and binding while preserving same keys on other stages", () => {
+  it("removes selected routes and bindings while preserving same keys on other stages", () => {
     const graph = structuredClone(referenceWorkflow);
-    const stage = graph.stages[0];
-    stage.tasks[0].actionKeys = ["ADVANCE"];
     graph.transitions.push({ ...graph.transitions[0], priority: 2 });
-    const removed = graph.transitions.filter(
-      (route) =>
-        route.sourceStageKey === stage.stableKey &&
-        route.actionKey === "ADVANCE",
-    );
-
-    const result = removeWorkflowAction(graph, stage.stableKey, "ADVANCE");
-
+    const result = removeWorkflowAction(graph, input.stageKey, input.actionKey);
     expect(result.stages[0].actions).toEqual([]);
     expect(result.stages[0].tasks[0].actionKeys).toEqual([]);
-    expect(result.transitions).toEqual(
-      graph.transitions.filter((route) => !removed.includes(route)),
-    );
+    expect(
+      result.transitions.some(
+        (route) =>
+          route.sourceStageKey === input.stageKey &&
+          route.actionKey === input.actionKey,
+      ),
+    ).toBe(false);
     expect(result.stages.slice(1)).toEqual(graph.stages.slice(1));
     expect(graph.stages[0].actions).toHaveLength(1);
   });
 
   it.each(["ADVANCE", "OLD_REFER"])(
-    "deletes %s while unrelated legacy errors remain visible",
+    "uses targeted deletion for %s without loading a graph first",
     async (actionKey) => {
-      const graph = graphWithLegacyActions();
       await deleteWorkflowAction(
         actor,
         "definition-id",
         { ...input, actionKey },
         "correlation",
       );
-
-      const saved = vi.mocked(replaceWorkflowDraft).mock.calls[0][0];
-      expect(saved.graph).toEqual(
-        removeWorkflowAction(graph, input.stageKey, actionKey),
-      );
-      expect(saved).toMatchObject({
+      expect(deleteDraftWorkflowAction).toHaveBeenCalledWith({
+        ...input,
+        actionKey,
         actorId: actor.id,
+        definitionId: "definition-id",
         correlationId: "correlation",
-        expectedRowVersion: 2,
       });
-      expect(workflowEditorView).toHaveBeenCalledWith(input.versionId);
-      expect(validateWorkflowGraph(saved.graph).errors).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({ code: "REMOVED_ACTION_TYPE" }),
-        ]),
+      expect(workflowEditorView).toHaveBeenCalledExactlyOnceWith(
+        input.versionId,
       );
+      expect(
+        vi.mocked(deleteDraftWorkflowAction).mock.invocationCallOrder[0],
+      ).toBeLessThan(vi.mocked(workflowEditorView).mock.invocationCallOrder[0]);
     },
   );
 
   it.each([null, { ...actor, capabilities: new Set<string>() }])(
-    "denies unauthorized deletion before reading the graph",
+    "denies unauthorized deletion before accessing persistence",
     async (user) => {
       await expect(
         deleteWorkflowAction(user, "definition-id", input, "correlation"),
       ).rejects.toThrow();
-      expect(findWorkflowTemplateVersion).not.toHaveBeenCalled();
-      expect(replaceWorkflowDraft).not.toHaveBeenCalled();
+      expect(deleteDraftWorkflowAction).not.toHaveBeenCalled();
+      expect(workflowEditorView).not.toHaveBeenCalled();
     },
   );
 
-  it("rejects a version belonging to another definition", async () => {
-    vi.mocked(findWorkflowTemplateVersion).mockResolvedValue(null);
-    await expect(
-      deleteWorkflowAction(actor, "other-definition", input, "correlation"),
-    ).rejects.toThrow();
-    expect(findWorkflowTemplateVersion).toHaveBeenCalledWith(
-      "other-definition",
-      input.versionId,
-    );
-    expect(replaceWorkflowDraft).not.toHaveBeenCalled();
-  });
-
-  it.each(["PUBLISHED", "RETIRED"])("preserves %s versions", async (status) => {
-    vi.mocked(findWorkflowTemplateVersion).mockResolvedValue({
-      version: { status },
-    } as never);
-    await expect(
-      deleteWorkflowAction(actor, "definition-id", input, "correlation"),
-    ).rejects.toThrow("Only draft versions");
-    expect(replaceWorkflowDraft).not.toHaveBeenCalled();
-  });
-
-  it.each([{ stageKey: "MISSING" }, { actionKey: "MISSING" }])(
-    "rejects missing targets",
-    async (target) => {
+  it.each([
+    ["not_found", "not found"],
+    ["not_draft", "Only draft versions"],
+    ["missing_action", "no longer exists"],
+    ["conflict", "another session"],
+  ] as const)(
+    "reports %s without returning an editor",
+    async (kind, message) => {
+      vi.mocked(deleteDraftWorkflowAction).mockResolvedValue({ kind });
       await expect(
-        deleteWorkflowAction(
-          actor,
-          "definition-id",
-          { ...input, ...target },
-          "correlation",
-        ),
-      ).rejects.toThrow("no longer exists");
-      expect(replaceWorkflowDraft).not.toHaveBeenCalled();
+        deleteWorkflowAction(actor, "definition-id", input, "correlation"),
+      ).rejects.toThrow(message);
+      expect(workflowEditorView).not.toHaveBeenCalled();
     },
   );
-
-  it("reports a stale row version without returning success", async () => {
-    vi.mocked(replaceWorkflowDraft).mockResolvedValue(null);
-    await expect(
-      deleteWorkflowAction(actor, "definition-id", input, "correlation"),
-    ).rejects.toThrow();
-    expect(workflowEditorView).not.toHaveBeenCalled();
-  });
 });

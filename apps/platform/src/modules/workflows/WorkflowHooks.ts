@@ -11,26 +11,34 @@ import type {
   UpdateWorkflowDetailsInput,
 } from "@/modules/workflows/api/WorkflowTransportTypes";
 import type { WorkflowEditorView } from "@/modules/workflows/domain/definitions/WorkflowTypes";
-import type { CreateWorkflowTemplateInput } from "@/modules/workflows/api/WorkflowTemplateSchemas";
+import type {
+  CreateWorkflowTemplateInput,
+  WorkflowTemplateCopyInput,
+  WorkflowTemplateDefinitionUpdateInput,
+} from "@/modules/workflows/api/WorkflowTemplateSchemas";
 import type { WorkflowTemplateListItem } from "@/modules/workflows/domain/definitions/WorkflowTemplate";
 import { WorkflowPublicationValidationError } from "@/modules/workflows/WorkflowPublicationValidationFeedback";
 
 export const workflowQueryKeys = {
   all: ["admin", "workflows"] as const,
   assignments: ["admin", "workflows", "assignments"] as const,
-  actionAvailability: (input: WorkflowActionAvailabilityQuery) => [
-    "workflows",
-    input.workflowInstanceId,
-    "actions",
-    input.sourceStageInstanceId,
-    input.taskId ?? null,
-  ] as const,
-  detail: (id: string, versionId?: string) => versionId
-    ? ["admin", "workflows", id, versionId] as const
-    : ["admin", "workflows", id] as const,
+  actionAvailability: (input: WorkflowActionAvailabilityQuery) =>
+    [
+      "workflows",
+      input.workflowInstanceId,
+      "actions",
+      input.sourceStageInstanceId,
+      input.taskId ?? null,
+    ] as const,
+  detail: (id: string, versionId?: string) =>
+    versionId
+      ? (["admin", "workflows", id, versionId] as const)
+      : (["admin", "workflows", id] as const),
   opportunities: ["admin", "workflows", "opportunities"] as const,
   published: ["admin", "workflows", "published"] as const,
   templates: ["admin", "workflow-templates"] as const,
+  templateVersions: (id: string, page: number, pageSize: number) =>
+    ["admin", "workflow-templates", id, "versions", page, pageSize] as const,
 };
 
 export function useWorkflowActionAvailability(
@@ -38,9 +46,10 @@ export function useWorkflowActionAvailability(
   enabled = true,
 ) {
   return useQuery({
-    enabled: enabled
-      && Boolean(input.workflowInstanceId)
-      && Boolean(input.sourceStageInstanceId),
+    enabled:
+      enabled &&
+      Boolean(input.workflowInstanceId) &&
+      Boolean(input.sourceStageInstanceId),
     queryFn: () => clientWorkflowService.getActionAvailability(input),
     queryKey: workflowQueryKeys.actionAvailability(input),
   });
@@ -50,6 +59,37 @@ export function useWorkflowTemplates(page: number, pageSize: number) {
   return useQuery({
     queryKey: [...workflowQueryKeys.templates, page, pageSize],
     queryFn: () => clientWorkflowService.listTemplates(page, pageSize),
+  });
+}
+
+export function useWorkflowTemplateVersions(
+  id: string,
+  page: number,
+  pageSize: number,
+) {
+  return useQuery({
+    queryKey: workflowQueryKeys.templateVersions(id, page, pageSize),
+    queryFn: () =>
+      clientWorkflowService.listTemplateVersions(id, page, pageSize),
+    enabled: Boolean(id),
+  });
+}
+
+export function useUpdateWorkflowTemplateDefinition(id: string) {
+  const refresh = useRefreshWorkflow();
+  return useMutation({
+    mutationFn: (input: WorkflowTemplateDefinitionUpdateInput) =>
+      clientWorkflowService.updateTemplateDefinition(id, input),
+    onSuccess: () => refresh(),
+  });
+}
+
+export function useCopyWorkflowTemplate(id: string) {
+  const refresh = useRefreshWorkflow();
+  return useMutation({
+    mutationFn: (input: WorkflowTemplateCopyInput) =>
+      clientWorkflowService.copyTemplate(id, input),
+    onSuccess: refresh,
   });
 }
 
@@ -70,7 +110,11 @@ export function useWorkflowDefinitions() {
   });
 }
 
-export function useWorkflowEditor(id: string, enabled = true, versionId?: string) {
+export function useWorkflowEditor(
+  id: string,
+  enabled = true,
+  versionId?: string,
+) {
   return useQuery({
     queryKey: workflowQueryKeys.detail(id, versionId),
     queryFn: () => clientWorkflowService.getEditor(id, versionId),
@@ -158,7 +202,10 @@ export function useWorkflowListLifecycle(
   const refresh = useRefreshWorkflow(detailId);
   return useMutation({
     mutationFn: async (definitionId: string) => {
-      const editor = await clientWorkflowService.getEditor(definitionId, versionId);
+      const editor = await clientWorkflowService.getEditor(
+        definitionId,
+        versionId,
+      );
       if (action === "publish" && !editor.validation.valid) {
         throw new WorkflowPublicationValidationError(
           editor.validation.errors,

@@ -41,6 +41,7 @@ export const record = {
     id: "version-id",
     definitionId: "definition-id",
     versionNumber: 1,
+    sourceVersionId: null,
     status: "APPROVED" as const,
     metadata: { code: "REFERENCE", name: "Reference", description: "" },
     rowVersion: 1,

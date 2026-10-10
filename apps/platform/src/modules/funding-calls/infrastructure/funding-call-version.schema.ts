@@ -11,7 +11,7 @@ import {
 import { users } from "@/db/schema/identity";
 import type { FundingCallPublicationSnapshot } from "../domain/FundingCallPublication";
 import { jsonb } from "drizzle-orm/pg-core";
-import { fundingCalls } from "./funding-call.schema";
+import { fundingCalls, fundingCallPublicationRevisions } from "./funding-call.schema";
 
 // Published versions live in the immutable publication revisions table. A working
 // version keeps the same ID when published and never changes the effective call.
@@ -22,6 +22,10 @@ export const fundingCallDraftVersions = pgTable(
     fundingCallId: uuid("funding_call_id")
       .notNull()
       .references(() => fundingCalls.id, { onDelete: "restrict" }),
+    sourceVersionId: uuid("source_version_id").references(
+      () => fundingCallPublicationRevisions.id,
+      { onDelete: "restrict" },
+    ),
     status: text("status")
       .$type<"DRAFT" | "APPROVAL_PENDING" | "APPROVED">()
       .notNull()

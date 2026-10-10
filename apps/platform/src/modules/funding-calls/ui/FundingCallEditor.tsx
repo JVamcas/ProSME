@@ -107,7 +107,11 @@ export function FundingCallEditor({
         <FundingCallReadOnlyReview call={call} />
       )}
       {call?.currentPublishedVersionId ? (
-        <FundingCallVersionsPanel id={id} />
+        <FundingCallVersionsPanel
+          id={id}
+          canEdit={canUpdate}
+          rowVersion={call.rowVersion}
+        />
       ) : null}
     </PageShell>
   );

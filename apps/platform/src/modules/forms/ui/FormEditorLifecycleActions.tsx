@@ -66,7 +66,7 @@ export function FormEditorLifecycleActions({
         {clonePending
           ? "Creating…"
           : isPublished
-            ? "Edit published version"
+            ? "Edit"
             : "Create new draft"}
       </GeneralButton>
     </div>

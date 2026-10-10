@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "sonner";
 import { Pagination } from "@/components/ui/pagination";
 import { ActionMenu } from "@/shared/ui/ActionMenu";
 import { DataTable } from "@/shared/ui/DataTable";
@@ -8,14 +9,24 @@ import { RightDrawer } from "@/shared/ui/RightDrawer";
 import {
   useFundingCallVersion,
   useFundingCallVersions,
+  usePrepareFundingCallReplacement,
 } from "../FundingCallHooks";
 import { FundingCallReadOnlyReview } from "./FundingCallReadOnlyReview";
 
-export function FundingCallVersionsPanel({ id }: { id: string }) {
+export function FundingCallVersionsPanel({
+  id,
+  canEdit,
+  rowVersion,
+}: {
+  id: string;
+  canEdit: boolean;
+  rowVersion: number;
+}) {
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<string | null>(null);
   const versions = useFundingCallVersions(id, page);
   const history = useFundingCallVersion(id, selected);
+  const prepare = usePrepareFundingCallReplacement(id);
   return (
     <section className="mt-6 space-y-3">
       <h2 className="text-xl font-bold text-brand-navy">Published versions</h2>
@@ -51,6 +62,26 @@ export function FundingCallVersionsPanel({ id }: { id: string }) {
                     label: "View version",
                     onAction: () => setSelected(row.original.id),
                   },
+                  ...(canEdit
+                    ? [
+                        {
+                          id: "edit-version",
+                          label: "Edit",
+                          disabled: prepare.isPending,
+                          onAction: () =>
+                            prepare.mutate(
+                              {
+                                expectedRowVersion: rowVersion,
+                                sourceVersionId: row.original.id,
+                              },
+                              {
+                                onSuccess: () => setSelected(null),
+                                onError: (error) => toast.error(error.message),
+                              },
+                            ),
+                        },
+                      ]
+                    : []),
                 ]}
               />
             ),

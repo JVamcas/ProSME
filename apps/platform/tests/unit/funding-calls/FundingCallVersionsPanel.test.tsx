@@ -11,9 +11,11 @@ const state = vi.hoisted(() => ({
   loading: false,
   selected: null as string | null,
   historical: undefined as FundingCallView | undefined,
+  prepare: { isPending: false, mutate: vi.fn() },
 }));
 
 vi.mock("@/modules/funding-calls/FundingCallHooks", () => ({
+  usePrepareFundingCallReplacement: () => state.prepare,
   useFundingCallVersions: () => ({
     data: {
       total: 2,
@@ -53,6 +55,7 @@ vi.mock("@/modules/funding-calls/FundingCallHooks", () => ({
 let root: Root;
 
 beforeEach(() => {
+  vi.clearAllMocks();
   state.loading = false;
   state.selected = null;
   state.historical = {
@@ -76,7 +79,13 @@ async function viewHistoricalVersion() {
   document.body.append(container);
   root = createRoot(container);
   await act(async () => {
-    root.render(<FundingCallVersionsPanel id={stored.id} />);
+    root.render(
+      <FundingCallVersionsPanel
+        id={stored.id}
+        canEdit={false}
+        rowVersion={7}
+      />,
+    );
   });
   expect(document.querySelector('[role="dialog"]')).toBeNull();
   const trigger = container.querySelector<HTMLButtonElement>(
@@ -99,6 +108,42 @@ async function viewHistoricalVersion() {
 }
 
 describe("funding call version actions", () => {
+  it("edits the selected historical publication rather than the current one", async () => {
+    const container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+    await act(async () =>
+      root.render(
+        <FundingCallVersionsPanel id={stored.id} canEdit rowVersion={7} />,
+      ),
+    );
+    await act(async () =>
+      container
+        .querySelector<HTMLButtonElement>(
+          'button[aria-label="Actions for version 1"]',
+        )!
+        .click(),
+    );
+    const edit = [
+      ...document.querySelectorAll<HTMLElement>('[role="menuitem"]'),
+    ].find((item) => item.textContent === "Edit")!;
+    await act(async () => {
+      edit.dispatchEvent(
+        new PointerEvent("pointerdown", { bubbles: true, button: 0 }),
+      );
+      edit.dispatchEvent(
+        new PointerEvent("pointerup", { bubbles: true, button: 0 }),
+      );
+      edit.click();
+    });
+    expect(state.prepare.mutate).toHaveBeenCalledWith(
+      {
+        expectedRowVersion: 7,
+        sourceVersionId: "historical-version",
+      },
+      expect.any(Object),
+    );
+  });
   it("opens the selected published version in the right drawer and closes on Escape", async () => {
     const drawer = await viewHistoricalVersion();
     expect(state.selected).toBe("historical-version");

@@ -225,8 +225,8 @@ export async function cloneEligibilityRuleSet(
   });
   if (!version) {
     throw new ResourceConflictError(
-      "The source version does not exist or the ruleset already has a draft.",
+      "The source version does not exist or is already a draft.",
     );
   }
-  return requireRuleSet(ruleSetId);
+  return requireRuleSetVersion(version.id);
 }

@@ -128,6 +128,7 @@ export async function prepareVersionDatabase(
   for (const name of [
     "0185_asset_version_metadata",
     "0186_funding_call_integration_versions",
+    "0187_version_draft_sources",
   ]) {
     await pool.query(
       readFileSync(path.resolve(process.cwd(), `drizzle/${name}.sql`), "utf8"),

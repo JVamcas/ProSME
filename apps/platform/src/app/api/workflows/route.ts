@@ -4,7 +4,10 @@ import {
   portalRouteError,
   portalRouteSuccess,
 } from "@/lib/api/PortalApiResponse";
-import { workflowTemplateDetailsSchema, workflowTemplatePageSchema } from "@/modules/workflows/api/WorkflowTemplateSchemas";
+import {
+  workflowTemplateDetailsSchema,
+  workflowTemplatePageSchema,
+} from "@/modules/workflows/api/WorkflowTemplateSchemas";
 import {
   createWorkflowTemplate,
   getWorkflowTemplates,
@@ -38,14 +41,16 @@ export async function POST(request: Request) {
       {
         id: created.template.id,
         isLatest: true,
-        ...created.version.metadata,
+        code: created.template.code,
+        name: created.template.name,
+        description: created.template.description,
         currentVersion: {
           id: created.version.id,
           number: created.version.versionNumber,
           rowVersion: created.version.rowVersion,
           status: created.version.status,
         },
-        updatedAt: created.version.updatedAt.toISOString(),
+        updatedAt: created.template.updatedAt.toISOString(),
       },
       correlationId,
     );

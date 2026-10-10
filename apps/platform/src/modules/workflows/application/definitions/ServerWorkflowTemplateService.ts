@@ -31,6 +31,7 @@ import {
   findWorkflowTemplateByVersion,
   findWorkflowTemplateVersion,
   listWorkflowTemplatePage,
+  listWorkflowTemplateVersionPage,
   listWorkflowTemplateAudit,
   listWorkflowTemplateVersions,
 } from "../../infrastructure/WorkflowTemplateRepository";
@@ -121,6 +122,27 @@ export async function getWorkflowTemplates(
 ): Promise<WorkflowTemplatePage> {
   requirePermission(user, permissionCodes.workflowDefinitionRead);
   const result = await listWorkflowTemplatePage(page, pageSize);
+  return {
+    items: result.items.map(toListItem),
+    page,
+    pageSize,
+    total: result.total,
+    totalPages: Math.ceil(result.total / pageSize),
+  };
+}
+
+export async function getWorkflowTemplateVersionPage(
+  user: AuthenticatedUser | null,
+  templateId: string,
+  page: number,
+  pageSize: number,
+): Promise<WorkflowTemplatePage> {
+  requirePermission(user, permissionCodes.workflowDefinitionRead);
+  const result = await listWorkflowTemplateVersionPage(
+    z.uuid().parse(templateId),
+    page,
+    pageSize,
+  );
   return {
     items: result.items.map(toListItem),
     page,

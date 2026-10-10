@@ -15,6 +15,22 @@ export const workflowTemplateDetailsSchema = z.object({
   description: z.string().trim().max(1000).default(""),
 });
 
+export const workflowTemplateDefinitionUpdateSchema =
+  workflowTemplateDetailsSchema
+    .extend({ expectedUpdatedAt: z.iso.datetime() })
+    .strict();
+
+export const workflowTemplateCopySchema = workflowTemplateDetailsSchema
+  .extend({ sourceVersionId: z.uuid() })
+  .strict();
+
+export type WorkflowTemplateDefinitionUpdateInput = z.infer<
+  typeof workflowTemplateDefinitionUpdateSchema
+>;
+export type WorkflowTemplateCopyInput = z.infer<
+  typeof workflowTemplateCopySchema
+>;
+
 export const workflowTemplateVersionReferenceSchema = z.object({
   templateId: z.string().uuid(),
   versionId: z.string().uuid(),

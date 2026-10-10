@@ -2,11 +2,11 @@
 
 import { Plus } from "lucide-react";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { GeneralButton } from "@/components/ui/button";
 import { DraggableDialog } from "@/shared/ui/DraggableDialog";
 import { getErrorMessage } from "@/lib/client-http";
-import { ConfirmationDialog } from "@/shared/ui/ConfirmationDialog";
 import { toast } from "@/shared/ui/Toast";
 import {
   useCloneWorkflowTemplate,
@@ -14,7 +14,7 @@ import {
   useWorkflowListLifecycle,
   useWorkflowTemplates,
 } from "../../WorkflowHooks";
-import { showWorkflowPublicationError } from "./WorkflowPublicationErrorToast";
+import { WorkflowTemplateConfirmations } from "./WorkflowTemplateConfirmations";
 import type { WorkflowTemplateListItem } from "../../domain/definitions/WorkflowTemplate";
 import { WorkflowTemplateCreateForm } from "./WorkflowTemplateCreateForm";
 import { WorkflowTemplateTable } from "./WorkflowTemplateTable";
@@ -30,10 +30,13 @@ export function WorkflowTemplateAdminWorkspace({
   canPublish,
   canUpdate,
 }: Props) {
+  const router = useRouter();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [selectedTemplate, setSelectedTemplate] =
+    useState<WorkflowTemplateListItem>();
+  const [sourceTemplate, setSourceTemplate] =
     useState<WorkflowTemplateListItem>();
   const [deleteCandidate, setDeleteCandidate] =
     useState<WorkflowTemplateListItem>();
@@ -52,6 +55,25 @@ export function WorkflowTemplateAdminWorkspace({
     : (templates.error?.message ??
       "No workflow templates yet. Create a template to begin.");
 
+  function openVersion(template: WorkflowTemplateListItem) {
+    router.push(
+      `/admin/workflows/${template.id}?versionId=${template.currentVersion.id}`,
+    );
+  }
+
+  function createDraft(template: WorkflowTemplateListItem) {
+    cloneTemplate.mutate(template, {
+      onSuccess: (editor) =>
+        router.push(
+          `/admin/workflows/${editor.definition.id}?versionId=${editor.version.id}`,
+        ),
+      onError: (error) =>
+        toast.error(
+          getErrorMessage(error) ?? "Unable to create a draft version.",
+        ),
+    });
+  }
+
   return (
     <div className="space-y-4">
       {canCreate ? (
@@ -59,16 +81,18 @@ export function WorkflowTemplateAdminWorkspace({
           <GeneralButton
             onClick={() => {
               setSelectedTemplate(undefined);
+              setSourceTemplate(undefined);
               setIsDialogOpen(true);
             }}
             size="sm"
           >
             <Plus className="size-4" />
-            Create template
+            Create new template (v1)
           </GeneralButton>
         </div>
       ) : null}
       <WorkflowTemplateTable
+        canCreate={canCreate}
         canPublish={canPublish}
         canUpdate={canUpdate}
         cloningVersionId={
@@ -91,80 +115,57 @@ export function WorkflowTemplateAdminWorkspace({
           setPageSize(value);
           setPage(1);
         }}
-        onClone={(template) => {
-          cloneTemplate.mutate(template, {
-            onError: (error) => {
-              toast.error(
-                getErrorMessage(error) ?? "Unable to clone the workflow.",
-              );
-            },
-          });
+        onCreateDraft={createDraft}
+        onCreateTemplate={(template) => {
+          setSelectedTemplate(undefined);
+          setSourceTemplate(template);
+          setIsDialogOpen(true);
         }}
         onDelete={setDeleteCandidate}
         onEdit={(template) => {
+          if (template.currentVersion.status === "DRAFT") openVersion(template);
+          else createDraft(template);
+        }}
+        onEditDefinition={(template) => {
           setSelectedTemplate(template);
+          setSourceTemplate(undefined);
           setIsDialogOpen(true);
         }}
         onPublish={setPublishCandidate}
         publishingId={
-          publishTemplate.isPending ? publishTemplate.variables : undefined
+          publishTemplate.isPending
+            ? publishCandidate?.currentVersion.id
+            : undefined
         }
       />
       <DraggableDialog
         isOpen={isDialogOpen}
         onClose={() => setIsDialogOpen(false)}
-        title={selectedTemplate
-          ? "Edit workflow template"
-          : "Create workflow template"}
+        title={
+          selectedTemplate
+            ? "Edit workflow template"
+            : "Create new template (v1)"
+        }
       >
         <WorkflowTemplateCreateForm
-          key={selectedTemplate?.currentVersion.id ?? "create"}
+          key={
+            selectedTemplate?.id ??
+            sourceTemplate?.currentVersion.id ??
+            "create"
+          }
           onCompleted={() => setIsDialogOpen(false)}
           template={selectedTemplate}
+          source={sourceTemplate}
         />
       </DraggableDialog>
-      <ConfirmationDialog
-        confirmLabel="Publish"
-        isOpen={Boolean(publishCandidate)}
-        isPending={publishTemplate.isPending}
-        message={publishCandidate
-          ? `Publish ${publishCandidate.name} version ${publishCandidate.currentVersion.number}? Published workflow versions cannot be edited.`
-          : ""}
-        onClose={() => setPublishCandidate(undefined)}
-        onConfirm={() => {
-          if (!publishCandidate) return;
-          publishTemplate.mutate(publishCandidate.id, {
-            onError: showWorkflowPublicationError,
-            onSuccess: () => setPublishCandidate(undefined),
-          });
-        }}
-        pendingLabel="Publishing…"
-        title="Publish workflow template"
-      />
-      <ConfirmationDialog
-        confirmLabel="Delete"
-        isOpen={Boolean(deleteCandidate)}
-        isPending={deleteTemplate.isPending}
-        message={deleteCandidate
-          ? `Delete ${deleteCandidate.name}? This cannot be undone.`
-          : ""}
-        onClose={() => setDeleteCandidate(undefined)}
-        onConfirm={() => {
-          if (!deleteCandidate) return;
-          deleteTemplate.mutate(deleteCandidate, {
-            onError: (error) => {
-              toast.error(
-                getErrorMessage(error) ?? "Unable to delete the workflow.",
-              );
-            },
-            onSuccess: () => {
-              setDeleteCandidate(undefined);
-              setPage(1);
-            },
-          });
-        }}
-        pendingLabel="Deleting…"
-        title="Delete workflow template"
+      <WorkflowTemplateConfirmations
+        deleteCandidate={deleteCandidate}
+        publishCandidate={publishCandidate}
+        deleteTemplate={deleteTemplate}
+        publishTemplate={publishTemplate}
+        setDeleteCandidate={setDeleteCandidate}
+        setPublishCandidate={setPublishCandidate}
+        onDeleted={() => setPage(1)}
       />
     </div>
   );

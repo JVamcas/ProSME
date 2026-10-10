@@ -29,9 +29,16 @@ export function FundingCallHeaderActions({
       label: "Edit",
       disabled: prepare.isPending,
       onAction: () =>
-        prepare.mutate(call.rowVersion, {
-          onError: (error) => toast.error(error.message),
-        }),
+        prepare.mutate(
+          {
+            expectedRowVersion: call.rowVersion,
+            sourceVersionId:
+              call.viewedPublishedVersionId ?? call.currentPublishedVersionId!,
+          },
+          {
+            onError: (error) => toast.error(error.message),
+          },
+        ),
     });
   }
 
