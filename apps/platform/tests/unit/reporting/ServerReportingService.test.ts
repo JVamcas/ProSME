@@ -82,7 +82,7 @@ afterEach(() => {
 });
 
 async function service() {
-  return (await import("@/modules/reporting/ServerReportingService"))
+  return (await import("@/modules/reporting/application/ServerReportingService"))
     .getWebsiteAnalytics;
 }
 
@@ -100,7 +100,7 @@ describe("reporting authorization and durable reads", () => {
         provider: "Platform",
         state: collectionEnabled ? "ready" : "unavailable",
         collectionEnabled,
-        note: "Consenting public-page views only. Clicks and scroll depth are stored in the platform.",
+        note: "Anonymous approved public-page views only. Clicks and scroll depth are stored in the platform.",
       });
     },
   );

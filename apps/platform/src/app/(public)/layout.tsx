@@ -3,6 +3,7 @@ import localFont from "next/font/local";
 import { PublicSiteShell } from "@/modules/content/ui/public/PublicSiteShell";
 import { QueryProvider } from "@/shared/ui/portal/query-provider";
 import { WebsiteAnalyticsConsent } from "@/modules/reporting/ui/WebsiteAnalyticsConsent";
+import { WebsiteHeatmapCollection } from "@/modules/reporting/ui/WebsiteHeatmapCollection";
 import { Suspense } from "react";
 import {
   getWebsiteAnalyticsMeasurementId,
@@ -14,6 +15,7 @@ import {
   getSiteSettings,
 } from "@/modules/content/ServerContentQueries";
 import { Toast } from "@/shared/ui/Toast";
+import { ChatbotWidget } from "@/modules/chatbot/ui/public/ChatbotWidget";
 import "../globals.css";
 
 // Render each request for funding dates and preview authorization. Explicit
@@ -96,11 +98,12 @@ export default async function RootLayout({ children }: RootLayoutProps) {
           <PublicSiteShell mainClassName="public-content">
             {children}
           </PublicSiteShell>
+          <ChatbotWidget />
           <Suspense fallback={null}>
             <WebsiteAnalyticsConsent
               measurementId={getWebsiteAnalyticsMeasurementId()}
-              heatmapEnabled={heatmap.collectionEnabled}
             />
+            <WebsiteHeatmapCollection enabled={heatmap.collectionEnabled} />
           </Suspense>
           <Toast />
         </QueryProvider>

@@ -8,7 +8,6 @@ import type { HeatmapBatch } from "../domain/WebsiteHeatmap";
 
 export function useWebsiteHeatmapCollection(
   enabled: boolean,
-  consent: boolean,
   pathname: string,
 ) {
   const { mutateAsync } = useMutation({
@@ -19,9 +18,9 @@ export function useWebsiteHeatmapCollection(
     gcTime: 0,
   });
   useEffect(() => {
-    clientWebsiteHeatmapCaptureService.start(enabled, consent, (batch, final) =>
+    clientWebsiteHeatmapCaptureService.start(enabled, (batch, final) =>
       mutateAsync({ batch, final }),
     );
     return () => clientWebsiteHeatmapCaptureService.stop(true);
-  }, [enabled, consent, pathname, mutateAsync]);
+  }, [enabled, pathname, mutateAsync]);
 }

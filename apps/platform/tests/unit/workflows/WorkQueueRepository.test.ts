@@ -2,9 +2,9 @@ import { PgDialect } from "drizzle-orm/pg-core";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
-vi.mock("@/db/client", () => ({ getDatabase: vi.fn() }));
+vi.mock("@/platform/database/client", () => ({ getDatabase: vi.fn() }));
 
-import { getDatabase } from "@/db/client";
+import { getDatabase } from "@/platform/database/client";
 import { readWorkQueue } from "@/modules/workflows/infrastructure/WorkQueueRepository";
 
 const execute = vi.fn();
@@ -73,4 +73,21 @@ it("includes the original assignee's active manual escalations without routing t
   expect(query.sql).toContain('AS "outgoingEscalation"');
   expect(query.params).toContain("workflow.escalation.own.cancel");
   expect(query.sql).toContain("response.status = 'COMPLETED'");
+});
+
+it("monitors all assigned tasks in SQL while preserving COI protections and pagination", async () => {
+  execute.mockResolvedValue({ rows: [] });
+  await readWorkQueue(actorId, {
+    assignmentScope: "all",
+    limit: 25,
+    scope: "mine",
+  });
+  const query = new PgDialect().sqlToQuery(execute.mock.calls[0]![0]);
+  const filter = query.sql.slice(query.sql.indexOf("WHERE workflow.status"));
+  expect(filter).toContain("task.assigned_user_id IS NOT NULL");
+  expect(filter).not.toContain("task.assigned_user_id =");
+  expect(query.sql).toContain("app_workflow_task_coi_cleared");
+  expect(query.sql).toContain('CASE WHEN TRUE\n          THEN application.funding_opportunity_title');
+  expect(query.sql).toContain('ORDER BY "dueAt" ASC NULLS LAST');
+  expect(query.params).toContain(26);
 });

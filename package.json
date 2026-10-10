@@ -19,7 +19,9 @@
     "analytics:configure": "node --env-file-if-exists=.env scripts/development/configure-google-analytics.mjs",
     "check:architecture": "npm run check:architecture --workspace @prosme/platform",
     "check:files": "npm run check:files --workspace @prosme/platform",
-    "check": "npm run check:architecture && npm run check:files && npm run lint && npm run typecheck && npm run test && npm run build"
+    "check": "npm run check:architecture && npm run check:files && npm run lint && npm run typecheck && npm run test && npm run build",
+    "test:chatbot": "npm run test:chatbot --workspace @prosme/platform",
+    "test:component-reuse": "npm run test:component-reuse --workspace @prosme/platform"
   },
   "devDependencies": {
     "monaco-editor": "0.37.1"

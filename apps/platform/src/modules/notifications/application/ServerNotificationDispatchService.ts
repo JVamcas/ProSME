@@ -1,3 +1,4 @@
+import { requireChatbotDeliveryRecipient } from "./ChatbotCaseNotifications";
 import { resolveReportDeliveryAttachments } from "./ReportDeliveryAttachments";
 import "server-only";
 
@@ -119,6 +120,17 @@ async function dispatchDelivery(input: {
       input.delivery.eventKey,
       input.delivery.context,
     );
+    if (
+      input.delivery.eventKey === "chatbot.case.created" &&
+      "caseId" in context
+    ) {
+      await requireChatbotDeliveryRecipient(
+        context,
+        input.delivery.recipientUserId!,
+        input.delivery.recipientEmail,
+        input.delivery.ruleId ?? null,
+      );
+    }
     const rendered = systemOnly
       ? await renderAuthenticationEmail(
           input.delivery,

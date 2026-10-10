@@ -2,18 +2,22 @@
 
 import { Search } from "lucide-react";
 import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 
 import { DataTableFilter } from "@/components/ui/data-table-filter";
 import { Input } from "@/shared/ui/FormPrimitives";
 import { Pagination } from "@/components/ui/pagination";
+import { GeneralButton } from "@/shared/ui/Button";
 import { cn } from "@/lib/utils";
+import { workQueueListSchema } from "../WorkQueueSchemas";
 import { useWorkQueue } from "@/modules/work-queue/ui/useWorkQueue";
 import type { WorkQueueScope } from "@/modules/work-queue/WorkQueueTypes";
 import { PageShell } from "@/shared/ui/PageShell";
 import { WorkQueueTable } from "./WorkQueueTable";
 
 const scopes: Array<{ label: string; value: WorkQueueScope }> = [
-  { label: "My tasks", value: "mine" },
+  { label: "Tasks", value: "mine" },
   { label: "Overdue", value: "overdue" },
   { label: "Due soon", value: "due-soon" },
 ];
@@ -28,31 +32,44 @@ function QueueTabs({
   return (
     <div className="flex gap-1 overflow-x-auto border-b border-brand-navy/10">
       {scopes.map((item) => (
-        <button
+        <GeneralButton
           className={cn(
-            "whitespace-nowrap border-b-2 px-4 py-3 text-sm font-semibold",
+            "h-auto whitespace-nowrap rounded-none border-b-2 px-4 py-3 text-sm font-semibold",
             scope === item.value
               ? "border-brand-orange text-brand-navy"
               : "border-transparent text-brand-navy/55",
           )}
+          aria-pressed={scope === item.value}
           key={item.value}
           onClick={() => onChange(item.value)}
           type="button"
+          variant="ghost"
         >
           {item.label}
-        </button>
+        </GeneralButton>
       ))}
     </div>
   );
 }
 
-export function WorkQueueWorkspace() {
+const searchSchema = workQueueListSchema.pick({ search: true });
+
+export function WorkQueueWorkspace({
+  assignmentScope = "assigned",
+}: {
+  assignmentScope?: "assigned" | "all";
+}) {
+  const monitor = assignmentScope === "all";
   const [scope, setScope] = useState<WorkQueueScope>("mine");
-  const [draftSearch, setDraftSearch] = useState("");
+  const { register, handleSubmit, reset } = useForm({
+    resolver: zodResolver(searchSchema),
+    defaultValues: { search: "" },
+  });
   const [search, setSearch] = useState("");
   const [cursors, setCursors] = useState<string[]>([]);
 
   const queue = useWorkQueue({
+    assignmentScope,
     after: cursors.at(-1),
     limit: 25,
     search: search || undefined,
@@ -63,26 +80,30 @@ export function WorkQueueWorkspace() {
     setScope(next);
     setCursors([]);
   };
-  const applySearch = () => {
-    setSearch(draftSearch.trim());
+  const applySearch = handleSubmit((values) => {
+    setSearch(values.search ?? "");
     setCursors([]);
-  };
+  });
   const clearSearch = () => {
-    setDraftSearch("");
+    reset({ search: "" });
     setSearch("");
     setCursors([]);
   };
 
   const emptyMessage = queue.isPending
-    ? "Loading your work queue…"
+    ? "Loading assigned tasks…"
     : queue.isError
       ? queue.error.message
       : "No actionable tasks match these filters.";
 
   return (
     <PageShell
-      eyebrow="My work"
-      description="Tasks assigned to you."
+      eyebrow={monitor ? "Process Monitor" : "My Queue"}
+      description={
+        monitor
+          ? "Track tasks assigned across all users."
+          : "Tasks assigned to you."
+      }
       title="Assigned tasks"
     >
       <section className="overflow-hidden rounded-t-2xl border border-brand-navy/10 bg-white shadow-sm p-2">
@@ -91,7 +112,11 @@ export function WorkQueueWorkspace() {
           <DataTableFilter
             collapsible
             defaultExpanded={false}
-            description="Search the tasks assigned to you."
+            description={
+              monitor
+                ? "Search all assigned tasks."
+                : "Search the tasks assigned to you."
+            }
             onApply={applySearch}
             onClear={clearSearch}
             title="Queue filters"
@@ -101,9 +126,8 @@ export function WorkQueueWorkspace() {
               <Input
                 aria-label="Search work queue"
                 className="pl-10"
-                onChange={(event) => setDraftSearch(event.target.value)}
                 placeholder="Search reference, applicant, business or task"
-                value={draftSearch}
+                {...register("search")}
               />
             </div>
           </DataTableFilter>

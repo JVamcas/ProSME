@@ -9,12 +9,10 @@ import {
   heatmapQuerySchema,
   type HeatmapQuery,
 } from "./api/WebsiteHeatmapSchemas";
-import { clientWebsiteAnalyticsService } from "./ClientWebsiteAnalyticsService";
+
 let uploading = false;
 
 function collect(batch: HeatmapBatch, final: boolean) {
-  if (clientWebsiteAnalyticsService.readConsent() !== "accepted")
-    return Promise.resolve();
   const body = JSON.stringify(batch);
   const path = "/api/public/analytics/heatmap";
   if (final && typeof navigator.sendBeacon === "function") {
@@ -22,12 +20,15 @@ function collect(batch: HeatmapBatch, final: boolean) {
       path,
       new Blob([body], { type: "application/json" }),
     );
-    if (queued) return Promise.resolve();
+    if (queued) {
+      return Promise.resolve();
+    }
   }
-  if (uploading && !final)
+  if (uploading && !final) {
     return Promise.reject(
       new Error("A heatmap upload is already in progress."),
     );
+  }
   uploading = true;
   return requestData(path, {
     method: "POST",

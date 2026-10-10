@@ -7,7 +7,7 @@ import {
 import { sql } from "drizzle-orm";
 
 import { canCancelOwnEscalation } from "./WorkflowEscalationTrackingSql";
-import { getDatabase } from "@/db/client";
+import { getDatabase } from "@/platform/database/client";
 import type {
   WorkQueueListInput,
   WorkQueueRow,
@@ -42,12 +42,12 @@ function scopeFilter(scope: WorkQueueListInput["scope"]) {
   return sql`TRUE`;
 }
 
-function searchFilter(actorId: string, search?: string) {
+function searchFilter(actorId: string, search?: string, all = false) {
   if (!search) return sql`TRUE`;
   const pattern = `%${search}%`;
   return sql`(
     definition.name ILIKE ${pattern}
-    OR (app_workflow_task_coi_cleared(task.id, ${actorId}::uuid)
+    OR (${all ? sql`TRUE` : sql`app_workflow_task_coi_cleared(task.id, ${actorId}::uuid)`}
       AND (
         application.reference ILIKE ${pattern}
         OR applicant.display_name ILIKE ${pattern}
@@ -84,32 +84,31 @@ function queueQuery(
   actorId: string,
   cursor?: WorkQueueCursor,
 ) {
+  const monitor = input.assignmentScope === "all";
+  const contextVisible = monitor
+    ? sql`TRUE`
+    : sql`${visibleToActor(actorId)} AND app_workflow_task_coi_cleared(task.id, ${actorId}::uuid)`;
   return sql`
     WITH filtered AS (
       SELECT
         task.id AS "taskInstanceId",
         definition.code AS "taskDefinitionCode",
         definition.name AS "taskName",
-        CASE WHEN ${visibleToActor(actorId)}
-          AND app_workflow_task_coi_cleared(task.id, ${actorId}::uuid)
+        CASE WHEN ${contextVisible}
           THEN application.id ELSE NULL END AS "applicationId",
-        CASE WHEN ${visibleToActor(actorId)}
-          AND app_workflow_task_coi_cleared(task.id, ${actorId}::uuid)
+        CASE WHEN ${contextVisible}
           THEN application.reference ELSE coi_gate.blocked_reason END AS "reference",
-        CASE WHEN ${visibleToActor(actorId)}
-          AND app_workflow_task_coi_cleared(task.id, ${actorId}::uuid)
+        CASE WHEN ${contextVisible}
           THEN NULLIF(COALESCE(business.trading_name, business.legal_name), '')
           ELSE NULL END AS "businessName",
-        CASE WHEN ${visibleToActor(actorId)}
-          AND app_workflow_task_coi_cleared(task.id, ${actorId}::uuid)
+        CASE WHEN ${contextVisible}
           THEN applicant.display_name ELSE coi_gate.blocked_reason END AS "applicantName",
-        coi_gate.blocked_reason AS "coiBlockedReason",
-        CASE WHEN ${visibleToActor(actorId)}
-          AND app_workflow_task_coi_cleared(task.id, ${actorId}::uuid)
+        ${monitor ? sql`NULL::text` : sql`coi_gate.blocked_reason`} AS "coiBlockedReason",
+        CASE WHEN ${contextVisible}
           THEN application.funding_opportunity_title
           ELSE NULL END AS "fundingCallTitle",
         stage_definition.name AS "stageName",
-        CASE WHEN app_workflow_task_coi_cleared(task.id, ${actorId}::uuid)
+        CASE WHEN ${contextVisible}
           AND request.id IS NOT NULL THEN jsonb_build_object(
             'id', request.id, 'status', request.status,
             'createdAt', request.created_at, 'deadlineAt', request.deadline_at,
@@ -128,7 +127,7 @@ function queueQuery(
             THEN 'Close the open information request before completing this task.'
           ELSE NULL END AS "taskBlockedReason",
         CASE WHEN ${workflowTaskHasActiveHold(sql`task`)} THEN 'ON_HOLD' ELSE NULL END AS "processingStatus",
-        CASE WHEN app_workflow_task_coi_cleared(task.id, ${actorId}::uuid)
+        CASE WHEN ${contextVisible}
           THEN ${workflowTaskHoldSummaries(sql`task`)} ELSE '[]'::jsonb END AS holds,
         NULL::text AS "priority",
         CASE WHEN outgoing.id IS NOT NULL THEN 'ESCALATED'
@@ -196,9 +195,13 @@ function queueQuery(
       WHERE workflow.status = 'ACTIVE'
         AND stage.status IN ('ACTIVE', 'BLOCKED')
         AND task.status IN ${actionableStatuses}
-        AND ${visibleToActor(actorId)}
+        AND ${
+          input.assignmentScope === "all"
+            ? sql`task.assigned_user_id IS NOT NULL`
+            : visibleToActor(actorId)
+        }
         AND ${scopeFilter(input.scope)}
-        AND ${searchFilter(actorId, input.search)}
+        AND ${searchFilter(actorId, input.search, monitor)}
     )
     SELECT page.*, totals."totalCount"
     FROM (SELECT count(*)::integer AS "totalCount" FROM filtered) totals

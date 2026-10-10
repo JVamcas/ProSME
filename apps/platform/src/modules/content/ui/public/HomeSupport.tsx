@@ -3,6 +3,8 @@ import { BarChart3, Leaf, Users, Venus } from "lucide-react";
 import { ArrowLink } from "@/components/ui/links";
 import type { HomepageContent } from "@/modules/content/ContentTypes";
 
+import styles from "./HomeSupport.module.css";
+
 const icons = [Users, Venus, BarChart3, Leaf];
 
 export function HomeSupport({
@@ -36,8 +38,13 @@ export function HomeSupport({
           <SupportGroup groups={groups} presentation="grid" />
         </div>
       ) : (
-        <div className="support-marquee mt-6 overflow-hidden py-3">
-          <div className="support-track">
+        <div
+          aria-label={content.supportHeading}
+          className={`${styles["support-marquee"]} mt-6 py-3`}
+          role="region"
+          tabIndex={0}
+        >
+          <div className={styles["support-track"]}>
             <SupportGroup groups={groups} />
             <SupportGroup groups={groups} hidden />
           </div>
@@ -62,14 +69,14 @@ function SupportGroup({
       className={
         presentation === "grid"
           ? "grid gap-3 md:grid-cols-2 xl:grid-cols-3"
-          : "support-group"
+          : styles["support-group"]
       }
     >
       {groups.map((group, index) => {
         const Icon = icons[index % icons.length];
         return (
           <article
-            className={`${presentation === "grid" ? "min-w-0" : "support-card"} rounded-xl border border-brand-blue/20 bg-white p-5`}
+            className={`${presentation === "grid" ? "min-w-0" : styles["support-card"]} rounded-xl border border-brand-blue/20 bg-white p-5`}
             key={`${hidden ? "copy" : "main"}-${index}`}
           >
             <span className="grid size-12 place-items-center rounded-full bg-brand-orange/10 text-brand-orange">

@@ -3,31 +3,34 @@ import "server-only";
 import { getPayload } from "payload";
 import configPromise from "@payload-config";
 import type { News, Resource } from "@/payload-types";
-import type { ListingItem } from "../ContentTypes";
 import { media, resourceHref, resourceThumbnail } from "./ContentProjection";
-import { selectLatestHomeItems } from "../HomeFeedSelection";
+import {
+  HOME_FEED_LIMIT,
+  selectLatestHomeItems,
+  type HomeFeedItem,
+} from "../domain/HomeFeedSelection";
 
 async function payloadClient() {
   return getPayload({ config: configPromise });
 }
 
-export async function readHomeFeed(): Promise<{
-  news: ListingItem[];
-  resources: ListingItem[];
-}> {
+export async function readHomeFeed(): Promise<HomeFeedItem[]> {
   const payload = await payloadClient();
   const [news, resources] = await Promise.all([
     homeItems(payload, "news"),
     homeItems(payload, "resources"),
   ]);
 
-  return { news, resources };
+  return selectLatestHomeItems(
+    [...news, ...resources],
+    (item) => item.date ?? "",
+  );
 }
 
 async function homeItems(
   payload: Awaited<ReturnType<typeof payloadClient>>,
   collection: "news" | "resources",
-): Promise<ListingItem[]> {
+): Promise<HomeFeedItem[]> {
   const select = collection === "news"
     ? {
         id: true,
@@ -56,10 +59,10 @@ async function homeItems(
       collection,
       depth: collection === "resources" ? 2 : 1,
       draft: false,
-      limit: 2,
+      limit: HOME_FEED_LIMIT,
       overrideAccess: true,
       select,
-      sort: ["-publishedAt", "-createdAt", "-id"],
+      sort: ["-publishedAt", "-id"],
       where: {
         and: [
           { _status: { equals: "published" } },
@@ -71,7 +74,7 @@ async function homeItems(
       collection,
       depth: collection === "resources" ? 2 : 1,
       draft: false,
-      limit: 2,
+      limit: HOME_FEED_LIMIT,
       overrideAccess: true,
       select,
       sort: ["-createdAt", "-id"],
@@ -84,10 +87,16 @@ async function homeItems(
     }),
   ]);
 
-  const items = selectLatestHomeItems(dated.docs, undated.docs);
+  // Each query returns at most four candidates. Merge the date groups before
+  // combining collections so undated records can rank by their creation date.
+  const items = selectLatestHomeItems(
+    [...dated.docs, ...undated.docs],
+    (item) => item.publishedAt ?? item.createdAt,
+  );
 
   if (collection === "news") {
     return (items as News[]).map((item) => ({
+      kind: "news",
       id: item.id,
       image: media(item.image),
       slug: item.slug,
@@ -98,6 +107,7 @@ async function homeItems(
   }
 
   return (items as Resource[]).map((item) => ({
+    kind: "resource",
     id: item.id,
     category: item.resourceName || item.category || "Resource",
     href: resourceHref(item.file, item.externalUrl),

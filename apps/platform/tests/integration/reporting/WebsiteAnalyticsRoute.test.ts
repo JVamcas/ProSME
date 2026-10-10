@@ -3,7 +3,7 @@ vi.mock("server-only", () => ({}));
 vi.mock("@/auth/authorization/current-user", () => ({
   resolveUserFromHeaders: vi.fn(),
 }));
-vi.mock("@/modules/reporting/ServerReportingService", () => ({
+vi.mock("@/modules/reporting/application/ServerReportingService", () => ({
   getWebsiteAnalytics: vi.fn(),
 }));
 import { resolveUserFromHeaders } from "@/auth/authorization/current-user";
@@ -11,7 +11,7 @@ import {
   PermissionDeniedError,
   AuthenticationRequiredError,
 } from "@/auth/authorization/policy";
-import { getWebsiteAnalytics } from "@/modules/reporting/ServerReportingService";
+import { getWebsiteAnalytics } from "@/modules/reporting/application/ServerReportingService";
 import { GET } from "@/app/api/reporting/website/route";
 
 beforeEach(() => {

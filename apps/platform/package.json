@@ -12,7 +12,7 @@
     "test": "vitest run",
     "test:public": "playwright test",
     "test:watch": "vitest",
-    "check:architecture": "node ../../scripts/development/check-architecture.mjs && node ../../scripts/development/check-form-architecture.mjs",
+    "check:architecture": "node ../../scripts/development/check-architecture.mjs && node ../../scripts/development/check-form-architecture.mjs && node ../../scripts/development/check-component-reuse.mjs",
     "check:files": "node ../../scripts/development/check-file-limits.mjs",
     "payload": "payload",
     "payload:types": "payload generate:types",
@@ -29,7 +29,9 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
-    "db:seed:reporting": "NODE_OPTIONS=--conditions=react-server node --env-file-if-exists=../../.env ../../node_modules/payload/bin.js run ../../scripts/seed/seed-reporting.ts"
+    "db:seed:reporting": "NODE_OPTIONS=--conditions=react-server node --env-file-if-exists=../../.env ../../node_modules/payload/bin.js run ../../scripts/seed/seed-reporting.ts",
+    "test:component-reuse": "node --test ../../scripts/development/check-component-reuse.test.mjs",
+    "test:chatbot": "vitest run tests/unit/chatbot tests/integration/chatbot --maxWorkers=1 --hookTimeout=30000"
   },
   "dependencies": {
     "@ant-design/nextjs-registry": "1.3.0",

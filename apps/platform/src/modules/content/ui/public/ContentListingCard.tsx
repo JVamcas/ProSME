@@ -10,7 +10,11 @@ type Props = {
   headingAs?: "h2" | "h3";
 };
 
-export function ContentListingCard({ item, kind, headingAs: Heading = "h3" }: Props) {
+export function ContentListingCard({
+  item,
+  kind,
+  headingAs: Heading = "h3",
+}: Props) {
   const isResource = kind === "resource";
   const Icon = isResource ? Download : Newspaper;
   const category = isResource ? item.category ?? "Resource" : "News";
@@ -19,15 +23,15 @@ export function ContentListingCard({ item, kind, headingAs: Heading = "h3" }: Pr
     : `/news/${item.slug}`;
 
   return (
-    <article className="funding-card flex min-h-72 flex-col overflow-hidden rounded-xl border border-brand-blue/20 bg-white">
+    <article className="funding-card flex min-h-72 min-w-0 flex-col overflow-hidden rounded-xl border border-brand-blue/20 bg-white">
       {item.image ? (
         <CmsImage
-          className="aspect-video w-full object-cover object-top"
+          className="h-44 w-full shrink-0 object-cover object-top"
           image={item.image}
-          sizes="(max-width: 767px) 100vw, (max-width: 1023px) 50vw, 25vw"
+          sizes="(max-width: 767px) 100vw, 50vw"
         />
       ) : (
-        <div className="grid aspect-video place-items-center bg-brand-cream text-brand-orange">
+        <div className="grid h-44 shrink-0 place-items-center bg-brand-cream text-brand-orange">
           <Icon aria-hidden="true" className="size-10" />
         </div>
       )}
@@ -35,18 +39,23 @@ export function ContentListingCard({ item, kind, headingAs: Heading = "h3" }: Pr
         <span className="grid size-11 place-items-center rounded-full bg-brand-cream text-brand-orange">
           <Icon aria-hidden="true" className="size-5" />
         </span>
-        <p className="mt-5 text-xs font-extrabold uppercase tracking-wider text-brand-navy">
+        <p className="mt-5 line-clamp-1 break-words text-xs font-extrabold uppercase tracking-wider text-brand-navy">
           {category}
         </p>
-        <Heading className="mt-2 text-xl font-bold text-brand-navy">
+        <Heading className="mt-2 line-clamp-2 break-words text-xl font-bold text-brand-navy">
           {item.title}
         </Heading>
-        <p className="mt-3 text-sm leading-6 text-brand-navy">
+        <p className="mt-3 line-clamp-3 break-words text-sm leading-6 text-brand-navy">
           {item.summary}
         </p>
+      </div>
+      <footer className="mt-auto flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-brand-blue/20 px-6 py-4">
         {item.date ? (
-          <p className="mt-4 flex items-center gap-2 text-xs text-brand-navy">
-            <CalendarDays aria-hidden="true" className="size-4 text-brand-orange" />
+          <p className="flex items-center gap-2 whitespace-nowrap text-xs text-brand-navy">
+            <CalendarDays
+              aria-hidden="true"
+              className="size-4 shrink-0 text-brand-orange"
+            />
             <time dateTime={item.date}>
               {new Intl.DateTimeFormat("en-NA", {
                 dateStyle: "medium",
@@ -55,7 +64,6 @@ export function ContentListingCard({ item, kind, headingAs: Heading = "h3" }: Pr
           </p>
         ) : null}
         <ArrowLink
-          className="mt-auto pt-6"
           href={href}
           rel={isResource ? "noopener noreferrer" : undefined}
           target={isResource ? "_blank" : undefined}
@@ -65,7 +73,7 @@ export function ContentListingCard({ item, kind, headingAs: Heading = "h3" }: Pr
             <span className="sr-only"> (opens in a new tab)</span>
           ) : null}
         </ArrowLink>
-      </div>
+      </footer>
     </article>
   );
 }

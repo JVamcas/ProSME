@@ -1,6 +1,6 @@
 import { resolveUserFromHeaders } from "@/auth/authorization/current-user";
 import { heatmapQuerySchema } from "@/modules/reporting/api/WebsiteHeatmapSchemas";
-import { getWebsiteHeatmap } from "@/modules/reporting/ServerWebsiteHeatmapService";
+import { getWebsiteHeatmap } from "@/modules/reporting/application/ServerWebsiteHeatmapService";
 import {
   createCorrelationId,
   portalRouteError,

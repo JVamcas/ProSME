@@ -31,6 +31,19 @@ function trustedUrl(baseUrl: string, path: string): string {
 export function buildNotificationRenderValues<Key extends NotificationEventKey>(
   input: RenderValueInput<Key>,
 ): Record<string, string> {
+  if (input.eventKey === "chatbot.case.created") {
+    const context =
+      input.context as NotificationEventContextByKey["chatbot.case.created"];
+    return {
+      platformName: "SME Fund Namibia",
+      recipientName: input.recipient.displayName,
+      caseReference: context.caseReference ?? "Support case",
+      caseUrl: trustedUrl(
+        input.publicApplicationUrl,
+        `/admin/chatbot/cases/${context.caseId}`,
+      ),
+    };
+  }
   if (input.eventKey.startsWith("reporting.")) {
     return reportingRenderValues(
       input.context as NotificationEventContextByKey["reporting.generation.started"],

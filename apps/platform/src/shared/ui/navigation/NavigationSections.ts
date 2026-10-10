@@ -3,9 +3,12 @@ export type NavigationSectionId =
   | "funding"
   | "account"
   | "content"
+  | "queue"
+  | "process-monitor"
   | "reporting"
   | "analytics"
   | "applications"
+  | "chatbot"
   | "administration";
 
 const labels: Record<NavigationSectionId, string> = {
@@ -13,9 +16,12 @@ const labels: Record<NavigationSectionId, string> = {
   funding: "Funding",
   account: "My account",
   content: "Website content",
+  queue: "My Queue",
+  "process-monitor": "Process Monitor",
   analytics: "Analytics",
   reporting: "Reporting",
   applications: "Application management",
+  chatbot: "Chatbot",
   administration: "Administration",
 };
 

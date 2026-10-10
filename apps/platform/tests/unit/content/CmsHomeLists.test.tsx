@@ -211,6 +211,8 @@ describe("editable Home card lists", () => {
     });
     const html = renderToStaticMarkup(<HomeSupport content={content} />);
     expect(html.match(/<article\b/g)).toHaveLength(2);
+    expect(html).toContain(`aria-label="${content.supportHeading}"`);
+    expect(html).toContain('role="region" tabindex="0"');
     expect(html).toContain('aria-hidden="true"');
     expect(html).not.toContain("Youth-owned businesses");
     const empty = renderToStaticMarkup(

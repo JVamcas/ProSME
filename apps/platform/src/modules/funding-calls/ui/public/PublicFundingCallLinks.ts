@@ -1,9 +1,2 @@
-export const publicFundingHref = "/how-to-apply/funding";
-
-export function publicFundingCallHref(fundingCallId: string) {
-  return `${publicFundingHref}/${encodeURIComponent(fundingCallId)}`;
-}
-
-export function publicEligibilityHref(fundingCallId: string) {
-  return `${publicFundingCallHref(fundingCallId)}/eligibility`;
-}
+// Transitional path for public UI consumers; route identities belong to the domain.
+export * from "../../domain/PublicFundingCallLinks";

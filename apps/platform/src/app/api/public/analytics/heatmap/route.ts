@@ -1,5 +1,5 @@
 import { heatmapBatchSchema } from "@/modules/reporting/api/WebsiteHeatmapSchemas";
-import { collectWebsiteHeatmap } from "@/modules/reporting/ServerWebsiteHeatmapService";
+import { collectWebsiteHeatmap } from "@/modules/reporting/application/ServerWebsiteHeatmapService";
 import { RequestValidationError } from "@/lib/resource-errors";
 import {
   createCorrelationId,
@@ -39,11 +39,7 @@ export async function POST(request: Request) {
       );
     }
     const input = heatmapBatchSchema.parse(body);
-    await collectWebsiteHeatmap(
-      input,
-      request.headers,
-      new URL(request.url).origin,
-    );
+    await collectWebsiteHeatmap(input, request.headers, request.url);
     return portalRouteSuccess({ accepted: true }, correlationId);
   } catch (error) {
     return portalRouteError(error, correlationId);
