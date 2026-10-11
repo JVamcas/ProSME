@@ -13,7 +13,7 @@ export async function HomeFunding({
   const items = await getHomeNewsAndResources();
 
   return (
-    <section className="container py-14">
+    <section className="mx-auto w-[min(1720px,calc(100%-2rem))] py-14 sm:w-[min(1720px,calc(100%-5rem))]">
       <SectionHeading
         title={heading}
         text={introduction}
@@ -28,11 +28,11 @@ export async function HomeFunding({
           />
         </div>
       ) : null}
-      <div className="mt-6 grid gap-5 md:grid-cols-2">
+      <div className="mt-6 grid grid-cols-[repeat(auto-fill,minmax(min(100%,20rem),1fr))] gap-5">
         {items.map((item) => (
           <ContentListingCard
             item={item}
-            key={`${item.kind}-${item.slug}`}
+            key={`${item.kind}-${item.id}`}
             kind={item.kind}
           />
         ))}

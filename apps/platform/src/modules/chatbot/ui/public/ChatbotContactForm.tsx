@@ -38,11 +38,8 @@ export function ChatbotContactForm({
   return (
     <section className="space-y-4" aria-label="Optional staff follow-up">
       <h3 className="font-bold text-brand-navy">
-        Would you like staff to contact you?
+        Would you like a staff to contact you?
       </h3>
-      <p className="text-sm leading-6">
-        Optional contact details for staff follow-up.
-      </p>
       <FormProvider {...form}>
         <form className="space-y-4" onSubmit={submit}>
           <FormField

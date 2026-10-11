@@ -13,6 +13,7 @@ import {
   Coins,
   CircleHelp,
   Mail,
+  Newspaper,
 } from "lucide-react";
 import {
   NavigationList,
@@ -65,6 +66,13 @@ const contentRoutes: readonly NavigationRoute[] = [
     href: "/cms/collections/resources",
     label: "Resource Centre",
     icon: Library,
+  },
+  {
+    id: "cms-news",
+    section: "content",
+    href: "/cms/collections/news",
+    label: "News",
+    icon: Newspaper,
   },
   {
     id: "cms-funding",

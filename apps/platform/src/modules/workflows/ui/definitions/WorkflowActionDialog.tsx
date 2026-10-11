@@ -3,7 +3,7 @@
 import { FormProvider } from "react-hook-form";
 import { GeneralButton } from "@/components/ui/button";
 import { DraggableDialog } from "@/shared/ui/DraggableDialog";
-import { StepProgress } from "@/components/ui/step-progress";
+import { StepProgress } from "@/shared/ui/StepProgress";
 import type { WorkflowActionDefinition } from "@/modules/workflows/domain/actions/WorkflowActionDefinition";
 import type {
   WorkflowEditorView,

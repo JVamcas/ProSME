@@ -67,7 +67,7 @@ describe("homepage news and resources", () => {
       await HomeFunding({ heading: "Latest News & Resources" }),
     );
 
-    expect(markup).toContain('href="/news/programme-update"');
+    expect(markup).toContain('href="/news/2"');
     expect(markup).toContain("Read update");
     expect(markup).not.toContain('target="_blank"');
   });

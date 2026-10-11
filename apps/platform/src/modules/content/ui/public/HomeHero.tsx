@@ -112,12 +112,12 @@ function DesktopHeroFallback({ content }: HomeHeroProps) {
   return (
     <div className="absolute inset-y-0 right-0 hidden w-[46%] bg-brand-orange @5xl/banner:flex @5xl/banner:items-center @5xl/banner:justify-center">
       <div className="absolute inset-0 text-white/10 bg-[radial-gradient(circle_at_50%_50%,transparent_0_24%,currentColor_25%_39%,transparent_40%),linear-gradient(45deg,transparent_45%,currentColor_46%_54%,transparent_55%)] bg-size-[52px_52px]" />
-      <div className="relative max-w-sm rounded-3xl border border-brand-navy/25 bg-white/20 p-8 text-brand-navy backdrop-blur-sm">
+      <div className="relative max-w-sm rounded-3xl border border-brand-navy/25 bg-white/20 p-8 text-brand-white backdrop-blur-sm">
         <p className="m-0 text-4xl font-bold leading-tight">
           {content.heroPanelHeading}
         </p>
         <div className="mt-6 h-1.5 w-28 rounded-full bg-brand-yellow" />
-        <p className="m-0 mt-6 text-sm leading-6 text-brand-navy">
+        <p className="m-0 mt-6 text-sm leading-6 text-brand-white">
           {content.heroPanelSummary}
         </p>
       </div>

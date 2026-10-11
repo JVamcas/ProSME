@@ -1,0 +1,99 @@
+/* Payload portals are mounted outside WorkspaceFrame, beneath the HTML root. */
+.root :global(.list-drawer:has(.collection-list--media)) {
+  --gutter-h: 32px;
+  inset: 0 0 0 0;
+  width: auto;
+  height: 100dvh;
+  color: var(--sme-brand-navy);
+}
+
+/* Retain the native picker, close controls, pagination and modal focus handling. */
+.root :global(.list-drawer:has(.collection-list--media) > .drawer__content) {
+  width: 100% !important;
+  min-width: 0;
+  height: 100%;
+  border-top: 4px solid var(--sme-brand-orange);
+  background: var(--sme-brand-white);
+}
+
+.root :global(.list-drawer:has(.collection-list--media) > .drawer__close),
+.root :global(.list-drawer:has(.collection-list--media) > .drawer__blur-bg) {
+  display: none;
+}
+
+.root :global(.collection-list--media .list-header__title-and-actions) {
+  align-items: center;
+  gap: 16px;
+}
+
+.root :global(.collection-list--media .list-header h1) {
+  color: var(--sme-brand-navy);
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.root :global(.collection-list--media .list-header .btn),
+.root :global(.collection-list--media .list-header__create-new-button .pill) {
+  padding: 10px 18px;
+  border-radius: 999px;
+  border-color: var(--sme-brand-navy);
+  background: var(--sme-brand-navy);
+  color: var(--sme-brand-white);
+  font-weight: 600;
+}
+
+.root :global(.collection-list--media .list-header .btn:hover),
+.root :global(.collection-list--media .list-header__create-new-button:hover .pill) {
+  background: var(--sme-brand-orange);
+  border-color: var(--sme-brand-orange);
+}
+
+.root :global(.collection-list--media .search-bar) {
+  border: 1px solid var(--theme-elevation-200);
+  border-radius: 12px;
+  background: var(--theme-elevation-50);
+}
+
+.root :global(.collection-list--media .pill) {
+  border: 1px solid var(--theme-elevation-200);
+  border-radius: 999px;
+  background: var(--sme-brand-white);
+  color: var(--sme-brand-navy);
+}
+
+.root :global(.collection-list--media .table) {
+  border: 1px solid var(--theme-elevation-200);
+  border-radius: 12px;
+}
+
+.root :global(.collection-list--media .table table) {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.root :global(.collection-list--media .table thead) {
+  background: var(--theme-elevation-100);
+  color: var(--sme-brand-navy);
+}
+
+.root :global(.collection-list--media .table th) {
+  font-weight: 600;
+}
+
+.root :global(.collection-list--media .table td) {
+  border-top: 1px solid var(--theme-elevation-150);
+}
+
+@media (min-width: 1025px) {
+  /* Follow the existing sidebar's expanded, resized and collapsed widths. */
+  .root:has(:global(.nav--nav-open .cms-sidebar))
+    :global(.list-drawer:has(.collection-list--media)) {
+    left: var(--cms-nav-width, 320px);
+  }
+}
+
+@media (max-width: 768px) {
+  .root :global(.list-drawer:has(.collection-list--media)) {
+    --gutter-h: 16px;
+  }
+}

@@ -45,15 +45,16 @@ describe("published content invalidation", () => {
     },
   );
 
-  it("invalidates both old and new detail URLs after a slug rename", () => {
+  it("invalidates the article ID URL when its slug or content changes", () => {
     revalidateCollection({
       collection: { slug: "news" },
-      doc: { slug: "renamed" },
-      previousDoc: { slug: "original" },
+      doc: { id: 42, slug: "renamed" },
+      previousDoc: { id: 42, slug: "original" },
       req: { context: {} },
     } as unknown as Parameters<CollectionAfterChangeHook>[0]);
-    expect(state.path).toHaveBeenCalledWith("/news/original");
-    expect(state.path).toHaveBeenCalledWith("/news/renamed");
+    expect(state.path).toHaveBeenCalledWith("/news/42");
+    expect(state.path).not.toHaveBeenCalledWith("/news/original");
+    expect(state.path).not.toHaveBeenCalledWith("/news/renamed");
     expect(state.path).toHaveBeenCalledWith("/news");
   });
 

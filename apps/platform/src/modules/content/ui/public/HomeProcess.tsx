@@ -34,7 +34,7 @@ export function HomeProcess({
                 />
               ) : null}
               <span
-                className={`absolute left-3 top-3 z-10 grid size-8 place-items-center rounded-full text-sm font-bold ${index % 2 ? "bg-brand-yellow text-brand-navy" : "bg-brand-orange text-brand-navy"}`}
+                className={`absolute left-3 top-3 z-10 grid size-8 place-items-center rounded-full text-sm font-bold ${index % 2 ? "bg-brand-yellow text-brand-navy" : "bg-brand-orange text-brand-white"}`}
               >
                 {index + 1}
               </span>

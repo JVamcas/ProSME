@@ -5,7 +5,8 @@ import { useEffect, useState, type ReactNode } from "react";
 import { GeneralButton } from "@/components/ui/button";
 import { CheckboxField } from "@/components/ui/form-field";
 import { FormInput, FormTextarea } from "@/components/ui/form-fields";
-import { StepProgress } from "@/components/ui/step-progress";
+import { Input } from "@/shared/ui/FormPrimitives";
+import { StepProgress } from "@/shared/ui/StepProgress";
 import type {
   ChecklistConfigurationItem,
   DocumentRequirementItem,
@@ -77,7 +78,7 @@ function ChecklistContent({
           className="rounded-xl border border-brand-navy/10 bg-white p-5"
           key={item.code}
         >
-          <input name={`items.${index}.code`} type="hidden" value={item.code} />
+          <Input name={`items.${index}.code`} type="hidden" value={item.code} />
           <CheckboxField
             containerClassName="font-semibold text-brand-navy"
             disabled={disabled}
@@ -120,7 +121,7 @@ function ScoringContent({
           className="grid gap-4 rounded-xl border border-brand-navy/10 p-4 md:grid-cols-[1fr_10rem]"
           key={criterion.stableKey}
         >
-          <input
+          <Input
             name={`scores.${index}.criterion`}
             type="hidden"
             value={criterion.stableKey}
@@ -176,7 +177,7 @@ function CommentsContent({
     <div className="space-y-4">
       {fields.map((field, index) => (
         <div key={field.key}>
-          <input
+          <Input
             name={`comments.${index}.key`}
             type="hidden"
             value={field.key}

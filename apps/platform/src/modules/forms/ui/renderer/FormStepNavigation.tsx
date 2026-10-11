@@ -1,7 +1,7 @@
 "use client";
 
 import { GeneralButton } from "@/components/ui/button";
-import { StepProgress } from "@/components/ui/step-progress";
+import { StepProgress } from "@/shared/ui/StepProgress";
 
 export function FormStepProgress({
   completedStepIds,

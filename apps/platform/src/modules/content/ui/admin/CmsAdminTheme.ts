@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import mediaWorkspaceStyles from "./CmsMediaWorkspace.module.css";
 
 const theme = [
   "[--nav-width:320px]",
@@ -94,4 +95,9 @@ const documentDrawer = [
   String.raw`[&_.doc-drawer[id^=doc-drawer\_media\_]_.file-details\_\_edit]:font-semibold`,
 ];
 
-export const cmsAdminClassName = cn(theme, shell, documentDrawer);
+export const cmsAdminClassName = cn(
+  theme,
+  shell,
+  documentDrawer,
+  mediaWorkspaceStyles.root,
+);

@@ -15,7 +15,9 @@ export function PublicPageHeader({
   return (
     <section className="bg-brand-navy py-16 text-brand-white">
       <div
-        className={`container grid gap-9 ${image ? "lg:grid-cols-[1fr_420px] lg:items-center" : "max-w-4xl"}`}
+        className={`mx-auto grid w-[min(1180px,calc(100%-2rem))] gap-9 ${
+          image ? "lg:grid-cols-[1fr_420px] lg:items-center" : "max-w-4xl"
+        }`}
       >
         <div>
           <p className="text-xs font-extrabold uppercase tracking-[.16em] text-brand-orange">

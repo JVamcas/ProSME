@@ -50,8 +50,8 @@ export const revalidateCollection: CollectionAfterChangeHook = ({
   revalidate(
     collection.slug,
     [
-      ...collectionPaths(collection.slug, slug, root),
-      ...collectionPaths(collection.slug, previousSlug, root),
+      ...collectionPaths(collection.slug, slug, root, doc.id),
+      ...collectionPaths(collection.slug, previousSlug, root, previousDoc?.id),
     ],
     collection.slug === "media",
   );
@@ -68,16 +68,22 @@ export const revalidateCollectionDelete: CollectionAfterDeleteHook = ({
   const slug = typeof doc.slug === "string" ? doc.slug : undefined;
   revalidate(
     collection.slug,
-    collectionPaths(collection.slug, slug, root),
+    collectionPaths(collection.slug, slug, root, doc.id),
     collection.slug === "media",
   );
   return doc;
 };
 
-function collectionPaths(collection: string, slug?: string, root?: string) {
+function collectionPaths(
+  collection: string,
+  slug?: string,
+  root?: string,
+  id?: number | string,
+) {
+  const detail = collection === "news" ? id : slug;
   const paths = [
     root,
-    root && slug ? `${root}/${slug}` : undefined,
+    root && detail ? `${root}/${detail}` : undefined,
     collection === "pages" && slug ? `/${slug}` : undefined,
   ];
   if (

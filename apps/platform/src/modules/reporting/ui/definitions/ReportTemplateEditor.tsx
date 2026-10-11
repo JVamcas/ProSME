@@ -7,7 +7,7 @@ import { FormProvider, useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { PageShell } from "@/shared/ui/PageShell";
 import { GeneralButton } from "@/components/ui/button";
-import { StepProgress } from "@/components/ui/step-progress";
+import { StepProgress } from "@/shared/ui/StepProgress";
 import { QuerySection } from "@/shared/ui/QuerySection";
 import { Skeleton } from "@/shared/ui/Skeleton";
 import { permissionCodes } from "@/auth/authorization/permissions";

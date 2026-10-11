@@ -1,4 +1,5 @@
 import { fundingOverviewSection } from "@/modules/content/FundingOverviewSections";
+import { newsArticleHref } from "@/modules/content/NewsArticlePath";
 
 const publicPath = (path: string) => `/api/preview?path=${encodeURIComponent(path)}`;
 
@@ -7,8 +8,8 @@ export function pagePreviewUrl({ slug }: { slug?: string | null }) {
   return publicPath(slug ? `/${slug}` : "/");
 }
 
-export function newsPreviewUrl({ slug }: { slug?: string | null }) {
-  return publicPath(slug ? `/news/${slug}` : "/news");
+export function newsPreviewUrl({ id }: { id?: number | string | null }) {
+  return publicPath(id ? newsArticleHref(id) : "/news");
 }
 
 export function eventPreviewUrl({ slug }: { slug?: string | null }) {

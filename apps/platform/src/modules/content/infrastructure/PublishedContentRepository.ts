@@ -57,6 +57,12 @@ export const readPublishedNews = cachePublishedContent(
   ["news"],
 );
 
+export const readPublishedNewsArticle = cachePublishedContent(
+  (id: number) => content.readNewsById(id, publishedMode),
+  "news-article-media",
+  ["news"],
+);
+
 export const readPublishedEvents = cachePublishedContent(
   () => content.readEventsDocuments(publishedMode),
   "events",
