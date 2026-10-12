@@ -43,6 +43,12 @@ export const revalidateCollection: CollectionAfterChangeHook = ({
   req,
 }) => {
   if (req.context?.skipRevalidation) return doc;
+  // Payload creates the initial autosave draft while rendering the CMS page.
+  // Private drafts cannot change public reads, and Next forbids invalidating
+  // its cache during render. Preserve invalidation when content is unpublished.
+  if (doc._status === "draft" && previousDoc?._status !== "published") {
+    return doc;
+  }
   const root = roots[collection.slug];
   const slug = typeof doc.slug === "string" ? doc.slug : undefined;
   const previousSlug =

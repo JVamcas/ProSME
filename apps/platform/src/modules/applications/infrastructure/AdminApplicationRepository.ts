@@ -3,6 +3,9 @@ import { workflowHasActiveApplicationHold } from "@/modules/workflows/infrastruc
 
 import { sql } from "drizzle-orm";
 
+import { adminApplicationStatusPredicate, adminApplicationPublicStatusSql } from "./AdminApplicationStatusSql";
+import { adminApplicationDemographicFilters } from "./AdminApplicationListFilters";
+
 import { getDatabase } from "@/db/client";
 import type { AdminApplicationCursor } from "@/modules/applications/AdminApplicationCursor";
 import { projectApplicantStatus } from "@/modules/applications/domain/ApplicantStatusProjection";
@@ -75,17 +78,6 @@ function visibilityFilter(actorId: string, visibility: "all" | "assigned") {
   )`;
 }
 
-function statusFilter(status: AdminApplicationListInput["status"]) {
-  if (status === "all") return sql`TRUE`;
-  const code = status.replaceAll("-", "_").toUpperCase();
-  return sql`CASE
-    WHEN workflow.status IN ('COMPLETED', 'CANCELLED', 'REJECTED')
-      THEN COALESCE(workflow.public_status->>'status', 'CLOSED')
-    WHEN ${aliasedApplicationOpenRfiExists} THEN 'ACTION_REQUIRED'
-    ELSE COALESCE(stage_definition.applicant_status, 'SUBMITTED')
-  END = ${code}`;
-}
-
 function applicationSearch(search?: string) {
   if (!search) return sql`TRUE`;
   const pattern = `%${search}%`;
@@ -134,12 +126,7 @@ function applicationQuery(input: {
         application.submitted_at AS "submittedAt",
         COALESCE(workflow.terminal_outcome, stage_definition.name, 'Submitted')
           AS "internalStatus",
-        CASE
-          WHEN workflow.status IN ('COMPLETED', 'CANCELLED', 'REJECTED')
-            THEN COALESCE(workflow.public_status->>'status', 'CLOSED')
-          WHEN ${aliasedApplicationOpenRfiExists} THEN 'ACTION_REQUIRED'
-          ELSE COALESCE(stage_definition.applicant_status, 'SUBMITTED')
-        END AS "applicantStatus",
+        ${adminApplicationPublicStatusSql} AS "applicantStatus",
         stage_definition.name AS "activeStageName",
         COALESCE(task_summary.active_count, 0)::integer AS "activeTaskCount",
         task_summary.role_names AS "assignedRoleName",
@@ -151,6 +138,10 @@ function applicationQuery(input: {
       JOIN app_users applicant ON applicant.id = application.owner_user_id
       LEFT JOIN app_business_profiles business
         ON business.id = application.business_id
+      LEFT JOIN app_applicant_profiles profile
+        ON profile.user_id = application.owner_user_id
+      LEFT JOIN app_application_submission_snapshots snapshot
+        ON snapshot.id = application.submission_snapshot_id
       LEFT JOIN app_workflow_instances workflow ON workflow.application_id = application.id
       LEFT JOIN app_workflow_stage_instances stage
         ON stage.id = workflow.current_stage_instance_id
@@ -169,9 +160,10 @@ function applicationQuery(input: {
       ) task_summary ON TRUE
       WHERE application.status = 'submitted'
         AND ${visibilityFilter(input.actorId, input.visibility)}
-        AND ${statusFilter(input.filters.status)}
+        AND ${adminApplicationStatusPredicate(input.filters.status)}
         AND ${applicationSearch(input.filters.search)}
         AND ${stageFilter(input.filters.stage)}
+        AND ${adminApplicationDemographicFilters(input.filters)}
     )
     SELECT filtered.*, (SELECT count(*)::integer FROM filtered) AS "totalCount"
     FROM filtered

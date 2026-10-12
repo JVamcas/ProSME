@@ -1,3 +1,4 @@
+import * as migration_20261012_170000_news_autosave from "./20261012_170000_news_autosave";
 import * as migration_20261012_160000_public_page_visibility from "./20261012_160000_public_page_visibility";
 import * as migration_20261011_120000_event_metadata from "./20261011_120000_event_metadata";
 import * as migration_20260911_180817_phase1_payload_foundation from './20260911_180817_phase1_payload_foundation';
@@ -132,5 +133,10 @@ export const migrations = [
     up: migration_20261012_160000_public_page_visibility.up,
     down: migration_20261012_160000_public_page_visibility.down,
     name: "20261012_160000_public_page_visibility",
+  },
+  {
+    up: migration_20261012_170000_news_autosave.up,
+    down: migration_20261012_170000_news_autosave.down,
+    name: "20261012_170000_news_autosave",
   },
 ];

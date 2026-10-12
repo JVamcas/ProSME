@@ -32,16 +32,40 @@ beforeEach(() => vi.resetAllMocks());
 
 describe("published content invalidation", () => {
   it.each(["pages", "news", "resources", "events", "faqs", "programme-statistics", "eligibility-content"])(
-    "immediately expires %s on publication, unpublication and draft changes",
+    "immediately expires %s on publication and unpublication",
     (source) => {
       for (const status of ["published", "draft"]) {
         const doc = { slug: "guide", _status: status };
-        expect(revalidateCollection({
-          collection: { slug: source }, doc, req: { context: {} },
-        } as unknown as Parameters<CollectionAfterChangeHook>[0])).toBe(doc);
+        revalidateCollection({
+          collection: { slug: source },
+          doc,
+          previousDoc: { _status: "published" },
+          req: { context: {} },
+        } as unknown as Parameters<CollectionAfterChangeHook>[0]);
+        expect(state.tag).toHaveBeenCalledTimes(status === "published" ? 1 : 2);
       }
       expect(state.tag).toHaveBeenCalledWith(`cms-published:${source}`, { expire: 0 });
       expect(state.path).toHaveBeenCalledWith("/sitemap.xml");
+    },
+  );
+
+  it.each([undefined, { _status: "draft" }])(
+    "keeps initial and existing private News drafts out of public cache invalidation",
+    (previousDoc) => {
+      state.tag.mockImplementation(() => {
+        throw new Error("Cache invalidation is forbidden during render");
+      });
+      const doc = { id: 42, _status: "draft" };
+      const result = revalidateCollection({
+        collection: { slug: "news" },
+        doc,
+        previousDoc,
+        req: { context: {} },
+      } as unknown as Parameters<CollectionAfterChangeHook>[0]);
+
+      expect(result).toBe(doc);
+      expect(state.tag).not.toHaveBeenCalled();
+      expect(state.path).not.toHaveBeenCalled();
     },
   );
 

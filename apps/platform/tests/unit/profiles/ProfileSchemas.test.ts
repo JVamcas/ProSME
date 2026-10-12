@@ -22,6 +22,19 @@ describe("P3.1 profile validation", () => {
     expect(result.success).toBe(true);
   });
 
+  it("accepts optional gender and rejects unsupported values", () => {
+    const profile = {
+      firstName: "Anna", surname: "Ndeitunga", position: "Director",
+      phoneNumber: "+264810000000", dateOfBirth: "1990-06-12",
+      nationality: "Namibian", region: "Khomas", postalAddress: "",
+    };
+    expect(applicantProfileSchema.parse({ ...profile, gender: "Female" }).gender)
+      .toBe("Female");
+    expect(applicantProfileSchema.safeParse({ ...profile, gender: "invalid" }).success)
+      .toBe(false);
+    expect(applicantProfileSchema.safeParse(profile).success).toBe(true);
+  });
+
   it("rejects incomplete business details and invalid numeric values", () => {
     const result = businessProfileSchema.safeParse({
       legalName: "",

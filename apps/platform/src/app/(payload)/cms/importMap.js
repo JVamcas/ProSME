@@ -33,6 +33,7 @@ import { default as default_d0484b163bd5b044ded8c264ccf5467f } from '../../../mo
 import { default as default_4ac93a96741f7ef512dccd0b6ce48787 } from '../../../modules/content/ui/admin/CmsFundingOverviewGroupField.tsx'
 import { CmsPublishButton as CmsPublishButton_56dac0e05405877c95d4c8c117aba5fa } from '../../../modules/content/ui/admin/CmsDocumentButtons.tsx'
 import { CmsSaveDraftButton as CmsSaveDraftButton_56dac0e05405877c95d4c8c117aba5fa } from '../../../modules/content/ui/admin/CmsDocumentButtons.tsx'
+import { BlocksFeatureClient as BlocksFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
 import { default as default_ba4124c6cd98666f4a90373b2bb69bea } from '../../../modules/content/ui/admin/CmsFormDateInput.tsx'
 import { default as default_c888d54e703a4b1befb9e8daeff6033c } from '../../../modules/content/ui/admin/CmsNewsContentGroupField.tsx'
 import { default as default_02b516385fddcc4e4dce4bdb8f63da30 } from '../../../modules/content/ui/admin/CmsResourceContentGroupField.tsx'
@@ -102,6 +103,7 @@ export const importMap = {
   "./modules/content/ui/admin/CmsFundingOverviewGroupField.tsx#default": default_4ac93a96741f7ef512dccd0b6ce48787,
   "./modules/content/ui/admin/CmsDocumentButtons.tsx#CmsPublishButton": CmsPublishButton_56dac0e05405877c95d4c8c117aba5fa,
   "./modules/content/ui/admin/CmsDocumentButtons.tsx#CmsSaveDraftButton": CmsSaveDraftButton_56dac0e05405877c95d4c8c117aba5fa,
+  "@payloadcms/richtext-lexical/client#BlocksFeatureClient": BlocksFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
   "./modules/content/ui/admin/CmsFormDateInput.tsx#default": default_ba4124c6cd98666f4a90373b2bb69bea,
   "./modules/content/ui/admin/CmsNewsContentGroupField.tsx#default": default_c888d54e703a4b1befb9e8daeff6033c,
   "./modules/content/ui/admin/CmsResourceContentGroupField.tsx#default": default_02b516385fddcc4e4dce4bdb8f63da30,

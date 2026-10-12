@@ -20,7 +20,7 @@ export function PublicFundingCallCard({
 
   return (
     <article className="group relative flex h-full flex-col overflow-hidden rounded-xl border border-brand-navy/15 bg-white shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-brand-orange/60 hover:shadow-md">
-      <div className="relative aspect-[3/2] overflow-hidden bg-brand-cream">
+      <div className="relative aspect-3/2 overflow-hidden bg-brand-cream">
         {call.thumbnailUrl ? (
           <FundingCallThumbnailImage
             alt=""
@@ -31,7 +31,7 @@ export function PublicFundingCallCard({
         ) : (
           <div
             aria-hidden
-            className="h-full bg-gradient-to-br from-brand-blue/20 via-brand-cream to-brand-orange/20"
+            className="h-full bg-linear-to-br from-brand-blue/20 via-brand-cream to-brand-orange/20"
           />
         )}
         <PublicFundingCallStatus
@@ -69,9 +69,7 @@ export function PublicFundingCallCard({
               <>
                 View call <ArrowRight aria-hidden className="size-4" />
               </>
-            ) : (
-              "Public interaction disabled"
-            )}
+            ) : null}
           </span>
           {enabled && call.selfCheckAvailable && call.status !== "closed" ? (
             <Link

@@ -2,6 +2,8 @@ import "server-only";
 
 import { sql } from "drizzle-orm";
 
+import { adminApplicationPublicStatusSql, adminApplicationPendingDecisionSql } from "@/modules/applications/infrastructure/AdminApplicationStatusSql";
+
 import { getDatabase } from "@/db/client";
 import type {
   AdminDashboardActivity,
@@ -64,6 +66,7 @@ function toActivities(
 type DashboardInput = {
   actorId: string;
   since: Date | null;
+  until: Date;
   visibility: "all" | "assigned" | "none";
 };
 
@@ -73,11 +76,10 @@ function dashboardCtes(input: DashboardInput) {
       SELECT
         application.id,
         application.reference,
-        application.submitted_at,
         workflow.id AS workflow_id,
-        workflow.status AS workflow_status,
         stage_definition.name AS stage_name,
-        stage_definition.applicant_status
+        ${adminApplicationPublicStatusSql} AS applicant_status,
+        ${adminApplicationPendingDecisionSql} AS pending_decision
       FROM app_applications application
       LEFT JOIN app_workflow_instances workflow
         ON workflow.application_id = application.id
@@ -87,6 +89,7 @@ function dashboardCtes(input: DashboardInput) {
         ON stage_definition.id = stage.workflow_stage_definition_id
       WHERE application.status = 'submitted'
         AND ${submittedPeriod(input.since)}
+        AND application.submitted_at <= ${input.until}
         AND ${applicationScope(input)}
     ), status_counts AS (
       SELECT COALESCE(stage_name, 'Submitted') AS label, count(*)::integer AS count
@@ -111,32 +114,13 @@ function dashboardCtes(input: DashboardInput) {
 
 const dashboardSelect = sql`
     SELECT
-      (SELECT count(*)::integer FROM app_workflow_rfis rfi
-        WHERE rfi.status = 'OPEN' AND EXISTS (
-          SELECT 1 FROM scoped_applications scoped
-          WHERE scoped.id = rfi.application_id
-        )) AS "informationRequests",
+      (SELECT count(*)::integer FROM scoped_applications
+        WHERE applicant_status = 'ACTION_REQUIRED') AS "informationRequests",
       (SELECT count(*)::integer FROM scoped_applications) AS "totalApplications",
       (SELECT count(*)::integer FROM scoped_applications
-        WHERE workflow_status = 'ACTIVE'
-          AND applicant_status = 'UNDER_REVIEW') AS "underReview",
-      (SELECT count(DISTINCT scoped.id)::integer
-        FROM scoped_applications scoped
-        JOIN app_workflow_stage_instances stage
-          ON stage.workflow_instance_id = scoped.workflow_id
-          AND stage.status IN ('ACTIVE', 'BLOCKED')
-        JOIN app_workflow_tasks task
-          ON task.stage_instance_id = stage.id
-          AND EXISTS (
-            SELECT 1 FROM app_stage_task_action_bindings binding
-            JOIN app_workflow_action_definitions action
-              ON action.stage_id = binding.stage_id
-              AND action.stable_key = binding.action_key
-            WHERE binding.task_definition_id = task.workflow_task_definition_id
-              AND action.action_type IN ('APPROVE_ADVANCE', 'REJECT')
-          )
-          AND task.status IN ('PENDING', 'IN_PROGRESS'))
-        AS "pendingDecision",
+        WHERE applicant_status = 'UNDER_REVIEW') AS "underReview",
+      (SELECT count(*)::integer FROM scoped_applications
+        WHERE pending_decision) AS "pendingDecision",
       COALESCE((SELECT json_agg(status_counts) FROM status_counts), '[]'::json)
         AS statuses,
       COALESCE((SELECT json_agg(recent_activity) FROM recent_activity), '[]'::json)

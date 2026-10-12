@@ -59,6 +59,7 @@ describe("admin dashboard service", () => {
     expect(readAdminDashboard).toHaveBeenCalledWith({
       actorId: "79e20de0-3558-4d63-90a4-8c9f5125df07",
       since: new Date("2026-08-16T10:00:00.000Z"),
+      until: now,
       visibility: "all",
     });
     expect(dashboard.metrics.informationRequests).toBe(2);

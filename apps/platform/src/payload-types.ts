@@ -404,6 +404,9 @@ export interface News {
   title: string;
   slug: string;
   excerpt: string;
+  /**
+   * Use the toolbar or / menu to add layout sections. Drag the handle beside a section to reorder it; use its controls to edit or remove it.
+   */
   body: {
     root: {
       type: string;

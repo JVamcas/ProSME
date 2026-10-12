@@ -14,7 +14,7 @@ import {
   applicantContactProfileSchema,
   type ApplicantContactProfileInput,
 } from "@/modules/profiles/ProfileSchemas";
-import { ApplicantProfileFields } from "./ApplicantProfileFields";
+import { ApplicantProfileFields } from "@/modules/profiles/ui/applicant/ApplicantProfileFields";
 import { ProfileFormActions } from "./ProfileFormActions";
 import { PortalLoadingState } from "@/shared/ui/portal/PortalLoadingState";
 

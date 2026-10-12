@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import { CmsRichText } from "@/modules/content/ui/public/CmsRichText";
+import { NewsArticleContent } from "@/modules/content/ui/public/NewsArticleContent";
 import { PublicPageHeader } from "@/modules/content/ui/public/PublicPageHeader";
 import { getNewsArticle } from "@/modules/content/ServerNewsService";
 import { contentMetadata } from "@/modules/content/ContentMetadata";
@@ -26,8 +26,8 @@ export default async function NewsDetailPage({ params }: Props) {
         summary={item.summary}
       />
       <article className="section">
-        <div className="container max-w-3xl">
-          <CmsRichText data={item.body} />
+        <div className="container max-w-6xl">
+          <NewsArticleContent data={item.body} />
         </div>
       </article>
     </>

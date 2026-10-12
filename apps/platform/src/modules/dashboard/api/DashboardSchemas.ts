@@ -27,6 +27,10 @@ export const adminDashboardSchema = z.object({
     underReview: count,
   }),
   period: dashboardPeriodSchema,
+  submissionWindow: z.object({
+    from: z.iso.datetime({ offset: true }).nullable(),
+    to: z.iso.datetime({ offset: true }),
+  }).optional(),
   statuses: z.array(z.object({ count, label: z.string() })),
   visibility: z.enum(["all", "assigned", "none"]),
 });

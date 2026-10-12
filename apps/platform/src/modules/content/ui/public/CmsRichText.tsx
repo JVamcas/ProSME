@@ -8,6 +8,7 @@ import {
 
 import { media } from "../../infrastructure/ContentProjection";
 import { CmsImage } from "./CmsImage";
+import styles from "./CmsRichText.module.css";
 
 const converters: JSXConvertersFunction = ({ defaultConverters }) => ({
   ...defaultConverters,
@@ -50,13 +51,26 @@ export type CmsRichTextUploadProps = { node: SerializedUploadNode };
 export function CmsRichText({
   data,
   MediaUpload,
+  additionalConverters,
 }: {
   data: SerializedEditorState;
   MediaUpload?: ComponentType<CmsRichTextUploadProps>;
+  additionalConverters?: JSXConvertersFunction;
 }) {
   const renderConverters: JSXConvertersFunction = (args) => {
-    const defaults = converters(args);
-    if (!MediaUpload) return defaults;
+    const baseConverters = converters(args);
+    const defaults = additionalConverters
+      ? {
+          ...baseConverters,
+          ...additionalConverters({
+            ...args,
+            defaultConverters: baseConverters,
+          }),
+        }
+      : baseConverters;
+    if (!MediaUpload) {
+      return defaults;
+    }
 
     return {
       ...defaults,
@@ -73,6 +87,10 @@ export function CmsRichText({
   };
 
   return (
-    <RichText className="cms-rich-text" converters={renderConverters} data={data} />
+    <RichText
+      className={`cms-rich-text ${styles.content}`}
+      converters={renderConverters}
+      data={data}
+    />
   );
 }

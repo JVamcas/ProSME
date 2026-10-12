@@ -33,14 +33,17 @@ export async function getAdminDashboard(
 ): Promise<AdminDashboardView> {
   const actor = requireOperationsPortalAccess(user);
   const visibility = visibilityFor(actor);
+  const since = periodStart(period, now);
   const projection = await readAdminDashboard({
     actorId: actor.id,
-    since: periodStart(period, now),
+    since,
+    until: now,
     visibility,
   });
   return {
     ...projection,
     period,
+    submissionWindow: { from: since?.toISOString() ?? null, to: now.toISOString() },
     visibility,
   };
 }

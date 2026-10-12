@@ -1,0 +1,46 @@
+.content {
+  color: #334155;
+  font-size: 1rem;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+
+.content :where(p, ul, ol, blockquote, h2, h3, h4) {
+  margin-block: 0;
+}
+
+.content > * + * {
+  margin-top: 1.25rem;
+}
+
+.content h2 {
+  color: #0a183b;
+  font-size: 1.75rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.content h3 {
+  color: #0a183b;
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.content ul,
+.content ol {
+  padding-left: 1.5rem;
+}
+
+.content ul {
+  list-style: disc;
+}
+
+.content ol {
+  list-style: decimal;
+}
+
+.content a {
+  color: var(--color-brand-navy);
+  font-weight: 700;
+  text-decoration: underline;
+}

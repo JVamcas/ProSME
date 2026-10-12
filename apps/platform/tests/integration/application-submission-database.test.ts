@@ -221,6 +221,7 @@ describeDatabase("P3.4 transactional application submission", () => {
   });
   it("projects dashboard metrics from persisted, access-scoped records", async () => {
     const all = await readAdminDashboard({
+      until: new Date(),
       actorId: ownerId,
       since: new Date("2026-01-01T00:00:00.000Z"),
       visibility: "all",
@@ -244,12 +245,14 @@ describeDatabase("P3.4 transactional application submission", () => {
       eventCode: "APPLICATION_SUBMITTED",
     });
     const assigned = await readAdminDashboard({
+      until: new Date(),
       actorId: submissionReviewerId,
       since: null,
       visibility: "assigned",
     });
     expect(assigned.metrics.totalApplications).toBe(1);
     const hidden = await readAdminDashboard({
+      until: new Date(),
       actorId: ownerId,
       since: null,
       visibility: "none",

@@ -97,6 +97,11 @@ describe("notification delivery history states", () => {
 
     const { container, root } = await renderHistory(true);
 
+    expect(container.querySelector("table")).not.toBeNull();
+    expect(container.textContent).toContain("Delivery filters");
+    expect(container.textContent).toContain("application.submitted");
+    expect(container.textContent).toContain("applicant@example.test");
+    expect(container.textContent).toContain("SME Fund-2026-005");
     expect(container.textContent).toContain("Needs attention");
     expect(container.textContent).toContain("after several attempts");
     expect(container.textContent).not.toContain("NOTIFICATION_RETRY_EXHAUSTED");

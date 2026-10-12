@@ -145,6 +145,7 @@ export const adminApplicationStatuses = [
   "action-required",
   "outcome-available",
   "closed",
+  "pending-decision",
 ] as const;
 
 export type AdminApplicationStatusFilter =
@@ -171,6 +172,15 @@ export type AdminApplicationListRow = {
 };
 
 export type AdminApplicationListInput = {
+  gender?: string;
+  ageMin?: number;
+  ageMax?: number;
+  region?: string;
+  sector?: string;
+  submittedAfter?: string;
+  submittedBefore?: string;
+  submittedFrom?: string;
+  submittedTo?: string;
   after?: string;
   limit: number;
   search?: string;

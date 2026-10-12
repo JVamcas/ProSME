@@ -1,6 +1,7 @@
 import { FormInput, FormSelect, FormTextarea } from "@/components/ui/form-fields";
 import { FormDateInput } from "@/shared/ui/FormDateInput";
 import {
+  applicantGenders,
   namibianRegions,
   selectItems,
 } from "@/modules/profiles/ProfileOptions";
@@ -36,6 +37,13 @@ export function ApplicantProfileFields({
           disabled={disabled}
           label="Date of birth"
           name="dateOfBirth"
+        />
+        <FormSelect
+          disabled={disabled}
+          label="Gender (optional)"
+          name="gender"
+          items={selectItems(applicantGenders)}
+          placeholder="Select gender"
         />
         <FormInput
           disabled={disabled}

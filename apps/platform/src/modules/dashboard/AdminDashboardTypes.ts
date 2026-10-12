@@ -24,6 +24,7 @@ export type AdminDashboardView = {
     underReview: number;
   };
   period: AdminDashboardPeriod;
+  submissionWindow?: { from: string | null; to: string };
   statuses: AdminDashboardStatus[];
   visibility: "all" | "assigned" | "none";
 };

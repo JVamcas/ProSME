@@ -1,5 +1,5 @@
 import { ContactProfileForm } from "./ContactProfileForm";
-import { PersonalProfileForm } from "./PersonalProfileForm";
+import { PersonalProfileForm } from "@/modules/profiles/ui/applicant/PersonalProfileForm";
 import { PageHeader, PageShell } from "@/shared/ui/PageShell";
 import { ProfilePasswordPanel } from "./ProfilePasswordPanel";
 import type { ProfileTabId } from "./ProfileWorkspace";

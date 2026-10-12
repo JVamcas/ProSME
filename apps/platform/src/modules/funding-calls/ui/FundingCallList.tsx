@@ -45,7 +45,19 @@ function columns(
     {
       accessorKey: "status",
       header: "Status",
-      cell: ({ row }) => <StatusBadge status={row.original.status} />,
+      cell: ({ row }) => {
+        const interactionEnabled = row.original.publicInteractionEnabled !== false;
+
+        return (
+          <div className="flex flex-col items-start gap-1">
+            <StatusBadge status={row.original.status} />
+            <StatusBadge
+              label={`Public interaction ${interactionEnabled ? "enabled" : "disabled"}`}
+              status={interactionEnabled ? "active" : "disabled"}
+            />
+          </div>
+        );
+      },
     },
     {
       accessorKey: "opensAt",

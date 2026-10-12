@@ -97,4 +97,48 @@ describe("Native CMS news editor", () => {
     expect(html).toContain('alt="Inside the article"');
     expect(html).toContain("body-desktop.webp");
   });
+
+  it("resolves layout image IDs in the shared article preview", () => {
+    state.embeddedMedia = {
+      url: "/media/section.jpg",
+      mimeType: "image/jpeg",
+      alt: "Section photo",
+      sizes: {
+        desktop: { url: "/media/section-desktop.webp", width: 1600 },
+      },
+    };
+    state.fields.body = {
+      value: {
+        root: {
+          type: "root",
+          version: 1,
+          direction: null,
+          format: "",
+          indent: 0,
+          children: [{
+            type: "block",
+            version: 2,
+            fields: {
+              id: "section-1",
+              blockType: "articleTextImage",
+              heading: "Advisory services",
+              image: 123,
+              imagePosition: "left",
+              caption: "A workshop",
+              button: { label: "Contact us", href: "/contact" },
+            },
+          }],
+        },
+      },
+    };
+    const html = renderToStaticMarkup(
+      <CmsNewsContentGroupField {...({ path: "" } as GroupFieldClientProps)} />,
+    );
+    expect(html).toContain('alt="Section photo"');
+    expect(html).toContain('data-image-position="left"');
+    expect(html).toContain("Advisory services");
+    expect(html).toContain("A workshop");
+    expect(html).toContain('href="/contact"');
+    expect(html).toContain("max-w-6xl");
+  });
 });

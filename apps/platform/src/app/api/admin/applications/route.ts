@@ -4,7 +4,7 @@ import {
   portalListRouteSuccess,
   portalRouteError,
 } from "@/lib/api/PortalApiResponse";
-import { adminApplicationListSchema } from "@/modules/applications/AdminApplicationSchemas";
+import { adminApplicationListSchema } from "@/modules/applications/api/AdminApplicationSchemas";
 import { listAdminApplications } from "@/modules/applications/ServerAdminApplicationService";
 
 

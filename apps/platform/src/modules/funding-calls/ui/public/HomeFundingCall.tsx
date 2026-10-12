@@ -93,11 +93,7 @@ export function HomeFundingCall({
                 >
                   View call details
                 </GeneralButtonLink>
-              ) : (
-                <GeneralButton variant="outlineOrange" disabled>
-                  Public interaction disabled
-                </GeneralButton>
-              )}
+              ) : null}
               <GeneralButtonLink variant="outlineOrange" href="/portal">
                 Track application
               </GeneralButtonLink>

@@ -16,6 +16,7 @@ const applicantColumns = {
   position: applicantProfiles.position,
   phoneNumber: applicantProfiles.phoneNumber,
   dateOfBirth: applicantProfiles.dateOfBirth,
+  gender: applicantProfiles.gender,
   nationality: applicantProfiles.nationality,
   region: applicantProfiles.region,
   postalAddress: applicantProfiles.postalAddress,
@@ -29,6 +30,7 @@ type ApplicantProfileRow = {
   position: string;
   phoneNumber: string;
   dateOfBirth: string | null;
+  gender?: string | null;
   nationality: string;
   region: string;
   postalAddress: string;
@@ -63,6 +65,7 @@ export async function saveApplicantProfile(
       ? {
           ...input.data,
           dateOfBirth: input.data.dateOfBirth || null,
+          gender: input.data.gender || null,
         }
       : input.data;
 
