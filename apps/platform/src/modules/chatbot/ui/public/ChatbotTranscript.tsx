@@ -118,9 +118,21 @@ export function ChatbotTranscript({
           <ChatbotMessageBubble sender="assistant">
             <p
               role="status"
-              className="text-brand-navy/65 motion-safe:animate-pulse"
+              className="text-brand-navy/65"
             >
-              Finding an answer…
+              <span className="sr-only">Thinking...</span>
+              <span aria-hidden="true" className="inline-flex items-baseline">
+                Thinking
+                {[0, 150, 300].map((delay) => (
+                  <span
+                    key={delay}
+                    className="inline-block motion-safe:animate-bounce"
+                    style={{ animationDelay: `${delay}ms` }}
+                  >
+                    .
+                  </span>
+                ))}
+              </span>
             </p>
           </ChatbotMessageBubble>
         </div>

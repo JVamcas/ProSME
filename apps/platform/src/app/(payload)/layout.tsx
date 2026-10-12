@@ -1,4 +1,5 @@
 import config from "@payload-config";
+import { AntdRegistry } from "@ant-design/nextjs-registry";
 import "@payloadcms/next/css";
 import { RootLayout, handleServerFunctions } from "@payloadcms/next/layouts";
 import { redirect } from "next/navigation";
@@ -36,10 +37,12 @@ export default async function PayloadLayout({ children }: Props) {
       serverFunction={serverFunction}
       htmlProps={{ className: cmsAdminClassName }}
     >
-      <WorkspaceFrame className={cmsWorkspaceStyles.frame}>
-        <CmsSessionActivity />
-        {children}
-      </WorkspaceFrame>
+      <AntdRegistry>
+        <WorkspaceFrame className={cmsWorkspaceStyles.frame}>
+          <CmsSessionActivity />
+          {children}
+        </WorkspaceFrame>
+      </AntdRegistry>
     </RootLayout>
   );
 }

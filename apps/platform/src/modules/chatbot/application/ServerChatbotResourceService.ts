@@ -18,6 +18,7 @@ import {
   readActiveResourceSelection,
 } from "../infrastructure/ChatbotResourceRepository";
 import { prepareKnowledgeSources } from "./ServerChatbotKnowledgeService";
+import { chatbotDocumentLimits } from "../domain/ChatbotDocument";
 
 export async function retiredChatbotKnowledgeWorkflow(
   user: AuthenticatedUser | null,
@@ -35,7 +36,9 @@ export async function prepareActiveResourceKnowledge(
   if (
     selection.fundingCallIds.length > chatbotLimits.selectedCalls ||
     (selection.eligibilityCallIds?.length ?? 0) > chatbotLimits.selectedCalls ||
-    selection.faqIds.length > chatbotLimits.selectedFaqs
+    selection.faqIds.length > chatbotLimits.selectedFaqs ||
+    (selection.documentIds?.length ?? 0) >
+      chatbotDocumentLimits.selectedDocuments
   ) {
     throw new RequestValidationError(
       "Too many active resources. Deactivate some resources and try again.",

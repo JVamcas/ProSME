@@ -1,5 +1,35 @@
-import type { CmsImage, CmsImageVariant } from "../ContentTypes";
+import type { CmsImage, CmsImageVariant, ListingItem } from "../ContentTypes";
+import type { News } from "@/payload-types";
 import { cmsImageSizes } from "../ContentImageSizes";
+
+type NewsItemProjection = Pick<
+  News,
+  | "id"
+  | "body"
+  | "publishedAt"
+  | "image"
+  | "slug"
+  | "excerpt"
+  | "title"
+  | "excludeFromSearch"
+  | "seoDescription"
+  | "seoTitle"
+>;
+
+export function newsItem(item: NewsItemProjection): ListingItem {
+  return {
+    body: item.body,
+    date: item.publishedAt,
+    id: item.id,
+    image: media(item.image),
+    slug: item.slug,
+    summary: item.excerpt,
+    title: item.title,
+    excludeFromSearch: item.excludeFromSearch,
+    seoDescription: item.seoDescription,
+    seoTitle: item.seoTitle,
+  };
+}
 
 export function media(value: unknown): CmsImage | undefined {
   if (

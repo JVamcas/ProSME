@@ -1,4 +1,4 @@
-import { BadgeQuestionMark, ListTodo, ShieldCheck } from "lucide-react";
+import { BadgeQuestionMark, CalendarDays, ListTodo, ShieldCheck } from "lucide-react";
 
 import { permissionCodes } from "@/auth/authorization/permissions";
 import type { PortalRoute } from "./portal-navigation";
@@ -30,5 +30,18 @@ export const processMonitorPortalRoutes: readonly PortalRoute[] = [
     icon: BadgeQuestionMark,
     space: "operations",
     requiredPermission: permissionCodes.chatbotEscalationReadAll,
+  },
+  {
+    id: "admin-events",
+    section: "process-monitor",
+    href: "/admin/events",
+    label: "Events",
+    icon: CalendarDays,
+    space: "operations",
+    requiredAnyPermissions: [
+      permissionCodes.eventRegistrationsReadAll,
+      permissionCodes.eventRegistrationSettingsReadAll,
+      permissionCodes.eventEmailDeliveryReadAll,
+    ],
   },
 ];

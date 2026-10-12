@@ -32,7 +32,7 @@ export async function SiteHeader() {
         </div>
       </div>
 
-      <div className="bg-brand-orange text-brand-navy">
+      <div className="bg-brand-orange text-brand-white">
         <div className="container flex h-[76px] items-center justify-between gap-6">
           <Link href="/" aria-label="SME Fund home">
             <Image

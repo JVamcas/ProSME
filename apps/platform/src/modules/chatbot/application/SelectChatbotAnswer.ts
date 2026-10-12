@@ -19,10 +19,10 @@ export function unresolvedChatbotAnswer(
     reason,
     text:
       reason === "SERVICE_FAILURE"
-        ? "Programme guidance is temporarily unavailable."
+        ? "I’m unable to answer right now. Please try again shortly."
         : reason === "AMBIGUOUS_CALL"
-          ? "Which funding call is your question about?"
-          : "I cannot confirm an answer from the approved public guidance. Support staff can review this question.",
+          ? "Which funding call are you asking about?"
+          : "I couldn’t find an answer to your question. Support staff can review this question.",
     passages: [],
     sourceIds: [],
     releaseId,

@@ -77,7 +77,7 @@ describe("CMS navigation", () => {
   it("uses one Website content heading for its top-level destinations", () => {
     const html = renderToStaticMarkup(<CmsNavigationLinks />);
 
-    expect(html.match(/>Website content<\/p>/g)).toHaveLength(1);
+    expect(html.match(/>Website content<\/span>/g)).toHaveLength(1);
     expect(html.indexOf("Website content")).toBeLessThan(html.indexOf("Home Page"));
     expect(html).toContain("About");
     expect(html).toContain("Resource Centre");

@@ -4,6 +4,7 @@ import { ArrowDown, ArrowRight, ArrowUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type MetricSummaryProps = {
+  compact?: boolean;
   icon: LucideIcon;
   iconTone?: "blue" | "green" | "orange" | "violet";
   change?: number | null;
@@ -22,6 +23,7 @@ const iconToneClasses = {
 };
 
 export function DashboardMetricSummary({
+  compact = false,
   icon: Icon,
   iconTone = "blue",
   change,
@@ -31,6 +33,26 @@ export function DashboardMetricSummary({
   value,
   supportingText,
 }: MetricSummaryProps) {
+  if (compact) {
+    return (
+      <article className="flex min-w-0 items-center gap-4 rounded-lg border border-slate-200 bg-white p-5">
+        <Icon
+          aria-hidden="true"
+          className="size-8 shrink-0 text-brand-orange"
+        />
+        <div className="min-w-0">
+          <p className="text-sm text-brand-navy">{label}</p>
+          <p className="mt-2 text-3xl font-bold leading-none text-brand-navy">
+            {value}
+          </p>
+          {supportingText ? (
+            <p className="mt-2 text-xs text-slate-600">{supportingText}</p>
+          ) : null}
+        </div>
+      </article>
+    );
+  }
+
   const isPositive = change != null && change > 0;
   const isNegative = change != null && change < 0;
   const ChangeIcon = isNegative ? ArrowDown : ArrowUp;
@@ -51,9 +73,7 @@ export function DashboardMetricSummary({
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="truncate text-sm font-medium text-slate-600">
-            {label}
-          </p>
+          <p className="truncate text-sm font-medium text-slate-600">{label}</p>
 
           <p className="mt-2 text-[2rem] font-bold leading-none tracking-tight text-brand-navy">
             {value}
@@ -77,9 +97,7 @@ export function DashboardMetricSummary({
               "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-sm font-semibold",
               isPositive && "bg-emerald-50 text-emerald-700",
               isNegative && "bg-red-50 text-red-600",
-              !isPositive &&
-                !isNegative &&
-                "bg-slate-50 text-slate-600",
+              !isPositive && !isNegative && "bg-slate-50 text-slate-600",
             )}
           >
             <ChangeIcon aria-hidden="true" className="size-3.5" />

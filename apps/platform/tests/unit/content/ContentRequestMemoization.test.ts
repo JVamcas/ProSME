@@ -26,7 +26,7 @@ beforeAll(() => {
 
 describe("CMS reads in the real React server renderer", () => {
   it("coalesces concurrent and sequential identical reads while separating slugs", () => {
-    expect(evidence.deduplication.readsWithMemoization).toBe(17);
+    expect(evidence.deduplication.readsWithMemoization).toBe(18);
   });
 
   it("reads new publications and excludes unpublished pages, resources and feeds on the next request", () => {

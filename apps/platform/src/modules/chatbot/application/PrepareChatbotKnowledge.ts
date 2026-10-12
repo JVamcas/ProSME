@@ -20,6 +20,8 @@ import { prepareEligibilityKnowledge } from "./PrepareEligibilityKnowledge";
 import { approvedKnowledgeDocument } from "../engine/ApprovedKnowledgeDocument";
 import type { ContactKnowledgeProjection } from "@/modules/content/application/ServerContactKnowledgeService";
 import { prepareContactKnowledge } from "./PrepareContactKnowledge";
+import type { ChatbotDocumentKnowledge } from "../domain/ChatbotDocument";
+import { prepareDocumentKnowledge } from "./PrepareDocumentKnowledge";
 
 function callKnowledge(call: FundingCallKnowledgeProjection) {
   const fields = call.publicFields;
@@ -89,6 +91,7 @@ export function prepareChatbotKnowledge(
     faqs: FaqKnowledgeProjection[];
     eligibility: PublicEligibilityKnowledge;
     contact?: ContactKnowledgeProjection | null;
+    documents?: ChatbotDocumentKnowledge[];
   },
 ): PreparedKnowledge {
   const snapshot: PreparedKnowledge = {
@@ -99,6 +102,9 @@ export function prepareChatbotKnowledge(
       ...(selection.contact ? { contact: true } : {}),
       ...(selection.eligibilityCallIds
         ? { eligibilityCallIds: [...selection.eligibilityCallIds].sort() }
+        : {}),
+      ...(selection.documentIds
+        ? { documentIds: [...selection.documentIds].sort() }
         : {}),
     },
     sources: [],
@@ -196,9 +202,20 @@ export function prepareChatbotKnowledge(
     snapshot.sources.push(record.source);
     snapshot.records.push(record);
   }
+  for (const document of data.documents ?? []) {
+    if (!selection.documentIds?.includes(document.id)) continue;
+    const prepared = prepareDocumentKnowledge(document);
+    snapshot.sources.push(prepared.source);
+    snapshot.records.push(...prepared.records);
+  }
   for (const [kind, ids, found] of [
     ["call", selection.fundingCallIds, data.calls.map((item) => item.id)],
     ["faq", selection.faqIds, data.faqs.map((item) => item.id)],
+    [
+      "document",
+      selection.documentIds ?? [],
+      (data.documents ?? []).map((item) => item.id),
+    ],
   ] as const) {
     for (const id of ids) {
       if (!found.includes(id))

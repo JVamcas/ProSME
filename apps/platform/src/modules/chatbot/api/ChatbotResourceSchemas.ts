@@ -7,7 +7,7 @@ export const chatbotResourceKeySchema = z
     if (key === "contact:contact-details") return true;
     const [type, id, extra] = key.split(":");
     if (extra !== undefined) return false;
-    if (type === "funding" || type === "eligibility")
+    if (type === "funding" || type === "eligibility" || type === "document")
       return z.uuid().safeParse(id).success;
     return (
       type === "faq" &&

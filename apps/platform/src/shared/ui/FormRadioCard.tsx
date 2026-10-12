@@ -1,6 +1,8 @@
 import { Check } from "lucide-react";
 import type { InputHTMLAttributes } from "react";
 
+import { Input, Label } from "./FormPrimitives";
+
 import { cn } from "@/lib/utils";
 
 type FormRadioCardProps = Omit<
@@ -19,7 +21,8 @@ export function FormRadioCard({
   ...props
 }: FormRadioCardProps) {
   return (
-    <label
+    <Label
+      unstyled
       className={cn(
         "flex min-h-14 cursor-pointer items-center gap-3 rounded-xl border bg-brand-white px-4 py-3 text-sm font-semibold text-brand-navy transition",
         "hover:border-brand-orange focus-within:ring-2 focus-within:ring-brand-orange/30",
@@ -27,7 +30,7 @@ export function FormRadioCard({
         className,
       )}
     >
-      <input
+      <Input
         {...props}
         checked={checked}
         className="sr-only"
@@ -42,7 +45,7 @@ export function FormRadioCard({
             : "border-brand-navy/30",
         )}
       >
-        {checked ? <Check className="size-3.5 text-brand-navy" /> : null}
+        {checked ? <Check className="size-3.5 text-brand-white" /> : null}
       </span>
       <span>
         <span className="block">{label}</span>
@@ -52,6 +55,6 @@ export function FormRadioCard({
           </span>
         ) : null}
       </span>
-    </label>
+    </Label>
   );
 }

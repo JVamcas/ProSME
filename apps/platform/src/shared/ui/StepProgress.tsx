@@ -29,7 +29,7 @@ function markerClassName(state: StepState) {
     return "border-brand-green bg-brand-green-soft text-brand-navy";
   }
   if (state === "current") {
-    return "border-brand-orange bg-brand-orange text-brand-navy";
+    return "border-brand-orange bg-brand-orange text-brand-white";
   }
   return "border-brand-navy/20 bg-brand-white text-brand-navy/60";
 }

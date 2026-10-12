@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { ArrowRight, CalendarDays } from "lucide-react";
 
 import { EmptyState } from "@/components/ui/empty-state";
-import { CmsImage } from "@/modules/content/ui/public/CmsImage";
+import { ContentListingCard } from "@/modules/content/ui/public/ContentListingCard";
 import { PublicPageHeader } from "@/modules/content/ui/public/PublicPageHeader";
 import { contentMetadata } from "@/modules/content/ContentMetadata";
 import { getNews, getPage } from "@/modules/content/ServerContentQueries";
@@ -29,39 +27,12 @@ export default async function NewsPage() {
           {news.length ? (
             <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
               {news.map((item) => (
-                <article
-                  className="card flex min-h-64 flex-col overflow-hidden"
+                <ContentListingCard
                   key={item.id}
-                >
-                  <CmsImage
-                    className="aspect-video w-full object-cover"
-                    image={item.image}
-                    sizes="(max-width: 768px) 100vw, 33vw"
-                  />
-                  <div className="flex flex-1 flex-col p-6">
-                    <p className="flex items-center gap-2 text-xs font-bold text-brand-navy">
-                      <CalendarDays className="size-4 text-brand-orange" />
-                      {item.date
-                        ? new Intl.DateTimeFormat("en-NA", {
-                            dateStyle: "medium",
-                          }).format(new Date(item.date))
-                        : "Programme update"}
-                    </p>
-                    <h2 className="mt-4 text-xl font-bold text-navy">
-                      {item.title}
-                    </h2>
-                    <p className="mt-3 text-sm leading-6 text-slate-600">
-                      {item.summary}
-                    </p>
-                    <Link
-                      href={`/news/${item.slug}`}
-                      className="mt-auto inline-flex items-center gap-2 pt-5 text-sm font-bold text-brand-navy"
-                    >
-                      Read update{" "}
-                      <ArrowRight className="size-4 text-brand-orange" />
-                    </Link>
-                  </div>
-                </article>
+                  item={item}
+                  kind="news"
+                  headingAs="h2"
+                />
               ))}
             </div>
           ) : (

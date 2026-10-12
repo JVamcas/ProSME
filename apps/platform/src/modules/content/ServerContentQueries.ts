@@ -1,7 +1,7 @@
 import "server-only";
 
 import { homeProcessContent, homeSupportContent } from "./HomeListContent";
-import { media } from "./infrastructure/ContentProjection";
+import { media, newsItem } from "./infrastructure/ContentProjection";
 import { connection } from "next/server";
 import { getContentReadMode as queryMode } from "./application/ServerContentReadService";
 import * as published from "./infrastructure/PublishedContentRepository";
@@ -20,6 +20,8 @@ import {
 } from "./infrastructure/PayloadContentRepository";
 
 import { cache } from "react";
+import { getEventBySlug } from "./application/ServerEventContentService";
+import { getNewsArticle } from "./ServerNewsService";
 import { defaultHomeActionCards } from "./ContentDefaults";
 
 import type {
@@ -189,16 +191,7 @@ export const getNews = cache(
     const result = mode.draft
       ? await readNewsDocuments(mode)
       : await published.readPublishedNews();
-    return result.docs.map((item) => ({
-      body: item.body,
-      date: item.publishedAt,
-      id: item.id,
-      image: media(item.image),
-      slug: item.slug,
-      summary: item.excerpt,
-      title: item.title,
-      ...seo(item),
-    }));
+    return result.docs.map(newsItem);
   },
 );
 
@@ -263,8 +256,8 @@ export const getEligibilityContent = cache(
 );
 
 export const getListingItem = cache(
-  async function getListingItem(kind: "news" | "events", slug: string) {
-    const items = kind === "news" ? await getNews() : await getEvents();
-    return items.find((item) => item.slug === slug) ?? null;
+  async function getListingItem(kind: "news" | "events", identifier: string) {
+    if (kind === "news") return getNewsArticle(identifier);
+    return getEventBySlug(identifier);
   },
 );

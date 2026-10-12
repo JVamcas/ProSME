@@ -52,7 +52,7 @@ export default function CmsSidebar({
         displayName={displayName}
         email={email}
         footer={<CmsLogoutButton collapsed={isCollapsed} />}
-        logoHref="/cms"
+        logoHref="/"
         onClose={() => setNavOpen(false)}
         onToggleCollapsed={() => setCollapsed((current) => !current)}
         workspace={

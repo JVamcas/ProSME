@@ -33,7 +33,19 @@ import { default as default_d0484b163bd5b044ded8c264ccf5467f } from '../../../mo
 import { default as default_4ac93a96741f7ef512dccd0b6ce48787 } from '../../../modules/content/ui/admin/CmsFundingOverviewGroupField.tsx'
 import { CmsPublishButton as CmsPublishButton_56dac0e05405877c95d4c8c117aba5fa } from '../../../modules/content/ui/admin/CmsDocumentButtons.tsx'
 import { CmsSaveDraftButton as CmsSaveDraftButton_56dac0e05405877c95d4c8c117aba5fa } from '../../../modules/content/ui/admin/CmsDocumentButtons.tsx'
+import { default as default_ba4124c6cd98666f4a90373b2bb69bea } from '../../../modules/content/ui/admin/CmsFormDateInput.tsx'
+import { default as default_c888d54e703a4b1befb9e8daeff6033c } from '../../../modules/content/ui/admin/CmsNewsContentGroupField.tsx'
 import { default as default_02b516385fddcc4e4dce4bdb8f63da30 } from '../../../modules/content/ui/admin/CmsResourceContentGroupField.tsx'
+import { default as default_f40c581a6f9a54ae6c6fac7025c14cb0 } from '../../../modules/content/ui/admin/CmsEventScheduleField.tsx'
+import { default as default_5a97639837d19ba9447d45fd03edbacc } from '../../../modules/content/ui/admin/CmsEventTimezoneField.tsx'
+import { default as default_35bb7f80ff69d85bf814038c5bbb0313 } from '../../../modules/content/ui/admin/CmsEventImageField.tsx'
+import { default as default_f5f71fc237c1fef800862c537891464f } from '../../../modules/content/ui/admin/CmsEventPublicationField.tsx'
+import { default as default_05744f5bc2054ad2f57ad9604ec42adb } from '../../../modules/content/ui/admin/CmsEventRegistrationPanel.tsx'
+import { default as default_84d7c7b9ac3b1bb7e3888ec573d0562a } from '../../../modules/content/ui/admin/CmsEventCategoryField.tsx'
+import { default as default_7a5456a211426b8bf8ec830c44928a00 } from '../../../modules/content/ui/admin/CmsEventRecordingField.tsx'
+import { default as default_fe630367e416dfe848f611d730cdd976 } from '../../../modules/content/ui/admin/CmsEventContentGroupField.tsx'
+import { default as default_28123680b9caecbf00788d7b5d71ff9f } from '../../../modules/content/ui/admin/CmsEventPublishButton.tsx'
+import { default as default_f96231c8ad637f55ae68535d809cf66e } from '../../../modules/content/ui/admin/CmsEventEditView.tsx'
 import { default as default_e2fe971cc551ca80076ea809d5d3cf9a } from '../../../modules/content/ui/admin/CmsHomeBannerGroupField.tsx'
 import { default as default_215e55acb36338729bbb967a1283370f } from '../../../modules/content/ui/admin/CmsHomeActionsGroupField.tsx'
 import { CmsHomeProcessGroupField as CmsHomeProcessGroupField_a919c79f1d80ff6e7030a7b8b3020dad } from '../../../modules/content/ui/admin/CmsHomeListsGroupField.tsx'
@@ -88,7 +100,19 @@ export const importMap = {
   "./modules/content/ui/admin/CmsFundingOverviewGroupField.tsx#default": default_4ac93a96741f7ef512dccd0b6ce48787,
   "./modules/content/ui/admin/CmsDocumentButtons.tsx#CmsPublishButton": CmsPublishButton_56dac0e05405877c95d4c8c117aba5fa,
   "./modules/content/ui/admin/CmsDocumentButtons.tsx#CmsSaveDraftButton": CmsSaveDraftButton_56dac0e05405877c95d4c8c117aba5fa,
+  "./modules/content/ui/admin/CmsFormDateInput.tsx#default": default_ba4124c6cd98666f4a90373b2bb69bea,
+  "./modules/content/ui/admin/CmsNewsContentGroupField.tsx#default": default_c888d54e703a4b1befb9e8daeff6033c,
   "./modules/content/ui/admin/CmsResourceContentGroupField.tsx#default": default_02b516385fddcc4e4dce4bdb8f63da30,
+  "./modules/content/ui/admin/CmsEventScheduleField.tsx#default": default_f40c581a6f9a54ae6c6fac7025c14cb0,
+  "./modules/content/ui/admin/CmsEventTimezoneField.tsx#default": default_5a97639837d19ba9447d45fd03edbacc,
+  "./modules/content/ui/admin/CmsEventImageField.tsx#default": default_35bb7f80ff69d85bf814038c5bbb0313,
+  "./modules/content/ui/admin/CmsEventPublicationField.tsx#default": default_f5f71fc237c1fef800862c537891464f,
+  "./modules/content/ui/admin/CmsEventRegistrationPanel.tsx#default": default_05744f5bc2054ad2f57ad9604ec42adb,
+  "./modules/content/ui/admin/CmsEventCategoryField.tsx#default": default_84d7c7b9ac3b1bb7e3888ec573d0562a,
+  "./modules/content/ui/admin/CmsEventRecordingField.tsx#default": default_7a5456a211426b8bf8ec830c44928a00,
+  "./modules/content/ui/admin/CmsEventContentGroupField.tsx#default": default_fe630367e416dfe848f611d730cdd976,
+  "./modules/content/ui/admin/CmsEventPublishButton.tsx#default": default_28123680b9caecbf00788d7b5d71ff9f,
+  "./modules/content/ui/admin/CmsEventEditView.tsx#default": default_f96231c8ad637f55ae68535d809cf66e,
   "./modules/content/ui/admin/CmsHomeBannerGroupField.tsx#default": default_e2fe971cc551ca80076ea809d5d3cf9a,
   "./modules/content/ui/admin/CmsHomeActionsGroupField.tsx#default": default_215e55acb36338729bbb967a1283370f,
   "./modules/content/ui/admin/CmsHomeListsGroupField.tsx#CmsHomeProcessGroupField": CmsHomeProcessGroupField_a919c79f1d80ff6e7030a7b8b3020dad,

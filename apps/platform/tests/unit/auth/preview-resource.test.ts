@@ -5,7 +5,7 @@ import { previewResource } from "@/auth/authorization/preview-resource";
 describe("frontend preview authorization", () => {
   it.each([
     ["/", "site-settings"],
-    ["/news/update", "news"],
+    ["/news/42", "news"],
     ["/resources/guide", "resources"],
     ["/events/briefing", "events"],
     ["/eligibility", "eligibility"],

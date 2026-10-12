@@ -1,54 +1,73 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import Link from "next/link";
 
-import { CmsRichText } from "@/modules/content/ui/public/CmsRichText";
-import { PublicPageHeader } from "@/modules/content/ui/public/PublicPageHeader";
-import { getListingItem } from "@/modules/content/ServerContentQueries";
 import { contentMetadata } from "@/modules/content/ContentMetadata";
+import { getEventBySlug } from "@/modules/content/application/ServerEventContentService";
+import { CmsImage } from "@/modules/content/ui/public/CmsImage";
+import { CmsRichText } from "@/modules/content/ui/public/CmsRichText";
+import { EventRegistrationAction } from "@/modules/content/ui/public/EventRegistrationAction";
+import { EventScheduleDetails } from "@/modules/content/ui/public/EventScheduleDetails";
 
-
+type EventPageProps = {
+  params: Promise<{ slug: string }>;
+};
 
 export async function generateMetadata({
   params,
-}: {
-  params: Promise<{ slug: string }>;
-}): Promise<Metadata> {
-  const item = await getListingItem("events", (await params).slug);
+}: EventPageProps): Promise<Metadata> {
+  const item = await getEventBySlug((await params).slug);
   return item ? contentMetadata(item) : {};
 }
 
-export default async function EventDetailPage({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}) {
-  const item = await getListingItem("events", (await params).slug);
+export default async function EventDetailPage({ params }: EventPageProps) {
+  const item = await getEventBySlug((await params).slug);
   if (!item?.body) notFound();
+
   return (
-    <>
-      <PublicPageHeader
-        eyebrow="Event"
-        image={item.image}
-        title={item.title}
-        summary={item.summary}
-      />
-      <article className="section">
-        <div className="container max-w-3xl">
-          <p className="mb-6 rounded-xl bg-orange-pale p-4 text-sm font-semibold text-navy">
-            {item.location}
-            {item.date
-              ? ` · ${new Intl.DateTimeFormat("en-NA", { dateStyle: "long", timeStyle: "short" }).format(new Date(item.date))}`
-              : ""}
-          </p>
-          <CmsRichText data={item.body} />
-          {item.href ? (
-            <Link className="home-primary mt-8" href={item.href}>
-              Register for this event
-            </Link>
-          ) : null}
+    <main>
+      <section className="bg-brand-cream py-10 sm:py-14">
+        <div className="container grid gap-8 lg:grid-cols-[1fr_0.9fr] lg:items-center">
+          <div>
+            <p className="text-sm font-semibold text-brand-orange">
+              {item.category || "Event"}
+            </p>
+            <h1 className="mt-3 text-4xl font-bold leading-tight text-brand-navy sm:text-5xl">
+              {item.title}
+            </h1>
+            <p className="mt-4 max-w-2xl text-lg leading-8 text-brand-navy/70">
+              {item.summary}
+            </p>
+            <EventScheduleDetails item={item} />
+          </div>
+          <CmsImage
+            className="aspect-[1200/630] w-full rounded-xl object-cover"
+            image={item.image}
+            priority
+          />
         </div>
-      </article>
-    </>
+      </section>
+      <section className="section">
+        <div className="container grid gap-8 lg:grid-cols-[minmax(0,1.5fr)_minmax(320px,0.75fr)] lg:items-start">
+          <article className="cms-rich-text max-w-3xl">
+            <CmsRichText data={item.body} />
+          </article>
+          <aside className="rounded-xl bg-brand-cream p-6 sm:p-8">
+            <h2 className="text-2xl font-bold text-brand-navy">
+              Register for this session
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-brand-navy/70">
+              Secure your spot for {item.title}.
+            </p>
+            <div className="mt-5">
+              <EventRegistrationAction
+                eventId={item.id}
+                eventTitle={item.title}
+                registrationAvailable={item.registrationAvailable}
+              />
+            </div>
+          </aside>
+        </div>
+      </section>
+    </main>
   );
 }

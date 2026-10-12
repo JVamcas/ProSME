@@ -50,8 +50,30 @@ Public Contact knowledge is programme contact information; visitor contact is
 private case data. A new case or resolution never trains the bot or changes
 its knowledge.
 
-Configure the existing `chatbot.case.created` notification event, publish its
-email template and select active staff with the applicable case-read permission.
+After migration `0197`, authorized staff can use **Upload document** in the table
+toolbar for PDF, DOCX or UTF-8 TXT programme documents up to 5 MiB. Uploaded
+documents start inactive and open a readable extracted-text preview. Review that
+text before activating the row: activation publishes the text for visitor source
+links and chatbot answers. Click the row name to review it again; deactivate the
+row to remove it from answers and public source links. Funding calls, FAQs and
+eligibility rulesets continue to come from their existing modules. Scanned PDFs
+need a text layer. Upload requires the separate document-upload permission.
+
+Migration `0196_chatbot_support_role.sql` bootstraps the **Chatbot Support** role
+(`chatbot_support`) without assigning any people. Authorized administrators,
+including Lenis when granted role-management access, use the existing user/access
+screen to add or remove staff membership. Members can read all chatbot cases,
+assign cases to authorized staff, and resolve cases currently assigned to them.
+The role grants no knowledge-base, chatbot-settings or role-management access.
+
+On first bootstrap, an empty `chatbot.case.created` notification audience is
+configured to email the role's eligible members. Existing recipient configuration
+is preserved. Rerunning the migration preserves edited grants and routing, as
+well as membership. Removing a member is checked again before queued delivery;
+their other roles may still grant case access. An empty support role does not
+prevent visitors from saving cases, but no staff notification is queued.
+
+Publish the existing `chatbot.case.created` email template and verify delivery.
 The email contains a reference and `/admin/chatbot/cases/<case-id>` link. It does
 not contain the transcript or visitor email. Monitor delivery state in the
 existing notification workspace; retries use the original occurrence.

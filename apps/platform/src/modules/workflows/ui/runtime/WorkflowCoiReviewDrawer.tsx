@@ -7,7 +7,7 @@ import { z } from "zod";
 
 import { GeneralButton } from "@/components/ui/button";
 import { FormSelect, FormTextarea } from "@/components/ui/form-fields";
-import { FormRadioCard } from "@/components/ui/form-radio-card";
+import { FormRadioCard } from "@/shared/ui/FormRadioCard";
 import { formatLocalDateTime24 } from "@/lib/dateUtils";
 import { RightDrawer } from "@/shared/ui/RightDrawer";
 import type { WorkflowCoiReviewDetail } from "../../api/WorkflowCoiReviewTypes";

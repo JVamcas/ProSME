@@ -218,7 +218,7 @@ function NavigationSectionItem({
           aria-expanded={expanded}
           className={cn(
             styles.heading,
-            "h-auto rounded-lg font-bold focus-visible:ring-0",
+            "h-auto justify-between rounded-lg text-left font-bold focus-visible:ring-0",
           )}
           onClick={() => {
             setExpansionOverride({ expanded: !expanded, pathname });

@@ -1,0 +1,37 @@
+.newsCard {
+  box-shadow: 0 6px 20px rgb(10 24 59 / 4%);
+  transition:
+    transform 220ms ease-out,
+    box-shadow 220ms ease-out,
+    border-color 220ms ease-out;
+}
+
+.imageFrame :global(img),
+.newsCard :global(a svg) {
+  transition: transform 220ms ease-out;
+}
+
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .newsCard:hover {
+    transform: translateY(-4px);
+    border-color: rgb(255 111 0 / 55%);
+    box-shadow: 0 14px 32px rgb(10 24 59 / 10%);
+  }
+
+  .newsCard:hover .imageFrame :global(img) {
+    transform: scale(1.025);
+  }
+
+  .newsCard:hover :global(a svg) {
+    transform: translateX(3px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .newsCard,
+  .imageFrame :global(img),
+  .newsCard :global(a svg) {
+    transition: none;
+    transform: none;
+  }
+}

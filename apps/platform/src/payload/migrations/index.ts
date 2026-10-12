@@ -1,3 +1,4 @@
+import * as migration_20261011_120000_event_metadata from "./20261011_120000_event_metadata";
 import * as migration_20260911_180817_phase1_payload_foundation from './20260911_180817_phase1_payload_foundation';
 import * as migration_20260911_200942_phase2_public_content from './20260911_200942_phase2_public_content';
 import * as migration_20260911_202515_phase2_global_publishing from './20260911_202515_phase2_global_publishing';
@@ -120,5 +121,10 @@ export const migrations = [
     up: migration_20261007_200000_independent_funding_overview.up,
     down: migration_20261007_200000_independent_funding_overview.down,
     name: "20261007_200000_independent_funding_overview",
+  },
+  {
+    up: migration_20261011_120000_event_metadata.up,
+    down: migration_20261011_120000_event_metadata.down,
+    name: "20261011_120000_event_metadata",
   },
 ];

@@ -18,7 +18,7 @@ const nextConfig = {
   },
   output: "standalone",
   // The PostgreSQL parser resolves its WASM file relative to its own loader.
-  serverExternalPackages: ["libpg-query"],
+  serverExternalPackages: ["libpg-query", "pdf-parse", "mammoth"],
   typescript: {
     tsconfigPath:
       process.env.NODE_ENV === "production"
@@ -34,6 +34,13 @@ const nextConfig = {
   outputFileTracingRoot: repositoryRoot,
   outputFileTracingIncludes: {
     "/*": ["./node_modules/libpg-query/wasm/libpg-query.wasm"],
+    "/api/admin/chatbot/knowledge/documents": [
+      "../../node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs",
+      // PDF.js uses createRequire at runtime, which tracing can miss.
+      "../../node_modules/@napi-rs/canvas/**/*",
+      "../../node_modules/@napi-rs/canvas-*/*.node",
+      "../../node_modules/@napi-rs/canvas-*/package.json",
+    ],
     "/api/internal/notifications/process": [
       "./src/modules/notifications/templates/email/auth-*.html",
     ],

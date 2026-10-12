@@ -97,7 +97,10 @@ guidance; retain eligibility decisions in the existing application process.
 
 - Approved knowledge materials covering the required subjects.
 - A named content owner to resolve questions and approve content updates.
-- The follow-up destination and staff responsible for unresolved queries.
+- Staff membership of the bootstrapped **Chatbot Support** role and the agreed
+  human follow-up process. Authorized administrators manage membership through
+  existing user/access controls; a separately supplied escalation role or mailbox
+  is not an implementation prerequisite.
 - The monthly report recipients, metrics and delivery format.
 - Representative questions and expected answers for acceptance.
 

@@ -39,6 +39,7 @@ import {
   readKnowledgeWorkspace,
 } from "../infrastructure/ChatbotKnowledgeRepository";
 import { prepareChatbotKnowledge } from "./PrepareChatbotKnowledge";
+import { readChatbotDocumentKnowledge } from "../infrastructure/ChatbotDocumentRepository";
 
 function reader(user: AuthenticatedUser | null) {
   return requirePermission(user, permissionCodes.chatbotKnowledgeReadAll);
@@ -63,6 +64,10 @@ export async function prepareKnowledgeSources(
   const contact = selection.contact
     ? await readContactKnowledgeSource(transaction)
     : null;
+  const documents = await readChatbotDocumentKnowledge(
+    transaction,
+    selection.documentIds ?? [],
+  );
   const eligibility = await readEligibilityKnowledgeSources(
     [
       ...new Set(
@@ -78,6 +83,7 @@ export async function prepareKnowledgeSources(
     faqs,
     eligibility,
     contact,
+    documents,
   });
 }
 

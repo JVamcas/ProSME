@@ -7,6 +7,7 @@ import {
   getSiteSettings,
 } from "@/modules/content/ServerContentQueries";
 import { getResourceSitemapEntries } from "@/modules/content/ServerResourceCentreService";
+import { newsArticleHref } from "@/modules/content/NewsArticlePath";
 import { listPublicFundingCalls } from "@/modules/funding-calls/application/ServerPublicFundingCallService";
 
 
@@ -40,7 +41,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }
 
   const dynamicRoutes = [
-    ...news.filter(indexable).map((item) => `/news/${item.slug}`),
+    ...news.filter(indexable).map((item) => newsArticleHref(item.id)),
     ...resources.map((item) => `/resources/${item.slug}`),
     ...events.filter(indexable).map((item) => `/events/${item.slug}`),
     ...calls.items.map((item) => `/funding/${item.slug}`),

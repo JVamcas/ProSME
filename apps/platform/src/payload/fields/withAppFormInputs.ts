@@ -16,6 +16,8 @@ export function withAppFormInputs(field: Field): Field {
     };
   }
 
+  if (field.admin?.components?.Field) return field;
+
   if (
     field.type === "text" ||
     field.type === "textarea" ||

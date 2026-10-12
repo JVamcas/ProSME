@@ -63,6 +63,7 @@ const save = (resourceKeys: string[], active: boolean, actor = fixture.actor) =>
       expect(pages.map((page) => page.items.length)).toEqual([50, 50, 28, 0]);
       expect(pages.every((page) => page.total === 128)).toBe(true);
       const items = pages.flatMap((page) => page.items);
+      expect(items.slice(0, 2).map((item) => item.type)).toEqual(["funding", "funding"]);
       expect(new Set(items.map((item) => item.key)).size).toBe(128);
       expect(items.some((item) => item.key === "faq:123")).toBe(true);
       expect(

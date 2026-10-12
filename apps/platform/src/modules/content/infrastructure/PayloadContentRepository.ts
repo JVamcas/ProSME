@@ -5,6 +5,42 @@ import configPromise from "@payload-config";
 
 type ContentReadMode = { draft: boolean; where: Where };
 
+export async function readNewsById(id: number, mode: ContentReadMode) {
+  const payload = await getPayload({ config: configPromise });
+  const result = await payload.find({
+    collection: "news",
+    depth: 1,
+    draft: mode.draft,
+    overrideAccess: true,
+    where: { and: [{ id: { equals: id } }, mode.where] },
+    select: {
+      title: true,
+      slug: true,
+      excerpt: true,
+      body: true,
+      image: true,
+      publishedAt: true,
+      seoTitle: true,
+      seoDescription: true,
+      excludeFromSearch: true,
+    },
+    populate: {
+      media: {
+        alt: true,
+        url: true,
+        width: true,
+        height: true,
+        sizes: true,
+        mimeType: true,
+        filename: true,
+      },
+    },
+    limit: 1,
+    pagination: false,
+  });
+  return result.docs[0] ?? null;
+}
+
 export async function readHomepageDocument(draft: boolean) {
   const payload = await getPayload({ config: configPromise });
   return payload.findGlobal({

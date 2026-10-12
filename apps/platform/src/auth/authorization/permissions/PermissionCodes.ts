@@ -25,9 +25,14 @@ export type CmsPermissionCode =
   `cms.${CmsPermissionResource}.${CmsPermissionAction}`;
 
 export const permissionCodes = {
+  eventRegistrationsReadAll: "events.registrations.read.all",
+  eventRegistrationSettingsReadAll: "events.registration-settings.read.all",
+  eventRegistrationSettingsUpdateAll: "events.registration-settings.update.all",
+  eventEmailDeliveryReadAll: "events.email-delivery.read.all",
   chatbotSettingsReadAll: "chatbot.settings.read.all",
   chatbotSettingsUpdateAll: "chatbot.settings.update.all",
   chatbotKnowledgeReadAll: "chatbot.knowledge.read.all",
+  chatbotKnowledgeDocumentUploadAll: "chatbot.knowledge.document.upload.all",
   chatbotKnowledgeActivateAll: "chatbot.knowledge.activate.all",
   chatbotKnowledgeDeactivateAll: "chatbot.knowledge.deactivate.all",
   chatbotKnowledgePrepareAll: "chatbot.knowledge.prepare.all",

@@ -51,7 +51,7 @@ describe("content preview routes", () => {
 
   it("keeps the requested page path and query on the browser origin", async () => {
     mocks.user.mockResolvedValue(actor([cmsPermissionCode("news", "read")]));
-    const path = "/news/update?edition=draft";
+    const path = "/news/42?edition=draft";
     const response = await preview(new Request(
       `http://localhost:3000/api/preview?path=${encodeURIComponent(path)}`,
     ));

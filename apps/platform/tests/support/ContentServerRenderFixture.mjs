@@ -19,6 +19,7 @@ async function verifyDeduplication() {
     () => content.getSiteSettings(),
     () => content.getPage("about"),
     () => content.getNews(),
+    () => content.getListingItem("news", "1"),
     () => content.getEvents(),
     () => content.getFaqs(),
     () => content.getStatistics(),
@@ -37,11 +38,11 @@ async function verifyDeduplication() {
       }),
     );
     assert.equal(await content.getPage("different"), null);
-    assert.equal((await content.getListingItem("news", "about")).title, state.publishedTitle);
+    assert.equal((await content.getListingItem("news", "1")).title, state.publishedTitle);
   });
   // Five globals, six collection reads, four bounded feed reads, resource detail,
-  // and a distinct page slug. The three calls per identical getter run only once.
-  assert.equal(calls.length, 17);
+  // a distinct page slug and direct news detail. Identical getters run only once.
+  assert.equal(calls.length, 18);
   assert.equal(calls.filter((query) => query.slug === "site-settings").length, 1);
   assert.equal(calls.filter((query) => query.collection === "programme-statistics").length, 1);
   return { readsWithMemoization: calls.length };

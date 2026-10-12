@@ -1,4 +1,6 @@
 import type { SerializedEditorState } from "@payloadcms/richtext-lexical/lexical";
+import type { SerializedUploadNode } from "@payloadcms/richtext-lexical";
+import type { ComponentType } from "react";
 import {
   RichText,
   type JSXConvertersFunction,
@@ -43,8 +45,34 @@ const converters: JSXConvertersFunction = ({ defaultConverters }) => ({
   },
 });
 
-export function CmsRichText({ data }: { data: SerializedEditorState }) {
+export type CmsRichTextUploadProps = { node: SerializedUploadNode };
+
+export function CmsRichText({
+  data,
+  MediaUpload,
+}: {
+  data: SerializedEditorState;
+  MediaUpload?: ComponentType<CmsRichTextUploadProps>;
+}) {
+  const renderConverters: JSXConvertersFunction = (args) => {
+    const defaults = converters(args);
+    if (!MediaUpload) return defaults;
+
+    return {
+      ...defaults,
+      upload: (uploadArgs) => {
+        if (uploadArgs.node.relationTo === "media") {
+          return <MediaUpload node={uploadArgs.node} />;
+        }
+        const renderUpload = defaults.upload;
+        return typeof renderUpload === "function"
+          ? renderUpload(uploadArgs)
+          : renderUpload;
+      },
+    };
+  };
+
   return (
-    <RichText className="cms-rich-text" converters={converters} data={data} />
+    <RichText className="cms-rich-text" converters={renderConverters} data={data} />
   );
 }

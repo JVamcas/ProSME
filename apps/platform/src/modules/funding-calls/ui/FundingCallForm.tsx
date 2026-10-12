@@ -5,7 +5,7 @@ import { useState } from "react";
 import { FormProvider, useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 import { GeneralButton } from "@/components/ui/button";
-import { StepProgress } from "@/components/ui/step-progress";
+import { StepProgress } from "@/shared/ui/StepProgress";
 import {
   fundingCallCreateSchema,
   type FundingCallCreateInput,

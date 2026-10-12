@@ -173,7 +173,7 @@ select {
   border-radius: 999px;
   background: var(--color-brand-orange);
   padding: 0.75rem 1.75rem;
-  color: var(--color-brand-navy);
+  color: var(--color-brand-white);
   font-size: 0.875rem;
   font-weight: 700;
   box-shadow: 0 8px 20px rgba(10, 24, 59, 0.18);
@@ -182,6 +182,7 @@ select {
     background-color 0.2s;
 }
 .home-primary:hover {
+  color: var(--color-brand-navy);
   background: var(--color-brand-yellow);
   transform: translateY(-1px);
 }

@@ -506,10 +506,15 @@ export interface Event {
     };
     [k: string]: unknown;
   };
-  image?: (number | null) | Media;
   startsAt: string;
   endsAt?: string | null;
+  timezone: string;
   location: string;
+  image?: (number | null) | Media;
+  eventType: 'information-session' | 'workshop' | 'roadshow' | 'stakeholder-forum' | 'webinar' | 'virtual-session';
+  /**
+   * Retained for existing links. Application registrations are managed in Operations.
+   */
   registrationUrl?: string | null;
   reviewStatus: 'draft' | 'inReview' | 'approved';
   /**
@@ -519,6 +524,8 @@ export interface Event {
   seoTitle?: string | null;
   seoDescription?: string | null;
   excludeFromSearch?: boolean | null;
+  recordingUrl?: string | null;
+  category: string;
   updatedAt: string;
   createdAt: string;
   _status?: ('draft' | 'published') | null;
@@ -1020,16 +1027,20 @@ export interface EventsSelect<T extends boolean = true> {
   slug?: T;
   summary?: T;
   body?: T;
-  image?: T;
   startsAt?: T;
   endsAt?: T;
+  timezone?: T;
   location?: T;
+  image?: T;
+  eventType?: T;
   registrationUrl?: T;
   reviewStatus?: T;
   reviewNotes?: T;
   seoTitle?: T;
   seoDescription?: T;
   excludeFromSearch?: T;
+  recordingUrl?: T;
+  category?: T;
   updatedAt?: T;
   createdAt?: T;
   _status?: T;

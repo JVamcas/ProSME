@@ -2,7 +2,9 @@ import { CalendarDays, Download, Newspaper } from "lucide-react";
 
 import { ArrowLink } from "@/components/ui/links";
 import type { ListingItem } from "../../ContentTypes";
+import { newsArticleHref } from "../../NewsArticlePath";
 import { CmsImage } from "./CmsImage";
+import styles from "./ContentListingCard.module.css";
 
 type Props = {
   item: ListingItem;
@@ -20,16 +22,26 @@ export function ContentListingCard({
   const category = isResource ? item.category ?? "Resource" : "News";
   const href = isResource
     ? item.href ?? `/resources/${item.slug}`
-    : `/news/${item.slug}`;
+    : newsArticleHref(item.id);
 
   return (
-    <article className="funding-card flex min-h-72 min-w-0 flex-col overflow-hidden rounded-xl border border-brand-blue/20 bg-white">
+    <article
+      className={`${isResource ? "funding-card" : styles.newsCard} flex min-h-72 min-w-0 flex-col overflow-hidden rounded-xl border border-brand-blue/20 bg-white`}
+    >
       {item.image ? (
-        <CmsImage
-          className="h-44 w-full shrink-0 object-cover object-top"
-          image={item.image}
-          sizes="(max-width: 767px) 100vw, 50vw"
-        />
+        <div
+          className={isResource
+            ? "h-44 shrink-0 overflow-hidden"
+            : `${styles.imageFrame} aspect-video shrink-0 overflow-hidden`}
+        >
+          <CmsImage
+            className={isResource
+              ? "h-full w-full object-cover object-top"
+              : "h-full w-full object-cover object-center"}
+            image={item.image}
+            sizes="(max-width: 767px) 100vw, 50vw"
+          />
+        </div>
       ) : (
         <div className="grid h-44 shrink-0 place-items-center bg-brand-cream text-brand-orange">
           <Icon aria-hidden="true" className="size-10" />

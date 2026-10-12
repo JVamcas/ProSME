@@ -6,7 +6,7 @@ import { toast } from "sonner";
 
 import { GeneralButton } from "@/components/ui/button";
 import { DraggableDialog } from "@/shared/ui/DraggableDialog";
-import { StepProgress } from "@/components/ui/step-progress";
+import { StepProgress } from "@/shared/ui/StepProgress";
 import type {
   WorkflowEditorView,
   WorkflowStageInput,
