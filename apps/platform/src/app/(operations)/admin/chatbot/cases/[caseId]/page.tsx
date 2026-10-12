@@ -1,9 +1,9 @@
-import { ChatbotCaseDetail } from "@/modules/chatbot/ui/operations/ChatbotCaseDetail";
+import { ChatbotCaseWorkspace } from "@/modules/chatbot/ui/operations/ChatbotCaseWorkspace";
 export default async function ChatbotSupportCaseDetailPage({
   params,
 }: {
   params: Promise<{ caseId: string }>;
 }) {
   const { caseId } = await params;
-  return <ChatbotCaseDetail id={caseId} />;
+  return <ChatbotCaseWorkspace key={caseId} initialCaseId={caseId} />;
 }

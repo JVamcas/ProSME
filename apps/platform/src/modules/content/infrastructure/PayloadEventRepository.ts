@@ -2,6 +2,8 @@ import "server-only";
 
 import { getPayload, type Where } from "payload";
 import configPromise from "@payload-config";
+import { media } from "./ContentProjection";
+import type { EventOperationsListItem } from "../api/EventOperationsTypes";
 import type { EventContentQuery } from "../api/EventContentSchemas";
 
 const eventSelection = {
@@ -106,4 +108,36 @@ export async function readEventContentPage(
     limit: query.pageSize,
     page: query.page,
   });
+}
+
+export async function readOperationsEventPage(page: number) {
+  const payload = await getPayload({ config: configPromise });
+  const result = await payload.find({
+    collection: "events",
+    overrideAccess: true,
+    draft: false,
+    depth: 1,
+    select: {
+      title: true,
+      summary: true,
+      image: true,
+      startsAt: true,
+      timezone: true,
+      location: true,
+    },
+    populate: mediaPopulation,
+    sort: ["-startsAt", "-id"],
+    page,
+    limit: 20,
+  });
+  const items: EventOperationsListItem[] = result.docs.map((event) => ({
+    id: event.id,
+    title: event.title,
+    summary: event.summary,
+    image: media(event.image),
+    startsAt: event.startsAt,
+    timezone: event.timezone ?? "Africa/Windhoek",
+    location: event.location,
+  }));
+  return { items, total: result.totalDocs, page, pageSize: 20 };
 }

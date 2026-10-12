@@ -101,22 +101,3 @@ export async function readEventDeliveryPage(
     pageSize: query.pageSize,
   };
 }
-
-export async function readOperationsEventPage(page: number) {
-  const [rows, count] = await Promise.all([
-    getDatabase().execute<{
-      id: number;
-      title: string;
-      startsAt: string;
-      timezone: string;
-      location: string;
-    }>(sql`
-      SELECT id, title, starts_at AS "startsAt", timezone, location FROM cms_events
-      ORDER BY starts_at DESC, id DESC LIMIT 20 OFFSET ${(page - 1) * 20}
-    `),
-    getDatabase().execute<{ total: number }>(
-      sql`SELECT count(*)::integer AS total FROM cms_events`,
-    ),
-  ]);
-  return { items: rows.rows, total: count.rows[0].total, page, pageSize: 20 };
-}

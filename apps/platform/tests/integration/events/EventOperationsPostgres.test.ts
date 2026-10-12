@@ -21,6 +21,7 @@ import { permissionCodes } from "@/auth/authorization/permissions";
 
 const fixture = vi.hoisted(() => ({ database: null as unknown }));
 vi.mock("server-only", () => ({}));
+vi.mock("@/modules/content/infrastructure/PayloadEventRepository", () => ({}));
 vi.mock("@/platform/database/client", () => ({
   getDatabase: () => fixture.database,
 }));

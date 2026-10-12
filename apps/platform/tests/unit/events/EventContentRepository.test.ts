@@ -9,6 +9,7 @@ vi.mock("payload", () => ({
 import {
   readEventBySlug,
   readEventContentPage,
+  readOperationsEventPage,
 } from "@/modules/content/infrastructure/PayloadEventRepository";
 import { eventContentQuerySchema } from "@/modules/content/api/EventContentSchemas";
 
@@ -19,6 +20,66 @@ beforeEach(() => {
 });
 
 describe("Event content persistence queries", () => {
+  it("loads bounded Operations cards with populated covers and summaries", async () => {
+    fixture.find.mockResolvedValue({
+      docs: [
+        {
+          id: 42,
+          title: "Session",
+          summary: "Prepare your application.",
+          startsAt: "2030-11-12T10:00:00Z",
+          timezone: "Africa/Windhoek",
+          location: "Windhoek",
+          image: {
+            url: "/cover.jpg",
+            alt: "Session cover",
+            sizes: {
+              mobile: { url: "/cover-mobile.webp", width: 640 },
+            },
+          },
+        },
+        {
+          id: 43,
+          title: "No cover",
+          summary: "Summary",
+          image: null,
+        },
+      ],
+      totalDocs: 25,
+    });
+    const result = await readOperationsEventPage(2);
+    expect(result).toMatchObject({ total: 25, page: 2, pageSize: 20 });
+    expect(result.items[0]).toMatchObject({
+      summary: "Prepare your application.",
+      image: {
+        alt: "Session cover",
+        sizes: { mobile: { url: "/cover-mobile.webp" } },
+      },
+    });
+    expect(result.items[1].image).toBeUndefined();
+    expect(fixture.find).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({
+        collection: "events",
+        page: 2,
+        limit: 20,
+        depth: 1,
+        draft: false,
+        sort: ["-startsAt", "-id"],
+        select: {
+          title: true,
+          summary: true,
+          image: true,
+          startsAt: true,
+          timezone: true,
+          location: true,
+        },
+        populate: {
+          media: expect.objectContaining({ sizes: true, url: true }),
+        },
+      }),
+    );
+  });
+
   it("looks up a slug directly without fetching the first listing page", async () => {
     fixture.find.mockResolvedValue({
       docs: [{ id: 500, slug: "beyond-first-page" }],
