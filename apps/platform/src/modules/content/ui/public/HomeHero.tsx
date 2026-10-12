@@ -6,9 +6,10 @@ import { GeneralButtonLink } from "@/components/ui/button";
 
 type HomeHeroProps = {
   content: HomeBannerContent;
+  showFundingLink?: boolean;
 };
 
-export function HomeHero({ content }: HomeHeroProps) {
+export function HomeHero({ content, showFundingLink = true }: HomeHeroProps) {
   return (
     <section className="hero hero-animated @container/banner relative overflow-hidden bg-white font-sans">
       {content.heroImage ? (
@@ -37,13 +38,15 @@ export function HomeHero({ content }: HomeHeroProps) {
             >
               {content.applyLabel}
             </GeneralButtonLink>
-            <GeneralButtonLink
-              variant="outlineOrange"
-              href="/funding"
-              className="border-solid no-underline"
-            >
-              {content.fundingButtonLabel}
-            </GeneralButtonLink>
+            {showFundingLink ? (
+              <GeneralButtonLink
+                variant="outlineOrange"
+                href="/funding"
+                className="border-solid no-underline"
+              >
+                {content.fundingButtonLabel}
+              </GeneralButtonLink>
+            ) : null}
           </div>
 
           <div className="mt-8 flex flex-wrap gap-x-8 gap-y-3 text-xs font-medium text-brand-navy/80">

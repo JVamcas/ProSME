@@ -77,6 +77,8 @@ export const permissionCodes = {
   fundingCallApprovalRequestOwnWithdraw:
     "funding.call.approval-request.own.withdraw",
   fundingCallPublish: "funding.call.publish",
+  fundingCallPublicInteractionEnableAll: "funding.call.public-interaction.enable.all",
+  fundingCallPublicInteractionDisableAll: "funding.call.public-interaction.disable.all",
   fundingCallSuspend: "funding.call.suspend",
   fundingCallResume: "funding.call.resume",
   fundingCallWithdraw: "funding.call.withdraw",

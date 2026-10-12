@@ -18,9 +18,13 @@ export type ApplicationDuplicatePolicy =
   import("@/modules/applications/domain/Application").ApplicationDuplicatePolicy;
 
 export type FundingCall = {
+  publicInteractionEnabled?: boolean;
   allowResubmissionAfterWithdrawal: boolean;
   applicationDuplicatePolicy: ApplicationDuplicatePolicy;
   currentPublishedVersionId?: string | null;
+  currentPublishedVersionNumber?: number | null;
+  sourcePublishedVersionNumber?: number | null;
+  viewedPublishedVersionNumber?: number;
   draftVersionId?: string;
   viewedPublishedVersionId?: string;
   effectiveStatus?: FundingCallStatus;

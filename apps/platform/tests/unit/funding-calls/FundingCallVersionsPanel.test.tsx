@@ -9,6 +9,7 @@ import { stored } from "../../support/FundingCallThumbnailTestFixture";
 
 const state = vi.hoisted(() => ({
   loading: false,
+  working: false,
   selected: null as string | null,
   historical: undefined as FundingCallView | undefined,
   prepare: { isPending: false, mutate: vi.fn() },
@@ -18,14 +19,31 @@ vi.mock("@/modules/funding-calls/FundingCallHooks", () => ({
   usePrepareFundingCallReplacement: () => state.prepare,
   useFundingCallVersions: () => ({
     data: {
-      total: 2,
+      total: state.working ? 3 : 2,
       items: [
+        ...(state.working
+          ? [
+              {
+                id: "draft-version",
+                versionNumber: null,
+                title: "Draft call title",
+                publishedAt: null,
+                current: false,
+                kind: "working",
+                status: "APPROVAL_PENDING",
+                sourceVersionNumber: 1,
+              },
+            ]
+          : []),
         {
           id: "current-version",
           versionNumber: 2,
           title: "Current call title",
           publishedAt: "2026-10-09T12:00:00.000Z",
           current: true,
+          kind: "published",
+          status: "LIVE",
+          sourceVersionNumber: null,
         },
         {
           id: "historical-version",
@@ -33,6 +51,9 @@ vi.mock("@/modules/funding-calls/FundingCallHooks", () => ({
           title: "Historical call title",
           publishedAt: "2026-10-01T12:00:00.000Z",
           current: false,
+          kind: "published",
+          status: "SUPERSEDED",
+          sourceVersionNumber: null,
         },
       ],
     },
@@ -57,11 +78,15 @@ let root: Root;
 beforeEach(() => {
   vi.clearAllMocks();
   state.loading = false;
+  state.working = false;
   state.selected = null;
   state.historical = {
     ...stored,
     title: "Historical call title",
     viewedPublishedVersionId: "historical-version",
+    viewedPublishedVersionNumber: 1,
+    currentPublishedVersionId: "current-version",
+    currentPublishedVersionNumber: 2,
     opensAt: stored.opensAt.toISOString(),
     closesAt: stored.closesAt.toISOString(),
     createdAt: stored.createdAt.toISOString(),
@@ -108,6 +133,31 @@ async function viewHistoricalVersion() {
 }
 
 describe("funding call version actions", () => {
+  it("shows unpublished and published rows together with a Status column", async () => {
+    state.working = true;
+    const container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+    await act(async () =>
+      root.render(
+        <FundingCallVersionsPanel
+          id={stored.id}
+          canEdit={false}
+          rowVersion={7}
+          call={state.historical}
+        />,
+      ),
+    );
+    expect(container.textContent).toContain("Unpublished · Based on version 1");
+    expect(container.textContent).toContain("Approval Pending");
+    expect(container.textContent).toContain("Live");
+    expect(container.textContent).toContain("Superseded");
+    expect(container.querySelector("thead")?.textContent).toContain("Status");
+    expect(container.querySelector("thead")?.textContent).not.toContain(
+      "Publication",
+    );
+    expect(container.querySelector("h2")?.textContent).toBe("Versions");
+  });
   it("edits the selected historical publication rather than the current one", async () => {
     const container = document.createElement("div");
     document.body.append(container);
@@ -149,6 +199,8 @@ describe("funding call version actions", () => {
     expect(state.selected).toBe("historical-version");
     expect(drawer).not.toBeNull();
     expect(drawer.textContent).toContain("Historical call title");
+    expect(drawer.textContent).toContain("Viewing: Version 1 · Read-only");
+    expect(drawer.textContent).toContain("Current published: Version 2");
     expect(drawer.textContent).not.toContain("Current call title");
     expect(drawer.classList.contains("right-0")).toBe(true);
     expect(document.querySelector('[role="menu"]')).toBeNull();

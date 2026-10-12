@@ -14,11 +14,14 @@ async function payloadClient() {
   return getPayload({ config: configPromise });
 }
 
-export async function readHomeFeed(): Promise<HomeFeedItem[]> {
+export async function readHomeFeed(
+  newsEnabled = true,
+  resourcesEnabled = true,
+): Promise<HomeFeedItem[]> {
   const payload = await payloadClient();
   const [news, resources] = await Promise.all([
-    homeItems(payload, "news"),
-    homeItems(payload, "resources"),
+    newsEnabled ? homeItems(payload, "news") : [],
+    resourcesEnabled ? homeItems(payload, "resources") : [],
   ]);
 
   return selectLatestHomeItems(

@@ -1,3 +1,5 @@
+import { getPublicPageVisibilityInTransaction } from "@/modules/content/application/ServerPublicKnowledgeVisibilityService";
+import { visibleKnowledgeSelection } from "../domain/PublicKnowledgeVisibility";
 import "server-only";
 import type { AuthenticatedUser } from "@/auth/types";
 import { requirePermission } from "@/auth/authorization/policy";
@@ -32,7 +34,10 @@ export async function retiredChatbotKnowledgeWorkflow(
 export async function prepareActiveResourceKnowledge(
   transaction: DatabaseTransaction,
 ) {
-  const selection = await readActiveResourceSelection(transaction);
+  const selection = visibleKnowledgeSelection(
+    await readActiveResourceSelection(transaction),
+    await getPublicPageVisibilityInTransaction(transaction),
+  );
   if (
     selection.fundingCallIds.length > chatbotLimits.selectedCalls ||
     (selection.eligibilityCallIds?.length ?? 0) > chatbotLimits.selectedCalls ||

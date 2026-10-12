@@ -49,6 +49,14 @@ export function useFundingCallCreationProgress() {
   });
 }
 
+// Detail reads carry version identity/source metadata that command responses
+// omit. Await the authoritative refresh before completing a version mutation.
+function refreshFundingCallViews(
+  queryClient: ReturnType<typeof useQueryClient>,
+) {
+  return queryClient.invalidateQueries({ queryKey: fundingCallQueryKeys.all });
+}
+
 export function useSaveFundingCallCreationProgress() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -147,23 +155,12 @@ export function useUpdateFundingCall(id: string) {
   return useMutation({
     mutationFn: (input: FundingCallUpdateInput) =>
       clientFundingCallService.update(id, input),
-    onSuccess: (call) => {
-      queryClient.setQueryData(fundingCallQueryKeys.detail(id), call);
-      void queryClient.invalidateQueries({
-        queryKey: fundingCallQueryKeys.all,
-      });
-    },
+    onSuccess: () => refreshFundingCallViews(queryClient),
   });
 }
 
 export function useFundingCallThumbnail(id: string) {
   const queryClient = useQueryClient();
-  function updateCachedCall(
-    call: Awaited<ReturnType<typeof clientFundingCallService.uploadThumbnail>>,
-  ) {
-    queryClient.setQueryData(fundingCallQueryKeys.detail(id), call);
-    void queryClient.invalidateQueries({ queryKey: fundingCallQueryKeys.all });
-  }
   const upload = useMutation({
     mutationFn: (input: { file: File; expectedRowVersion: number }) =>
       clientFundingCallService.uploadThumbnail(
@@ -171,12 +168,12 @@ export function useFundingCallThumbnail(id: string) {
         input.file,
         input.expectedRowVersion,
       ),
-    onSuccess: updateCachedCall,
+    onSuccess: () => refreshFundingCallViews(queryClient),
   });
   const remove = useMutation({
     mutationFn: (expectedRowVersion: number) =>
       clientFundingCallService.removeThumbnail(id, expectedRowVersion),
-    onSuccess: updateCachedCall,
+    onSuccess: () => refreshFundingCallViews(queryClient),
   });
   return { remove, upload };
 }
@@ -186,12 +183,7 @@ export function usePublishFundingCall(id: string) {
   return useMutation({
     mutationFn: (expectedRowVersion: number) =>
       clientFundingCallService.publish(id, expectedRowVersion),
-    onSuccess: (call) => {
-      queryClient.setQueryData(fundingCallQueryKeys.detail(id), call);
-      void queryClient.invalidateQueries({
-        queryKey: fundingCallQueryKeys.all,
-      });
-    },
+    onSuccess: () => refreshFundingCallViews(queryClient),
   });
 }
 
@@ -200,12 +192,7 @@ export function useChangeFundingCallGovernanceStatus(id: string) {
   return useMutation({
     mutationFn: (input: FundingCallGovernanceCommandInput) =>
       clientFundingCallService.changeGovernanceStatus(id, input),
-    onSuccess: (call) => {
-      queryClient.setQueryData(fundingCallQueryKeys.detail(id), call);
-      void queryClient.invalidateQueries({
-        queryKey: fundingCallQueryKeys.all,
-      });
-    },
+    onSuccess: () => refreshFundingCallViews(queryClient),
   });
 }
 
@@ -214,12 +201,7 @@ export function useChangeFundingCallLifecycleStatus(id: string) {
   return useMutation({
     mutationFn: (input: FundingCallLifecycleCommandInput) =>
       clientFundingCallService.changeLifecycleStatus(id, input),
-    onSuccess: (call) => {
-      queryClient.setQueryData(fundingCallQueryKeys.detail(id), call);
-      void queryClient.invalidateQueries({
-        queryKey: fundingCallQueryKeys.all,
-      });
-    },
+    onSuccess: () => refreshFundingCallViews(queryClient),
   });
 }
 
@@ -232,18 +214,16 @@ export function usePreviewFundingCallReadiness(id: string) {
 export function usePrepareFundingCallReplacement(id: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: { expectedRowVersion: number; sourceVersionId: string }) =>
+    mutationFn: (input: {
+      expectedRowVersion: number;
+      sourceVersionId: string;
+    }) =>
       clientFundingCallService.prepareReplacement(
         id,
         input.expectedRowVersion,
         input.sourceVersionId,
       ),
-    onSuccess: (call) => {
-      queryClient.setQueryData(fundingCallQueryKeys.detail(id), call);
-      void queryClient.invalidateQueries({
-        queryKey: fundingCallQueryKeys.all,
-      });
-    },
+    onSuccess: () => refreshFundingCallViews(queryClient),
   });
 }
 
@@ -259,5 +239,21 @@ export function useFundingCallVersion(id: string, versionId: string | null) {
     enabled: Boolean(versionId),
     queryKey: [...fundingCallQueryKeys.detail(id), "version", versionId],
     queryFn: () => clientFundingCallService.get(id, versionId!),
+  });
+}
+
+export function useFundingCallPublicInteraction() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: {
+      id: string;
+      enabled: boolean;
+      expectedRowVersion: number;
+    }) =>
+      clientFundingCallService.setPublicInteraction(input.id, {
+        enabled: input.enabled,
+        expectedRowVersion: input.expectedRowVersion,
+      }),
+    onSuccess: () => refreshFundingCallViews(queryClient),
   });
 }

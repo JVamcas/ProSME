@@ -1,4 +1,4 @@
-import { renderToStaticMarkup } from "react-dom/server";
+import { renderAsyncServerComponents } from "../../support/RenderAsyncServerComponents";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { homepageFixture } from "../../support/HomepageFixture";
 
@@ -12,6 +12,10 @@ const state = vi.hoisted(() => ({
 }));
 vi.mock("next/headers", () => ({ draftMode: async () => ({ isEnabled: state.preview }) }));
 vi.mock("next/navigation", () => ({ notFound: state.notFound }));
+vi.mock("@/modules/content/application/ServerPublicPageVisibilityService", () => ({
+  getPublicPageVisibility: async () => ({}),
+  requirePublicPage: async () => {},
+}));
 vi.mock("@/modules/content/ServerContentQueries", () => ({ getHomepage: state.homepage }));
 vi.mock("@/modules/funding-calls/application/ServerPublicFundingCallService", () => ({
   listPublicFundingCalls: state.fundingCalls,
@@ -29,7 +33,7 @@ beforeEach(() => {
 
 describe("Home publication route", () => {
   it("renders published content", async () => {
-    const markup = renderToStaticMarkup(await HomePage());
+    const markup = await renderAsyncServerComponents(await HomePage());
     expect(markup).toContain("Published Home");
     expect(markup).not.toContain("Draft preview");
     expect(state.notFound).not.toHaveBeenCalled();
@@ -45,7 +49,7 @@ describe("Home publication route", () => {
   it("renders an authorized draft supplied by the service with an exit link", async () => {
     state.preview = true;
     state.homepage.mockResolvedValue({ ...homepageFixture, title: "Pending Home" });
-    const markup = renderToStaticMarkup(await HomePage());
+    const markup = await renderAsyncServerComponents(await HomePage());
     expect(markup).toContain("Pending Home");
     expect(markup).toContain("Draft preview");
     expect(markup).toContain('href="/api/preview/exit"');

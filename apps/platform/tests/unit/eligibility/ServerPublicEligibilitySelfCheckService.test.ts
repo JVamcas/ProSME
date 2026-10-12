@@ -61,6 +61,33 @@ beforeEach(() => {
 });
 
 describe("public eligibility self-check", () => {
+  it("rejects evaluation from a questionnaire opened before interaction was disabled", async () => {
+    const workspace = await getPublicEligibilitySelfCheck(fundingCallId);
+    const answers = Object.fromEntries(
+      workspace.questions.map((question) => [question.id, true]),
+    );
+    vi.mocked(findPublicFundingCallById).mockResolvedValue({
+      ...fundingCall,
+      publicInteractionEnabled: false,
+    });
+    await expect(
+      evaluatePublicEligibilitySelfCheck(
+        fundingCallId,
+        { answers, configurationToken: workspace.configurationToken },
+        true,
+      ),
+    ).rejects.toThrow(PublicEligibilitySelfCheckUnavailableError);
+    expect(recordAnonymousEligibilityCheck).not.toHaveBeenCalled();
+  });
+  it("rejects disabled funding calls before exposing the questionnaire", async () => {
+    vi.mocked(findPublicFundingCallById).mockResolvedValue({
+      ...fundingCall,
+      publicInteractionEnabled: false,
+    });
+    await expect(getPublicEligibilitySelfCheck(fundingCallId)).rejects.toThrow(
+      PublicEligibilitySelfCheckUnavailableError,
+    );
+  });
   it("exposes only fields required by self-check and both-mode rules", async () => {
     const workspace = await getPublicEligibilitySelfCheck(fundingCallId);
 

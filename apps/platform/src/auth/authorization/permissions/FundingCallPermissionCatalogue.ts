@@ -11,6 +11,16 @@ function define(
 
 export const fundingCallPermissionCatalogue: readonly PermissionDefinition[] = [
   define(
+    permissionCodes.fundingCallPublicInteractionEnableAll,
+    "Enable public interaction for funding calls",
+    "Enable public viewing, eligibility self-checks and application intake for any funding call, subject to its lifecycle and dates.",
+  ),
+  define(
+    permissionCodes.fundingCallPublicInteractionDisableAll,
+    "Disable public interaction for funding calls",
+    "Disable public viewing, eligibility self-checks and new application intake for any funding call. Existing submitted workflows continue.",
+  ),
+  define(
     permissionCodes.fundingCallRead,
     "Read funding calls",
     "Read funding calls.",

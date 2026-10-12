@@ -1,3 +1,5 @@
+import { getPublicPageVisibility } from "./application/ServerPublicPageVisibilityService";
+import { isPublicPageVisible } from "./domain/PublicPageVisibility";
 import "server-only";
 
 import { homeProcessContent, homeSupportContent } from "./HomeListContent";
@@ -43,7 +45,11 @@ import type {
 export const getHomeNewsAndResources = cache(
   async function getHomeNewsAndResources() {
     await connection();
-    return published.readPublishedHomeFeed();
+    const visibility = await getPublicPageVisibility();
+    return published.readPublishedHomeFeed(
+      isPublicPageVisible(visibility, "news"),
+      isPublicPageVisible(visibility, "resources"),
+    );
   },
 );
 

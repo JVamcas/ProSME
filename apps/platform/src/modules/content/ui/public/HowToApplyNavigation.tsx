@@ -1,3 +1,5 @@
+import { getPublicPageVisibility } from "../../application/ServerPublicPageVisibilityService";
+import { isPublicPathVisible } from "../../domain/PublicPageVisibility";
 import Link from "next/link";
 
 import { cn } from "@/lib/utils";
@@ -14,18 +16,22 @@ const sections = [
   },
 ] as const;
 
-export function HowToApplyNavigation({
+export async function HowToApplyNavigation({
   active,
 }: {
   active: ApplicationGuideSection;
 }) {
+  const visibility = await getPublicPageVisibility();
+  const navigation = sections.filter((section) =>
+    isPublicPathVisible(visibility, section.href),
+  );
   return (
     <div className="border-b border-brand-blue/20 bg-white">
       <nav
         aria-label="How to Apply"
         className="container flex flex-wrap gap-x-5 sm:gap-x-8"
       >
-        {sections.map((section) => (
+        {navigation.map((section) => (
           <Link
             aria-current={active === section.key ? "page" : undefined}
             className={cn(

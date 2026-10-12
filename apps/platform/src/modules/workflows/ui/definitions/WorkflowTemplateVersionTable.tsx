@@ -105,7 +105,7 @@ function columns(
       enableSorting: false,
       cell: ({ row }) => (
         <ArrowLink href={`/admin/workflows/${row.original.id}?versionId=${row.original.currentVersion.id}`}>
-          v${row.original.currentVersion.number}
+          {`v${row.original.currentVersion.number}`}
         </ArrowLink>
       ),
     },

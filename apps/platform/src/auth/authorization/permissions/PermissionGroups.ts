@@ -131,6 +131,8 @@ export const permissionGroups: readonly PermissionGroup[] = [
       permissionCodes.fundingCallApproveAll,
       permissionCodes.fundingCallApprovalRequestOwnWithdraw,
       permissionCodes.fundingCallPublish,
+      permissionCodes.fundingCallPublicInteractionEnableAll,
+      permissionCodes.fundingCallPublicInteractionDisableAll,
       permissionCodes.fundingCallSuspend,
       permissionCodes.fundingCallResume,
       permissionCodes.fundingCallWithdraw,

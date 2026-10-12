@@ -1,3 +1,4 @@
+import { renderAsyncServerComponents } from "../../support/RenderAsyncServerComponents";
 import type {
   CollectionBeforeChangeHook,
   Field,
@@ -21,6 +22,10 @@ vi.mock("@payloadcms/ui", () => ({
   usePayloadAPI: () => [{ data: {}, isLoading: false, isError: false }],
   useEditDepth: () => 1,
   useStepNav: () => ({ stepNav: [], setStepNav: vi.fn() }),
+}));
+vi.mock("@/modules/content/application/ServerPublicPageVisibilityService", () => ({
+  getPublicPageVisibility: async () => ({}),
+  requirePublicPage: async () => {},
 }));
 vi.mock("@/modules/content/ServerContentQueries", () => ({ getPage: state.getPage }));
 vi.mock("@/modules/content/ui/public/ContentBlocks", () => ({
@@ -159,7 +164,7 @@ describe("How to Apply publishing", () => {
 
 describe("public application guide", () => {
   it("renders CMS edits and preserves the application journey and its destination", async () => {
-    const html = renderToStaticMarkup(await HowToApplyPage());
+    const html = await renderAsyncServerComponents(await HowToApplyPage());
     expect(state.getPage).toHaveBeenCalledWith("how-to-apply");
     expect(html).toContain(editedPage.eyebrow);
     expect(html).toContain(editedPage.title);

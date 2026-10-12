@@ -10,12 +10,14 @@ const icons = [Users, Venus, BarChart3, Leaf];
 export function HomeSupport({
   content,
   presentation = "marquee",
+  showEligibilityLink = true,
 }: {
   content: Pick<
     HomepageContent,
     "supportHeading" | "supportIntroduction" | "supportCards"
   >;
   presentation?: "marquee" | "grid";
+  showEligibilityLink?: boolean;
 }) {
   const groups = content.supportCards;
   return (
@@ -30,7 +32,9 @@ export function HomeSupport({
               {content.supportIntroduction}
             </p>
           </div>
-          <ArrowLink href="/eligibility">See eligibility details</ArrowLink>
+          {showEligibilityLink ? (
+            <ArrowLink href="/eligibility">See eligibility details</ArrowLink>
+          ) : null}
         </div>
       </div>
       {presentation === "grid" ? (

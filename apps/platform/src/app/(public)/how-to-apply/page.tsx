@@ -1,3 +1,4 @@
+import { requirePublicPage } from "@/modules/content/application/ServerPublicPageVisibilityService";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
@@ -15,6 +16,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function HowToApplyPage() {
+  await requirePublicPage("funding.application-guide");
   const page = await getPage("how-to-apply");
   if (!page) notFound();
   return (

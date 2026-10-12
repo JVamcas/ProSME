@@ -1,0 +1,100 @@
+.editor :global(.doc-controls) {
+  display: none;
+}
+
+.content {
+  color: var(--brand-navy, #0b1739);
+}
+.content > p {
+  color: #64748b;
+  margin: 12px 0;
+}
+.feedback {
+  min-height: 24px;
+  font-size: 13px;
+}
+.panel {
+  border: 1px solid #dbe3ed;
+  border-radius: 8px;
+  overflow: hidden;
+  background: white;
+}
+.heading,
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.heading {
+  padding: 14px 24px;
+  background: #f4f7fa;
+  font-weight: 600;
+}
+.heading > :last-child {
+  width: 104px;
+}
+.tree {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.row {
+  min-height: 46px;
+  padding: 8px 24px 8px 14px;
+  border-top: 1px solid #e9edf3;
+}
+.row[data-hidden] {
+  color: #64748b;
+}
+.label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.control {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+  width: 104px;
+}
+.control > span {
+  min-width: 24px;
+}
+.expand {
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  min-height: 24px;
+  color: inherit;
+}
+.spacer {
+  width: 24px;
+  flex-shrink: 0;
+}
+.children {
+  margin-left: 28px;
+  border-left: 1px solid #e9edf3;
+}
+
+@media (max-width: 640px) {
+  .row {
+    padding-right: 12px;
+  }
+  .heading {
+    padding: 12px;
+  }
+  .children {
+    margin-left: 14px;
+  }
+  .label {
+    gap: 5px;
+    font-size: 13px;
+  }
+  .control,
+  .heading > :last-child {
+    width: 84px;
+  }
+}

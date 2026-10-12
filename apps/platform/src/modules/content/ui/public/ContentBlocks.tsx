@@ -1,3 +1,8 @@
+import { getPublicPageVisibility } from "../../application/ServerPublicPageVisibilityService";
+import {
+  isPublicPageVisible,
+  isPublicPathVisible,
+} from "../../domain/PublicPageVisibility";
 import Link from "next/link";
 
 import { CmsImage } from "@/modules/content/ui/public/CmsImage";
@@ -62,7 +67,9 @@ async function renderBlock(
         </div>
       </section>
     );
-  if (block.blockType === "callToAction")
+  if (block.blockType === "callToAction") {
+    if (!isPublicPathVisible(await getPublicPageVisibility(), text(block.href)))
+      return null;
     return (
       <section className="bg-orange-pale py-12" key={key}>
         <div className="container flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
@@ -78,6 +85,7 @@ async function renderBlock(
         </div>
       </section>
     );
+  }
   if (block.blockType === "statistics")
     return <StatisticsBlock block={block} key={key} />;
   if (block.blockType === "resourceGrid")
@@ -108,6 +116,7 @@ async function ResourceGrid({
 }
 
 async function FaqList({ block }: { block: Block }) {
+  if (!isPublicPageVisible(await getPublicPageVisibility(), "faq")) return null;
   const category = text(block.category);
   const faqs = (await getFaqs()).filter(
     (item) => !category || item.category === category,

@@ -59,6 +59,7 @@ export async function readFundingCallKnowledgeSources(
     FROM app_funding_calls c
     INNER JOIN app_funding_call_publication_revisions p ON p.id = c.current_published_version_id
     WHERE c.id = ANY(${sql.param(ids)}::uuid[]) AND c.status IN ('SCHEDULED', 'LIVE', 'CLOSED')
+      AND c.public_interaction_enabled
     ORDER BY c.id FOR SHARE OF c, p
   `);
   return result.rows as FundingCallKnowledgeProjection[];
@@ -74,7 +75,7 @@ export async function listFundingCallKnowledgeSources(input: {
       'Publication ' || p.revision_number::text AS revision
     FROM app_funding_calls c
     INNER JOIN app_funding_call_publication_revisions p ON p.id = c.current_published_version_id
-    WHERE c.status IN ('SCHEDULED', 'LIVE', 'CLOSED')
+    WHERE c.status IN ('SCHEDULED', 'LIVE', 'CLOSED') AND c.public_interaction_enabled
       AND (${input.after ?? null}::uuid IS NULL OR c.id > ${input.after ?? null}::uuid)
       AND (p.snapshot->>'title' ILIKE ${`%${input.search}%`}
         OR p.snapshot->>'reference' ILIKE ${`%${input.search}%`})

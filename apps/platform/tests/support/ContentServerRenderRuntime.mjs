@@ -49,6 +49,7 @@ const state = {
   published: true,
   publishedSlug: "about",
   resourceTotal: 25,
+  visibility: {},
 };
 
 function matches(document, where = {}) {
@@ -96,6 +97,7 @@ const payload = {
       siteName: query.draft ? state.draftTitle : state.publishedTitle,
       siteDescription: "Description",
       email: "contact@example.test",
+      visibility: state.visibility,
     };
   },
 };
@@ -120,12 +122,18 @@ function loadSource(filename) {
     if (name === "server-only") return {};
     if (name === "@payload-config") return { default: {} };
     if (name === "payload") return { getPayload: async () => payload };
+    if (name === "@/platform/database/client") {
+      return { getDatabase: () => { throw new Error("Unexpected application database read in CMS renderer fixture"); } };
+    }
     if (name === "next/headers") {
       return {
         draftMode: async () => ({
           isEnabled: requests.getStore()?.preview ?? false,
         }),
       };
+    }
+    if (name === "next/navigation") {
+      return { notFound: () => { throw new Error("NEXT_HTTP_ERROR_FALLBACK;404"); } };
     }
     if (name === "@/auth/authorization/current-user") {
       return { getCurrentUser: async () => requests.getStore()?.user ?? null };
@@ -205,9 +213,12 @@ async function render(
 const hooks = loadSource(path.join(sourceRoot, "payload/hooks/revalidate-public-content.ts"));
 
 async function invalidate(source = "pages", slug = "about", previousSlug) {
+  // Separate a synthetic publication event from the preceding cache file's
+  // fractional modification timestamp before Next records its expiry time.
+  await new Promise((resolve) => setTimeout(resolve, 5));
   const store = { incrementalCache, route: "/api/cms", page: "/api/cms/route" };
   workAsyncStorage.run(store, () => {
-    if (["homepage", "header", "footer", "contact-details", "site-settings"].includes(source)) {
+    if (["homepage", "header", "footer", "contact-details", "site-settings", "public-page-visibility"].includes(source)) {
       hooks.revalidateGlobal({ global: { slug: source }, doc: {}, req: { context: {} } });
     } else {
       hooks.revalidateCollection({

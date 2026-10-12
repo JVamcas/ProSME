@@ -1,6 +1,8 @@
 import "server-only";
 
-import { and, count, desc, eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
+import type { FundingCallVersionItem } from "../api/FundingCallTransport";
 import { getDatabase, type DatabaseTransaction } from "@/db/client";
 import { authorizationAuditEntries } from "@/db/schema";
 import { ResourceConflictError } from "@/lib/resource-errors";
@@ -145,41 +147,76 @@ export async function updateWorkingFundingCall(
   return fundingCallWorkingView(updated, updatedDraft);
 }
 
+function versionRows(id: string) {
+  return sql`
+    SELECT p.id, p.revision_number AS "versionNumber", p.published_at AS "publishedAt",
+      p.snapshot->>'title' AS title,
+      p.id = c.current_published_version_id AS current,
+      CASE WHEN p.id = c.current_published_version_id THEN c.status ELSE 'SUPERSEDED' END AS status,
+      'published' AS kind, NULL::integer AS "sourceVersionNumber", p.published_at AS "sortDate"
+    FROM app_funding_call_publication_revisions p
+    JOIN app_funding_calls c ON c.id = p.funding_call_id
+    WHERE c.id = ${id}::uuid
+    UNION ALL
+    SELECT d.id, NULL::integer, NULL::timestamptz, d.snapshot->>'title', false,
+      d.status, 'working', source.revision_number, d.updated_at
+    FROM app_funding_call_draft_versions d
+    LEFT JOIN app_funding_call_publication_revisions source
+      ON source.id = d.source_version_id AND source.funding_call_id = d.funding_call_id
+    WHERE d.funding_call_id = ${id}::uuid
+    UNION ALL
+    SELECT c.id, NULL::integer, NULL::timestamptz, c.title, false,
+      c.status, 'working', NULL::integer, c.updated_at
+    FROM app_funding_calls c
+    WHERE c.id = ${id}::uuid AND c.current_published_version_id IS NULL
+      AND NOT EXISTS (SELECT 1 FROM app_funding_call_draft_versions d WHERE d.funding_call_id = c.id)
+  `;
+}
+
 export async function listFundingCallVersions(id: string, page: number) {
   const database = getDatabase();
-  const [items, totals] = await Promise.all([
-    database
-      .select({
-        id: fundingCallPublicationRevisions.id,
-        versionNumber: fundingCallPublicationRevisions.revisionNumber,
-        publishedAt: fundingCallPublicationRevisions.publishedAt,
-        title: sql<string>`${fundingCallPublicationRevisions.snapshot}->>'title'`,
-        current: sql<boolean>`${fundingCallPublicationRevisions.id} = ${fundingCalls.currentPublishedVersionId}`,
-      })
-      .from(fundingCallPublicationRevisions)
-      .innerJoin(
-        fundingCalls,
-        eq(fundingCalls.id, fundingCallPublicationRevisions.fundingCallId),
-      )
-      .where(eq(fundingCalls.id, id))
-      .orderBy(desc(fundingCallPublicationRevisions.revisionNumber))
-      .limit(10)
-      .offset((page - 1) * 10),
-    database
-      .select({ total: count() })
-      .from(fundingCallPublicationRevisions)
-      .where(eq(fundingCallPublicationRevisions.fundingCallId, id)),
+  type Row = Omit<FundingCallVersionItem, "publishedAt"> & {
+    publishedAt: Date | string | null;
+  };
+  const selection = versionRows(id);
+  const [rows, totals] = await Promise.all([
+    database.execute<Row>(sql`
+      WITH versions AS (${selection})
+      SELECT id, "versionNumber", "publishedAt", title, current, status, kind, "sourceVersionNumber"
+      FROM versions ORDER BY (kind = 'working') DESC, "versionNumber" DESC NULLS FIRST, "sortDate" DESC, id
+      LIMIT 10 OFFSET ${(page - 1) * 10}
+    `),
+    database.execute<{ total: number }>(sql`
+      WITH versions AS (${selection}) SELECT count(*)::integer AS total FROM versions
+    `),
   ]);
-  return { items, page, pageSize: 10, total: totals[0]?.total ?? 0 };
+  return {
+    items: rows.rows.map((row) => ({
+      ...row,
+      publishedAt: row.publishedAt
+        ? new Date(row.publishedAt).toISOString()
+        : null,
+    })),
+    page,
+    pageSize: 10,
+    total: totals.rows[0]?.total ?? 0,
+  };
 }
 
 export async function readHistoricalFundingCall(
   id: string,
   versionId: string,
 ): Promise<FundingCall | null> {
+  const currentPublication = alias(
+    fundingCallPublicationRevisions,
+    "current_publication",
+  );
   const [row] = await getDatabase()
     .select({
       call: fundingCalls,
+      viewedPublishedVersionNumber:
+        fundingCallPublicationRevisions.revisionNumber,
+      currentPublishedVersionNumber: currentPublication.revisionNumber,
       snapshot: fundingCallPublicationRevisions.snapshot,
       publishedAt: fundingCallPublicationRevisions.publishedAt,
       publishedStatus: fundingCallPublicationRevisions.publishedStatus,
@@ -188,6 +225,13 @@ export async function readHistoricalFundingCall(
     .innerJoin(
       fundingCalls,
       eq(fundingCalls.id, fundingCallPublicationRevisions.fundingCallId),
+    )
+    .leftJoin(
+      currentPublication,
+      and(
+        eq(currentPublication.id, fundingCalls.currentPublishedVersionId),
+        eq(currentPublication.fundingCallId, fundingCalls.id),
+      ),
     )
     .where(
       and(
@@ -203,6 +247,8 @@ export async function readHistoricalFundingCall(
     opensAt: new Date(row.snapshot.opensAt),
     closesAt: new Date(row.snapshot.closesAt),
     viewedPublishedVersionId: versionId,
+    viewedPublishedVersionNumber: row.viewedPublishedVersionNumber,
+    currentPublishedVersionNumber: row.currentPublishedVersionNumber,
     status: row.publishedStatus,
     updatedAt: row.publishedAt,
   };

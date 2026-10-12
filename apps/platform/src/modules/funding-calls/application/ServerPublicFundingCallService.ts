@@ -49,10 +49,15 @@ function summary(
 ): PublicFundingCallSummary {
   const status = publicFundingCallStatus(call, now);
   const thumbnailVersion = call.thumbnailObjectKey
-    ? createHash("sha256").update(call.thumbnailObjectKey).digest("hex").slice(0, 16)
+    ? createHash("sha256")
+        .update(call.thumbnailObjectKey)
+        .digest("hex")
+        .slice(0, 16)
     : null;
   return {
-    applicationsOpen: status === "open",
+    publicInteractionEnabled: call.publicInteractionEnabled !== false,
+    applicationsOpen:
+      call.publicInteractionEnabled !== false && status === "open",
     closesAt: call.closesAt.toISOString(),
     fundingInstrument: call.fundingInstrument,
     id: call.id,
@@ -60,7 +65,9 @@ function summary(
     minimumAmount: Number(call.minimumGrantAmount),
     opensAt: call.opensAt.toISOString(),
     reference: call.reference,
-    selfCheckAvailable: call.eligibilityRuleSetVersionId !== null,
+    selfCheckAvailable:
+      call.publicInteractionEnabled !== false &&
+      call.eligibilityRuleSetVersionId !== null,
     slug: call.slug,
     status,
     summary: richTextToPlainText(call.description),
@@ -146,7 +153,9 @@ export async function findPublicFundingCallById(
     return null;
   }
   const call = await readPublicFundingCallById(id);
-  return call ? detail(call, new Date()) : null;
+  return call && call.publicInteractionEnabled !== false
+    ? detail(call, new Date())
+    : null;
 }
 
 export async function getPublicFundingCallById(id: string) {

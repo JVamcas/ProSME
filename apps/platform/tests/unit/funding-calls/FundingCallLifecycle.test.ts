@@ -50,6 +50,12 @@ describe("funding call lifecycle", () => {
     ).toBe(target);
   });
 
+  it("blocks intake when interaction is disabled and still enforces lifecycle/dates when enabled", () => {
+    expect(isFundingCallEffectivelyOpen({ ...source("LIVE"), publicInteractionEnabled: false }, insideWindow)).toBe(false);
+    expect(isFundingCallEffectivelyOpen({ ...source("LIVE"), publicInteractionEnabled: true }, insideWindow)).toBe(true);
+    expect(isFundingCallEffectivelyOpen({ ...source("SUSPENDED"), publicInteractionEnabled: true }, insideWindow)).toBe(false);
+    expect(isFundingCallEffectivelyOpen({ ...source("LIVE"), publicInteractionEnabled: true }, closesAt)).toBe(false);
+  });
   it("denies every unlisted transition", () => {
     const allowed = new Set([
       "DRAFT:SUBMIT_FOR_APPROVAL",
