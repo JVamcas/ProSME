@@ -101,7 +101,9 @@ function collectionPaths(
 export const revalidateGlobal: GlobalAfterChangeHook = ({ doc, global, req }) => {
   if (req.context?.skipRevalidation) return doc;
   // Header/footer/settings/contact are shared by every public route.
-  const paths = global.slug === "site-settings" ? ["/robots.txt"] : [];
+  const paths = ["site-settings", "public-page-visibility"].includes(global.slug)
+    ? ["/robots.txt"]
+    : [];
   revalidate(global.slug, paths, true);
   return doc;
 };

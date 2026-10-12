@@ -26,6 +26,7 @@ export const fundingCalls = pgTable(
   "app_funding_calls",
   {
     id: uuid("id").primaryKey().defaultRandom(),
+    publicInteractionEnabled: boolean("public_interaction_enabled").notNull().default(true),
     currentPublishedVersionId: uuid("current_published_version_id"),
     reference: text("reference").notNull(),
     slug: text("slug").notNull(),

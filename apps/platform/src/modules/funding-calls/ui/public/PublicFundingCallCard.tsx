@@ -15,6 +15,7 @@ export function PublicFundingCallCard({
 }: {
   call: PublicFundingCallSummary;
 }) {
+  const enabled = call.publicInteractionEnabled !== false;
   const detailHref = publicFundingCallHref(call.id);
 
   return (
@@ -42,12 +43,16 @@ export function PublicFundingCallCard({
       <div className="flex flex-1 flex-col p-5 sm:p-6">
         <div className="min-w-0">
           <h3 className="text-xl font-bold leading-tight text-brand-navy">
-            <Link
-              className="after:absolute after:inset-0 after:rounded-xl focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-brand-navy focus-visible:after:ring-offset-2"
-              href={detailHref}
-            >
-              {call.title}
-            </Link>
+            {enabled ? (
+              <Link
+                className="after:absolute after:inset-0 after:rounded-xl focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-brand-navy focus-visible:after:ring-offset-2"
+                href={detailHref}
+              >
+                {call.title}
+              </Link>
+            ) : (
+              <span>{call.title}</span>
+            )}
           </h3>
           <p className="mt-2 line-clamp-3 text-sm leading-6 text-brand-navy/70 sm:text-base">
             {call.summary}
@@ -60,9 +65,15 @@ export function PublicFundingCallCard({
 
         <div className="mt-auto flex items-center justify-between gap-3 pt-5 text-sm font-semibold">
           <span className="inline-flex items-center gap-2 text-brand-navy transition group-hover:text-brand-orange">
-            View call <ArrowRight aria-hidden className="size-4" />
+            {enabled ? (
+              <>
+                View call <ArrowRight aria-hidden className="size-4" />
+              </>
+            ) : (
+              "Public interaction disabled"
+            )}
           </span>
-          {call.selfCheckAvailable && call.status !== "closed" ? (
+          {enabled && call.selfCheckAvailable && call.status !== "closed" ? (
             <Link
               className="relative z-10 text-brand-orange underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-navy focus-visible:ring-offset-2"
               href={publicEligibilityHref(call.id)}

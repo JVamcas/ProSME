@@ -40,9 +40,9 @@ async function verifyDeduplication() {
     assert.equal(await content.getPage("different"), null);
     assert.equal((await content.getListingItem("news", "1")).title, state.publishedTitle);
   });
-  // Five globals, six collection reads, four bounded feed reads, resource detail,
+  // Six globals (including page visibility), six collection reads, four bounded feed reads, resource detail,
   // a distinct page slug and direct news detail. Identical getters run only once.
-  assert.equal(calls.length, 18);
+  assert.equal(calls.length, 19);
   assert.equal(calls.filter((query) => query.slug === "site-settings").length, 1);
   assert.equal(calls.filter((query) => query.collection === "programme-statistics").length, 1);
   return { readsWithMemoization: calls.length };
@@ -118,7 +118,8 @@ async function verifyPreview() {
     "cms.news.read",
     "cms.resources.read",
   ]);
-  assert(calls.length === 0 || calls.length === 4);
+  const feedReads = calls.filter((query) => query.collection);
+  assert(feedReads.length === 0 || feedReads.length === 4);
   assert(calls.every((query) => query.draft === false));
   const [preview, publicPage] = await Promise.all([
     render(() => content.getPage("about"), true, ["cms.pages.read"]),
@@ -226,6 +227,23 @@ async function verifyRestartIsolation() {
   return true;
 }
 
+async function verifyVisibility() {
+  state.published = true;
+  state.visibility = { news: false };
+  await invalidate("public-page-visibility");
+  const resourcesOnly = await render(() => content.getHomeNewsAndResources());
+  assert(resourcesOnly.length > 0);
+  assert(resourcesOnly.every((item) => item.kind === "resource"));
+  state.visibility = { news: false, resources: false };
+  await invalidate("public-page-visibility");
+  assert.deepEqual(await render(() => content.getHomeNewsAndResources()), []);
+  state.visibility = {};
+  await invalidate("public-page-visibility");
+  const restored = await render(() => content.getHomeNewsAndResources());
+  assert(restored.some((item) => item.kind === "news"));
+  return true;
+}
+
 (async () => {
   const report = {
     deduplication: await verifyDeduplication(),
@@ -234,6 +252,7 @@ async function verifyRestartIsolation() {
     buildFallback: await verifyBuildFallback(),
     persistentCache: await verifyPersistentCache(),
     resourcePagination: await verifyResourcePagination(),
+    visibility: await verifyVisibility(),
     restartIsolation: await verifyRestartIsolation(),
   };
   await cleanup();

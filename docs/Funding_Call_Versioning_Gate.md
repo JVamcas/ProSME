@@ -2,6 +2,39 @@
 
 Date: 2026-10-09
 
+## Version identity and complete version listing — 2026-10-12
+
+The existing page header now identifies the version being viewed, whether it is
+an initial unpublished version or a replacement draft, the replacement's source
+publication number, and the current publication number. Historical drawer
+headers identify the selected version as read-only and show the current
+publication separately. Numbering remains assigned at publication.
+
+The table is named **Versions** and includes the initial unpublished call or
+replacement under Draft, Approval Pending, or Approved, followed by all
+published versions. **Status** replaces **Publication**: the current publication
+shows its effective lifecycle status and earlier publications show Superseded.
+Unpublished rows show their source when applicable and have no publication date.
+Viewing a working row uses the existing loaded editor data; historical views
+continue to fetch the exact selected publication.
+
+Version numbers are resolved with bounded joins in the existing detail/history
+queries. The version list uses a narrow SQL union projection, filtering by call,
+ordering, paging, and counting in SQL. Mutation hooks await an authoritative
+detail/history refresh because command responses omit these read-only metadata.
+No schema change or migration is required for this change.
+
+Recorded verification: 43 funding-call unit files / 211 tests passed; the two
+affected public-route fixture files passed separately with 10 tests after
+adapting them to the public visibility server views. Four disposable PostgreSQL
+tests passed for working/published rows, statuses, source version 2 versus current
+version 4, historical call scope, projection shape, and pagination boundaries.
+The disposable container was removed. Type checking, architecture boundaries,
+form architecture, component reuse, and file-size checks passed. Repository lint
+passed with existing warnings; the changed client service's final lint check
+passed without warnings. Browser/deployed
+acceptance remains separate; no production build or deployment was performed.
+
 ## Implemented behavior
 
 Editing a published funding call, application form, workflow template, or

@@ -95,14 +95,14 @@ export async function findPublishedFundingOpportunity(
   id: string,
 ): Promise<FundingOpportunityDetail | null> {
   const call = await readPublishedFundingCall(id);
-  return call
+  return call && call.publicInteractionEnabled !== false
     ? { ...summary(call, new Date()), description: call.description }
     : null;
 }
 
 export async function resolvePublishedApplicationFormBinding(id: string) {
   const call = await readPublishedFundingCall(id);
-  if (!call) return null;
+  if (!call || call.publicInteractionEnabled === false) return null;
   return {
     allowResubmissionAfterWithdrawal: call.allowResubmissionAfterWithdrawal,
     applicationDuplicatePolicy: call.applicationDuplicatePolicy,
@@ -116,7 +116,7 @@ export async function resolvePublishedApplicationFormBinding(id: string) {
 
 export async function resolvePublishedEligibilityRuleSetBinding(id: string) {
   const call = await readPublishedFundingCall(id);
-  if (!call) return null;
+  if (!call || call.publicInteractionEnabled === false) return null;
   return {
     eligibilityRuleSetVersionId: call.eligibilityRuleSetVersionId,
     formVersionId: call.formVersionId,

@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-import { CloneButton, DeleteButton } from "@/components/ui/action-buttons";
 import { GeneralButton, GeneralButtonLink } from "@/components/ui/button";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { DataTable, type DataTableColumn } from "@/shared/ui/DataTable";
@@ -17,18 +16,16 @@ import {
   useCloneFundingCall,
   useDeleteFundingCall,
   useFundingCalls,
+  useFundingCallPublicInteraction,
 } from "../FundingCallHooks";
-import { FundingCallExceptionalActions } from "./FundingCallExceptionalActions";
+import {
+  FundingCallListActions,
+  type FundingCallListActionOptions,
+} from "./FundingCallListActions";
 
-function columns(input: {
-  canClone: boolean;
-  canDelete: boolean;
-  canWithdrawForAmendment: boolean;
-  cloningId?: string;
-  deletingId?: string;
-  onClone: (call: FundingCallView) => void;
-  onDelete: (call: FundingCallView) => void;
-}): DataTableColumn<FundingCallView>[] {
+function columns(
+  input: FundingCallListActionOptions,
+): DataTableColumn<FundingCallView>[] {
   return [
     {
       accessorKey: "title",
@@ -65,29 +62,7 @@ function columns(input: {
       header: "Actions",
       enableSorting: false,
       cell: ({ row }) => (
-        <div className="flex items-center gap-1">
-          <FundingCallExceptionalActions
-            call={row.original}
-            canArchive={false}
-            canResume={false}
-            canSuspend={false}
-            canWithdraw={false}
-            canWithdrawForAmendment={input.canWithdrawForAmendment}
-            display="menu"
-          />
-          <CloneButton
-            disabled={!input.canClone}
-            isLoading={input.cloningId === row.original.id}
-            onClick={() => input.onClone(row.original)}
-            title={`Clone ${row.original.title}`}
-          />
-          <DeleteButton
-            disabled={!input.canDelete}
-            isLoading={input.deletingId === row.original.id}
-            onClick={() => input.onDelete(row.original)}
-            title={`Delete ${row.original.title}`}
-          />
-        </div>
+        <FundingCallListActions {...input} call={row.original} />
       ),
     },
   ];
@@ -97,11 +72,15 @@ export function FundingCallList({
   canCreate,
   canDelete,
   canWithdrawForAmendment = false,
+  canEnablePublicInteraction = false,
+  canDisablePublicInteraction = false,
   fundingCallId,
 }: {
   canCreate: boolean;
   canDelete: boolean;
   canWithdrawForAmendment?: boolean;
+  canEnablePublicInteraction?: boolean;
+  canDisablePublicInteraction?: boolean;
   fundingCallId?: string;
 }) {
   const router = useRouter();
@@ -111,6 +90,7 @@ export function FundingCallList({
   const query = useFundingCalls(page, pageSize, fundingCallId);
   const cloneCall = useCloneFundingCall();
   const deleteCall = useDeleteFundingCall();
+  const interaction = useFundingCallPublicInteraction();
 
   function handleClone(call: FundingCallView) {
     cloneCall.mutate(call.id, {
@@ -133,10 +113,23 @@ export function FundingCallList({
     });
   }
 
+  function handleToggleInteraction(call: FundingCallView) {
+    const enabled = call.publicInteractionEnabled === false;
+    interaction.mutate(
+      { id: call.id, enabled, expectedRowVersion: call.rowVersion },
+      {
+        onError: (error) => toast.error(error.message),
+        onSuccess: () =>
+          toast.success(
+            `Public interaction ${enabled ? "enabled" : "disabled"} for ${call.title}.`,
+          ),
+      },
+    );
+  }
+
   useEffect(() => {
-    if (query.error)
-      toast.error(query.error.message)
-  }, [query.error])
+    if (query.error) toast.error(query.error.message);
+  }, [query.error]);
 
   return (
     <>
@@ -145,6 +138,12 @@ export function FundingCallList({
           canClone: canCreate,
           canDelete,
           canWithdrawForAmendment,
+          canEnablePublicInteraction,
+          canDisablePublicInteraction,
+          changingInteractionId: interaction.isPending
+            ? interaction.variables?.id
+            : undefined,
+          onToggleInteraction: handleToggleInteraction,
           cloningId: cloneCall.isPending ? cloneCall.variables : undefined,
           deletingId: deleteCall.isPending ? deleteCall.variables : undefined,
           onClone: handleClone,
@@ -154,9 +153,9 @@ export function FundingCallList({
         emptyMessage={
           query.isPending
             ? "Loading funding calls…"
-            : query.error?.message ?? "No funding calls configured."
+            : (query.error?.message ?? "No funding calls configured.")
         }
-        footer={(
+        footer={
           <Pagination
             disabled={query.isFetching}
             hasNextPage={
@@ -172,7 +171,7 @@ export function FundingCallList({
             pageSize={query.data?.pageSize ?? pageSize}
             total={query.data?.total ?? 0}
           />
-        )}
+        }
         rowKey={(call) => String(call.id)}
         toolbar={{
           actions: (
@@ -190,9 +189,7 @@ export function FundingCallList({
                   Create funding call
                 </GeneralButtonLink>
               ) : (
-                <GeneralButton disabled>
-                  Create funding call
-                </GeneralButton>
+                <GeneralButton disabled>Create funding call</GeneralButton>
               )}
             </>
           ),
@@ -209,9 +206,11 @@ export function FundingCallList({
         isLoading={deleteCall.isPending}
         isOpen={Boolean(deleteCandidate)}
         loadingText="Deleting…"
-        message={deleteCandidate
-          ? `Delete ${deleteCandidate.title}? Funding calls with applications cannot be deleted. This action cannot be undone.`
-          : ""}
+        message={
+          deleteCandidate
+            ? `Delete ${deleteCandidate.title}? Funding calls with applications cannot be deleted. This action cannot be undone.`
+            : ""
+        }
         onCancel={() => setDeleteCandidate(undefined)}
         onConfirm={handleDelete}
         title="Delete funding call"

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { primaryNavigation } from "@/components/layout/primary-navigation";
+import { primaryNavigation } from "@/modules/content/PublicNavigation";
 
 describe("primary navigation", () => {
   it("defines application routes in code", () => {

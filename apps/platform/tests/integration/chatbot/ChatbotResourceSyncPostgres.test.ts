@@ -35,6 +35,67 @@ const runtime = () => createKnowledgeRuntime(() => storage);
 (url ? describe : describe.skip)(
   "automatic published-resource synchronization",
   () => {
+    it("removes hidden parents and descendants from answers and restores their active selections", async () => {
+      await save([
+        `funding:${chatbotId(10)}`,
+        `eligibility:${chatbotId(10)}`,
+        "faq:1",
+      ]);
+      const bot = runtime();
+      const original = await bot.load();
+      await fixture.pool.query(
+        "UPDATE cms_public_page_visibility SET visibility = $1",
+        [
+          {
+            funding: false,
+            "funding.overview.sectors": true,
+          },
+        ],
+      );
+      const hidden = await bot.load();
+      expect(hidden.lease.releaseId).not.toBe(original.lease.releaseId);
+      expect(new Set(hidden.records.map((record) => record.kind))).toEqual(
+        new Set(["faq"]),
+      );
+      await fixture.pool.query(
+        "UPDATE cms_public_page_visibility SET visibility = $1",
+        [
+          {
+            funding: true,
+            "funding.overview": false,
+            "funding.overview.sectors": true,
+          },
+        ],
+      );
+      const childrenHidden = await bot.load();
+      expect(
+        new Set(childrenHidden.records.map((record) => record.kind)),
+      ).toEqual(new Set(["funding-call", "eligibility-criterion", "faq"]));
+      await fixture.pool.query(
+        "UPDATE cms_public_page_visibility SET visibility = '{}'::jsonb",
+      );
+      const restored = await bot.load();
+      expect(new Set(restored.records.map((record) => record.kind))).toEqual(
+        new Set(["funding-call", "eligibility-criterion", "faq"]),
+      );
+      await fixture.pool.query(
+        "UPDATE app_funding_calls SET public_interaction_enabled = false WHERE id = $1",
+        [chatbotId(10)],
+      );
+      const interactionDisabled = await bot.load();
+      expect(
+        new Set(interactionDisabled.records.map((record) => record.kind)),
+      ).toEqual(new Set(["faq"]));
+      await fixture.pool.query(
+        "UPDATE app_funding_calls SET public_interaction_enabled = true WHERE id = $1",
+        [chatbotId(10)],
+      );
+      expect(
+        (await bot.load()).records.some(
+          (record) => record.kind === "funding-call",
+        ),
+      ).toBe(true);
+    });
     it("uses active Funding, Eligibility, FAQ and Contact resources without another approval", async () => {
       await save([
         `funding:${chatbotId(10)}`,

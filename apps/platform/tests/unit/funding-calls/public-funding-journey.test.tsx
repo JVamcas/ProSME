@@ -1,5 +1,6 @@
+import type { ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { defaultEligibilityFocusSection } from "@/modules/content/EligibilityPageContent";
 import {
@@ -12,9 +13,20 @@ import { PublicFundingCallNextStep } from "@/modules/funding-calls/ui/public/Pub
 import { PublicFundingPage } from "@/modules/funding-calls/ui/public/PublicFundingPage";
 import { publicCall } from "./PublicFundingCallFixture";
 
+// Visibility behavior has dedicated policy/surface tests; this fixture isolates
+// the funding journey's existing editorial and questionnaire composition.
+vi.mock("@/modules/content/ui/public/PublicVisibility", () => ({
+  PublicVisibility: ({ children }: { children: ReactNode }) => children,
+}));
+
 const detailHref = "/how-to-apply/funding/00000000-0000-4000-8000-000000000042";
 
 describe("public funding journey", () => {
+  it("renders a disabled call without clickable call or eligibility destinations", () => {
+    const markup = renderToStaticMarkup(<PublicFundingCallCard call={publicCall({ publicInteractionEnabled: false })} />);
+    expect(markup).toContain("Public interaction disabled");
+    expect(markup).not.toContain('href=');
+  });
   it("links both actions to the specific call and shows its actual amount and date", () => {
     const markup = renderToStaticMarkup(
       <PublicFundingCallCard call={publicCall()} />,

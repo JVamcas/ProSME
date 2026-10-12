@@ -56,6 +56,15 @@ describe("Home feed queries", () => {
     }
   });
 
+  it("does not query hidden collections and fills the feed from visible sources", async () => {
+    expect(await readHomeFeed(false, true)).toEqual([]);
+    expect(find).toHaveBeenCalledTimes(2);
+    expect(find.mock.calls.every(([query]) => query.collection === "resources")).toBe(true);
+    find.mockClear();
+    expect(await readHomeFeed(false, false)).toEqual([]);
+    expect(find).not.toHaveBeenCalled();
+  });
+
   function item(id: number, publishedAt: string | null, createdAt = "2026-09-01") {
     return {
       id,

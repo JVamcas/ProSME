@@ -12,7 +12,10 @@ export function PublicFundingCallNextStep({
 }: {
   call: PublicFundingCallDetail;
 }) {
-  const available = call.selfCheckAvailable && call.status !== "closed";
+  const available =
+    call.publicInteractionEnabled !== false &&
+    call.selfCheckAvailable &&
+    call.status !== "closed";
   return (
     <aside className="h-fit rounded-xl border border-brand-blue/25 bg-brand-blue/5 p-5 sm:p-7">
       <PublicFundingCallStatus call={call} />

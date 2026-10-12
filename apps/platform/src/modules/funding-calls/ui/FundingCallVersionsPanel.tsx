@@ -6,6 +6,12 @@ import { Pagination } from "@/components/ui/pagination";
 import { ActionMenu } from "@/shared/ui/ActionMenu";
 import { DataTable } from "@/shared/ui/DataTable";
 import { RightDrawer } from "@/shared/ui/RightDrawer";
+import { StatusBadge } from "@/components/ui/status-badge";
+import type {
+  FundingCallView,
+  FundingCallVersionItem,
+} from "../api/FundingCallTransport";
+import { FundingCallVersionContext } from "./FundingCallVersionContext";
 import {
   useFundingCallVersion,
   useFundingCallVersions,
@@ -17,52 +23,68 @@ export function FundingCallVersionsPanel({
   id,
   canEdit,
   rowVersion,
+  call,
 }: {
   id: string;
   canEdit: boolean;
   rowVersion: number;
+  call?: FundingCallView;
 }) {
   const [page, setPage] = useState(1);
-  const [selected, setSelected] = useState<string | null>(null);
+  const [selected, setSelected] = useState<FundingCallVersionItem | null>(null);
   const versions = useFundingCallVersions(id, page);
-  const history = useFundingCallVersion(id, selected);
+  const history = useFundingCallVersion(
+    id,
+    selected?.kind === "working" ? null : (selected?.id ?? null),
+  );
+  const displayedCall = selected?.kind === "working" ? call : history.data;
   const prepare = usePrepareFundingCallReplacement(id);
   return (
     <section className="mt-6 space-y-3">
-      <h2 className="text-xl font-bold text-brand-navy">Published versions</h2>
+      <h2 className="text-xl font-bold text-brand-navy">Versions</h2>
       <DataTable
         data={versions.data?.items ?? []}
-        emptyMessage={
-          versions.isPending ? "Loading versions…" : "No published versions"
-        }
+        emptyMessage={versions.isPending ? "Loading versions…" : "No versions"}
         columns={[
-          { accessorKey: "versionNumber", header: "Version" },
+          {
+            accessorKey: "versionNumber",
+            header: "Version",
+            cell: ({ row }) =>
+              row.original.kind === "working"
+                ? `Unpublished${row.original.sourceVersionNumber ? ` · Based on version ${row.original.sourceVersionNumber}` : ""}`
+                : `Version ${row.original.versionNumber}`,
+          },
           { accessorKey: "title", header: "Title" },
           {
             accessorKey: "publishedAt",
             header: "Published",
             cell: ({ row }) =>
-              new Date(row.original.publishedAt).toLocaleString(),
+              row.original.publishedAt
+                ? new Date(row.original.publishedAt).toLocaleString()
+                : "Not published",
           },
           {
-            accessorKey: "current",
-            header: "Publication",
-            cell: ({ row }) =>
-              row.original.current ? "Current" : "Superseded",
+            accessorKey: "status",
+            header: "Status",
+            cell: ({ row }) => <StatusBadge status={row.original.status} />,
           },
           {
             id: "view",
             header: "",
             cell: ({ row }) => (
               <ActionMenu
-                label={`Actions for version ${row.original.versionNumber}`}
+                label={
+                  row.original.kind === "working"
+                    ? "Actions for unpublished version"
+                    : `Actions for version ${row.original.versionNumber}`
+                }
                 items={[
                   {
                     id: "view-version",
                     label: "View version",
-                    onAction: () => setSelected(row.original.id),
+                    onAction: () => setSelected(row.original),
                   },
-                  ...(canEdit
+                  ...(canEdit && row.original.kind !== "working"
                     ? [
                         {
                           id: "edit-version",
@@ -101,11 +123,22 @@ export function FundingCallVersionsPanel({
         open={Boolean(selected)}
         onClose={() => setSelected(null)}
         size="xl"
-        title="Published funding call version"
+        title={
+          selected?.kind === "working"
+            ? "Unpublished funding call version"
+            : `Funding call · Version ${selected?.versionNumber ?? ""} · Read-only`
+        }
       >
-        {history.isPending ? <p>Loading version…</p> : null}
-        {history.data ? (
-          <FundingCallReadOnlyReview call={history.data} />
+        {selected?.kind !== "working" && history.isPending ? (
+          <p>Loading version…</p>
+        ) : null}
+        {displayedCall ? (
+          <>
+            <p className="mb-4 text-sm text-brand-navy/65">
+              <FundingCallVersionContext call={displayedCall} />
+            </p>
+            <FundingCallReadOnlyReview call={displayedCall} />
+          </>
         ) : null}
       </RightDrawer>
     </section>

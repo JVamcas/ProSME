@@ -1,3 +1,6 @@
+import { getPublicPageVisibility } from "@/modules/content/application/ServerPublicPageVisibilityService";
+import { isPublicPathVisible } from "@/modules/content/domain/PublicPageVisibility";
+import { PublicVisibility } from "@/modules/content/ui/public/PublicVisibility";
 import { HomeHero } from "@/modules/content/ui/public/HomeHero";
 import { draftMode } from "next/headers";
 import { notFound } from "next/navigation";
@@ -12,9 +15,11 @@ import { listPublicFundingCalls } from "@/modules/funding-calls/application/Serv
 
 export default async function HomePage() {
   const preview = (await draftMode()).isEnabled;
-  const [homepage, fundingCalls] = await Promise.all([
+  const [homepage, fundingCalls, visibility] = await Promise.all([
     getHomepage(),
+
     listPublicFundingCalls({ limit: 2, status: "open" }),
+    getPublicPageVisibility(),
   ]);
   if (!homepage) notFound();
   const newsBlocks = homepage.blocks.filter(isResourceGrid);
@@ -31,20 +36,40 @@ export default async function HomePage() {
           </Link>
         </div>
       ) : null}
-      <HomeHero content={homepage} />
-      <HomeActions content={homepage} />
-      <HomeFundingCall
-        call={fundingCalls.items[0]}
-        showViewAll={fundingCalls.total > 1}
-        slogan={homepage.fundingSlogan}
-      />
-      <ContentBlocks
-        blocks={newsBlocks}
-        resourceIntroduction={homepage.newsIntroduction}
-      />
-      <HomeProcess content={homepage} />
-      <HomeSupport content={homepage} />
-      <ContentBlocks blocks={remainingBlocks} />
+      <PublicVisibility pageKey="home.banner">
+        <HomeHero
+          content={homepage}
+          showFundingLink={isPublicPathVisible(visibility, "/funding")}
+        />
+      </PublicVisibility>
+      <PublicVisibility pageKey="home.action-cards">
+        <HomeActions content={homepage} visibility={visibility} />
+      </PublicVisibility>
+      <PublicVisibility pageKey="funding">
+        <HomeFundingCall
+          call={fundingCalls.items[0]}
+          showViewAll={fundingCalls.total > 1}
+          slogan={homepage.fundingSlogan}
+        />
+      </PublicVisibility>
+      <PublicVisibility pageKey="home.additional-content">
+        <ContentBlocks
+          blocks={newsBlocks}
+          resourceIntroduction={homepage.newsIntroduction}
+        />
+      </PublicVisibility>
+      <PublicVisibility pageKey="home.how-it-works">
+        <HomeProcess content={homepage} />
+      </PublicVisibility>
+      <PublicVisibility pageKey="home.who-we-support">
+        <HomeSupport
+          content={homepage}
+          showEligibilityLink={isPublicPathVisible(visibility, "/eligibility")}
+        />
+      </PublicVisibility>
+      <PublicVisibility pageKey="home.additional-content">
+        <ContentBlocks blocks={remainingBlocks} />
+      </PublicVisibility>
     </>
   );
 }

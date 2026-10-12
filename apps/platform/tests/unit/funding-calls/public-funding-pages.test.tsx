@@ -1,4 +1,4 @@
-import { renderToStaticMarkup } from "react-dom/server";
+import { renderAsyncServerComponents } from "../../support/RenderAsyncServerComponents";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import LegacyFundingPage from "@/app/(public)/funding/page";
@@ -44,6 +44,10 @@ vi.mock(
   }),
 );
 
+vi.mock("@/modules/content/application/ServerPublicPageVisibilityService", () => ({
+  getPublicPageVisibility: async () => ({}),
+}));
+
 const params = Promise.resolve({ fundingCallId: publicCall().id });
 
 describe("public application guide routes", () => {
@@ -81,7 +85,7 @@ describe("public application guide routes", () => {
   });
 
   it("asks the visitor to choose rather than silently defaulting even when only one call exists", async () => {
-    const markup = renderToStaticMarkup(
+    const markup = await renderAsyncServerComponents(
       await EligibilityCallChooser({ searchParams: Promise.resolve({}) }),
     );
     expect(markup).toContain("Choose a call to check eligibility");
@@ -92,7 +96,7 @@ describe("public application guide routes", () => {
   });
 
   it("runs the questionnaire against the call resolved from the URL", async () => {
-    const markup = renderToStaticMarkup(await EligibilityPage({ params }));
+    const markup = await renderAsyncServerComponents(await EligibilityPage({ params }));
     expect(findPublicFundingCallById).toHaveBeenCalledWith(publicCall().id);
     expect(markup).toContain(`data-check-call="${publicCall().id}"`);
     expect(markup).toContain("You are checking");
@@ -110,7 +114,7 @@ describe("public application guide routes", () => {
     vi.mocked(findPublicFundingCallById).mockResolvedValue(
       publicCall({ applicationsOpen: false, status: "closed" }),
     );
-    const markup = renderToStaticMarkup(await EligibilityPage({ params }));
+    const markup = await renderAsyncServerComponents(await EligibilityPage({ params }));
     expect(markup).toContain("Applications for this funding call have closed");
     expect(markup).not.toContain("Call-specific questionnaire");
   });

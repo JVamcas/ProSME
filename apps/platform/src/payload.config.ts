@@ -30,6 +30,7 @@ import { ContactDetails } from "@/payload/globals/ContactDetails";
 import { Footer } from "@/payload/globals/Footer";
 import { Header } from "@/payload/globals/Header";
 import { Homepage } from "@/payload/globals/Homepage";
+import { PublicPageVisibility } from "@/payload/globals/PublicPageVisibility";
 import { SiteSettings } from "@/payload/globals/SiteSettings";
 
 const filename = fileURLToPath(import.meta.url);
@@ -93,7 +94,7 @@ export default buildConfig({
     push: false,
   }),
   editor: lexicalEditor(),
-  globals: [Header, Footer, Homepage, ContactDetails, SiteSettings],
+  globals: [Header, Footer, Homepage, ContactDetails, SiteSettings, PublicPageVisibility],
   plugins: [
     gcsStorage({
       alwaysInsertFields: true,

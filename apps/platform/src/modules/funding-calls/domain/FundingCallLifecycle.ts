@@ -117,22 +117,27 @@ export function resolveFundingCallTransition(
 
   return {
     sourceStatus: source.status,
-    suspendedFromStatus: command === "SUSPEND"
-      ? source.status as FundingCallPublishedStatus
-      : targetStatus === "SUSPENDED"
-        ? source.suspendedFromStatus
-        : null,
+    suspendedFromStatus:
+      command === "SUSPEND"
+        ? (source.status as FundingCallPublishedStatus)
+        : targetStatus === "SUSPENDED"
+          ? source.suspendedFromStatus
+          : null,
     targetStatus,
   };
 }
 
 export function isFundingCallEffectivelyOpen(
-  source: Pick<FundingCallLifecycleSource, "closesAt" | "opensAt" | "status">,
+  source: Pick<
+    FundingCallLifecycleSource,
+    "closesAt" | "opensAt" | "status"
+  > & { publicInteractionEnabled?: boolean },
   now: Date,
 ) {
   return (
-    (source.status === "SCHEDULED" || source.status === "LIVE")
-    && source.opensAt <= now
-    && now < source.closesAt
+    source.publicInteractionEnabled !== false &&
+    (source.status === "SCHEDULED" || source.status === "LIVE") &&
+    source.opensAt <= now &&
+    now < source.closesAt
   );
 }

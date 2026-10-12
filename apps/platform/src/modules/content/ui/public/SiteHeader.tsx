@@ -3,13 +3,22 @@ import Link from "next/link";
 import { ArrowRight, Menu } from "lucide-react";
 
 import { ActiveNavigationLink } from "@/shared/ui/navigation/ActiveNavigationLink";
-import { primaryNavigation } from "@/components/layout/primary-navigation";
+import { primaryNavigation } from "@/modules/content/PublicNavigation";
 import { getHeader } from "@/modules/content/ServerContentQueries";
+import { getPublicPageVisibility } from "../../application/ServerPublicPageVisibilityService";
+import { isPublicPathVisible } from "../../domain/PublicPageVisibility";
+import type { NavigationItem } from "../../PublicNavigation";
 import type { HeaderContent } from "@/modules/content/ContentTypes";
 import { GeneralButtonLink } from "@/components/ui/button";
 
 export async function SiteHeader() {
-  const content = await getHeader();
+  const [content, visibility] = await Promise.all([
+    getHeader(),
+    getPublicPageVisibility(),
+  ]);
+  const navigation = primaryNavigation.filter((link) =>
+    isPublicPathVisible(visibility, link.href),
+  );
 
   return (
     <header className="sticky top-0 z-50 shadow-md">
@@ -48,11 +57,14 @@ export async function SiteHeader() {
             <GeneralButtonLink href="/sign-in" variant={"outlineWhite"}>
               Sign in
             </GeneralButtonLink>
-            <GeneralButtonLink variant={"yellow"} href={"/portal/applications/new"}>
+            <GeneralButtonLink
+              variant={"yellow"}
+              href={"/portal/applications/new"}
+            >
               Apply Now
             </GeneralButtonLink>
           </div>
-          <MobileNavigation content={content} />
+          <MobileNavigation content={content} navigation={navigation} />
         </div>
       </div>
 
@@ -61,7 +73,7 @@ export async function SiteHeader() {
           className="container hidden min-h-12 items-center justify-between gap-4 overflow-x-auto lg:flex"
           aria-label="Primary navigation"
         >
-          {primaryNavigation.map((link) => (
+          {navigation.map((link) => (
             <ActiveNavigationLink
               className="flex min-h-12 shrink-0 items-center px-1 text-[13px] font-semibold"
               key={link.href}
@@ -108,7 +120,13 @@ function PartnerLogos({ hidden = false }: { hidden?: boolean }) {
   );
 }
 
-function MobileNavigation({ content }: { content: HeaderContent }) {
+function MobileNavigation({
+  content,
+  navigation,
+}: {
+  content: HeaderContent;
+  navigation: readonly NavigationItem[];
+}) {
   return (
     <details className="group relative lg:hidden">
       <summary className="grid size-11 list-none place-items-center rounded-full border border-brand-white [&::-webkit-details-marker]:hidden">
@@ -119,7 +137,7 @@ function MobileNavigation({ content }: { content: HeaderContent }) {
         className="absolute right-0 top-14 max-h-[70vh] w-72 overflow-y-auto rounded-xl border border-brand-blue bg-white p-3 text-brand-navy shadow-xl"
         aria-label="Mobile navigation"
       >
-        {primaryNavigation.map((link) => (
+        {navigation.map((link) => (
           <ActiveNavigationLink
             className="block rounded-lg px-4 py-2.5 text-sm font-semibold hover:bg-brand-cream"
             key={link.href}

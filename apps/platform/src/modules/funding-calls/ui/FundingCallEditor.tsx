@@ -11,6 +11,7 @@ import { useFundingCall, useUpdateFundingCall } from "../FundingCallHooks";
 import { FundingCallForm } from "./FundingCallForm";
 import { FundingCallHeaderActions } from "./FundingCallHeaderActions";
 import { FundingCallReadOnlyReview } from "./FundingCallReadOnlyReview";
+import { FundingCallVersionContext } from "./FundingCallVersionContext";
 
 export function FundingCallEditor({
   canApprove,
@@ -72,6 +73,14 @@ export function FundingCallEditor({
       eyebrow="Funding calls"
       icon={<CircleDollarSign />}
       title="Manage funding calls"
+      description={
+        call ? (
+          <FundingCallVersionContext
+            call={call}
+            editable={call.status === "DRAFT" && canUpdate}
+          />
+        ) : undefined
+      }
     >
       {call?.draftVersionId ? (
         <p className="mb-4 rounded-lg bg-brand-blue/10 p-4 text-sm">
@@ -106,11 +115,12 @@ export function FundingCallEditor({
       ) : (
         <FundingCallReadOnlyReview call={call} />
       )}
-      {call?.currentPublishedVersionId ? (
+      {call ? (
         <FundingCallVersionsPanel
           id={id}
           canEdit={canUpdate}
           rowVersion={call.rowVersion}
+          call={call}
         />
       ) : null}
     </PageShell>

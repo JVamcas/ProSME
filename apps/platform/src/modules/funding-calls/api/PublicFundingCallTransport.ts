@@ -19,6 +19,7 @@ export type PublicFundingCallDocument = {
 };
 
 export type PublicFundingCallSummary = {
+  publicInteractionEnabled?: boolean;
   applicationsOpen: boolean;
   closesAt: string;
   fundingInstrument: string | null;

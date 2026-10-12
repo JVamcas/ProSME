@@ -55,6 +55,8 @@ import { CmsHomeImpactField as CmsHomeImpactField_d4088b8669548a82b4f959bca18a00
 import { CmsHomeAdditionalGroupField as CmsHomeAdditionalGroupField_a919c79f1d80ff6e7030a7b8b3020dad } from '../../../modules/content/ui/admin/CmsHomeListsGroupField.tsx'
 import { default as default_67ce7d515155dd2fe46a00c6b7076e46 } from '../../../modules/content/ui/admin/CmsHomeSectionEditView.tsx'
 import { default as default_761617cef8299cb95986be337f8db908 } from '../../../modules/content/ui/admin/CmsContactDetailsGroupField.tsx'
+import { default as default_c464c4cff84f1941ccdbdc79c427c2db } from '../../../modules/content/ui/admin/CmsPublicPageVisibilityField.tsx'
+import { default as default_545cd25cd7efde8a7f3401831dcead77 } from '../../../modules/content/ui/admin/CmsPublicPageVisibilityEditView.tsx'
 import { default as default_5763e6234a5405f6bc0ed01e521c6e9b } from '../../../modules/content/ui/admin/CmsHeaderAvatar.tsx'
 import { default as default_cc5960ae17e6557b637fc918ea983d9e } from '../../../modules/content/ui/admin/CmsNavigation.tsx'
 import { default as default_336c162c05fce76a5c4f6f078350f16a } from '../../../modules/content/ui/admin/CmsLogoutButton.tsx'
@@ -122,6 +124,8 @@ export const importMap = {
   "./modules/content/ui/admin/CmsHomeListsGroupField.tsx#CmsHomeAdditionalGroupField": CmsHomeAdditionalGroupField_a919c79f1d80ff6e7030a7b8b3020dad,
   "./modules/content/ui/admin/CmsHomeSectionEditView.tsx#default": default_67ce7d515155dd2fe46a00c6b7076e46,
   "./modules/content/ui/admin/CmsContactDetailsGroupField.tsx#default": default_761617cef8299cb95986be337f8db908,
+  "./modules/content/ui/admin/CmsPublicPageVisibilityField.tsx#default": default_c464c4cff84f1941ccdbdc79c427c2db,
+  "./modules/content/ui/admin/CmsPublicPageVisibilityEditView.tsx#default": default_545cd25cd7efde8a7f3401831dcead77,
   "./modules/content/ui/admin/CmsHeaderAvatar.tsx#default": default_5763e6234a5405f6bc0ed01e521c6e9b,
   "./modules/content/ui/admin/CmsNavigation.tsx#default": default_cc5960ae17e6557b637fc918ea983d9e,
   "./modules/content/ui/admin/CmsLogoutButton.tsx#default": default_336c162c05fce76a5c4f6f078350f16a,

@@ -24,10 +24,12 @@ export async function installChatbotKnowledgeDatabaseFixture(
   await pool.query(`
     CREATE TABLE app_users(id uuid PRIMARY KEY);
     CREATE TABLE app_capabilities(code text PRIMARY KEY, description text NOT NULL);
-    CREATE TABLE app_funding_calls(id uuid PRIMARY KEY, status text, current_published_version_id uuid, eligibility_rule_set_version_id uuid);
+    CREATE TABLE app_funding_calls(id uuid PRIMARY KEY, status text, current_published_version_id uuid, eligibility_rule_set_version_id uuid, public_interaction_enabled boolean NOT NULL DEFAULT true);
     CREATE TABLE app_funding_call_publication_revisions(id uuid PRIMARY KEY, revision_number integer, snapshot jsonb, published_at timestamptz DEFAULT now());
     CREATE TABLE cms_faqs(id integer PRIMARY KEY, question text, answer jsonb, _status text, review_status text, review_notes text, updated_at timestamptz DEFAULT now());
     CREATE TABLE cms_contact_details(id integer PRIMARY KEY, email text, phone text, address text, office_hours text, _status text, review_status text, review_notes text, updated_at timestamptz DEFAULT now());
+    CREATE TABLE cms_public_page_visibility(id serial PRIMARY KEY, visibility jsonb NOT NULL DEFAULT '{}'::jsonb);
+    INSERT INTO cms_public_page_visibility(visibility) VALUES ('{}'::jsonb);
     CREATE TABLE app_eligibility_rule_set_versions(id uuid PRIMARY KEY, version_number integer, status text, published_at timestamptz DEFAULT now());
     CREATE TABLE app_eligibility_rules(id uuid PRIMARY KEY, version_id uuid, condition_group_id uuid, condition_id uuid,
       condition_kind text, failure_type text, applicant_message text, display_order integer, execution_mode text);

@@ -158,6 +158,7 @@ async function loadSelfCheck(fundingCallId: string) {
     const { inputs, ruleSet } = configuration;
     if (
       !fundingCall ||
+      fundingCall.publicInteractionEnabled === false ||
       fundingCall.status === "closed" ||
       !fundingCall.selfCheckAvailable
     ) {

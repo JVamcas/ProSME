@@ -3,7 +3,7 @@ import { CalendarDays, Coins, Sprout } from "lucide-react";
 import { formatDate } from "@/lib/dateUtils";
 import type { PublicFundingCallSummary } from "@/modules/funding-calls/api/PublicFundingCallTransport";
 import { SanitizedRichTextContent } from "@/shared/ui/SanitizedRichTextContent";
-import { GeneralButtonLink } from "@/components/ui/button";
+import { GeneralButton, GeneralButtonLink } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ArrowLink } from "@/components/ui/links";
 import { publicFundingCallHref } from "./PublicFundingCallLinks";
@@ -27,7 +27,9 @@ export function HomeFundingCall({
       >
         <div className="container">
           <EmptyState
-            action={<ArrowLink href="/funding">View all funding calls</ArrowLink>}
+            action={
+              <ArrowLink href="/funding">View all funding calls</ArrowLink>
+            }
             title="No funding calls are open right now"
             message="New opportunities will appear here as soon as applications open. You can still browse upcoming and recently closed funding calls."
           />
@@ -72,7 +74,7 @@ export function HomeFundingCall({
               {call.title}
             </h2>
 
-            {call.summaryHtml ? (
+            {call.summaryHtml && call.publicInteractionEnabled !== false ? (
               <SanitizedRichTextContent
                 className="mt-5 line-clamp-3 max-h-21 max-w-2xl overflow-hidden text-base [&>*+*]:mt-1"
                 sanitizedHtml={call.summaryHtml}
@@ -84,12 +86,18 @@ export function HomeFundingCall({
             )}
 
             <div className="mt-8 flex flex-wrap items-center gap-5">
-              <GeneralButtonLink
-                variant="outlineOrange"
-                href={publicFundingCallHref(call.id)}
-              >
-                View call details
-              </GeneralButtonLink>
+              {call.publicInteractionEnabled !== false ? (
+                <GeneralButtonLink
+                  variant="outlineOrange"
+                  href={publicFundingCallHref(call.id)}
+                >
+                  View call details
+                </GeneralButtonLink>
+              ) : (
+                <GeneralButton variant="outlineOrange" disabled>
+                  Public interaction disabled
+                </GeneralButton>
+              )}
               <GeneralButtonLink variant="outlineOrange" href="/portal">
                 Track application
               </GeneralButtonLink>
@@ -119,7 +127,9 @@ export function HomeFundingCall({
                   />
                 </span>
                 <div>
-                  <p className="text-sm text-brand-orange">{status.dateLabel}</p>
+                  <p className="text-sm text-brand-orange">
+                    {status.dateLabel}
+                  </p>
                   <p className="mt-1 text-lg font-bold sm:text-xl">
                     {formatDate(status.date)}
                   </p>

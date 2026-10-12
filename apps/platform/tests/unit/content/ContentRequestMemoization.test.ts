@@ -10,6 +10,7 @@ type RenderEvidence = {
   persistentCache: boolean;
   resourcePagination: boolean;
   restartIsolation: boolean;
+  visibility: boolean;
 };
 
 let evidence: RenderEvidence;
@@ -26,7 +27,7 @@ beforeAll(() => {
 
 describe("CMS reads in the real React server renderer", () => {
   it("coalesces concurrent and sequential identical reads while separating slugs", () => {
-    expect(evidence.deduplication.readsWithMemoization).toBe(18);
+    expect(evidence.deduplication.readsWithMemoization).toBe(19);
   });
 
   it("reads new publications and excludes unpublished pages, resources and feeds on the next request", () => {
@@ -51,5 +52,9 @@ describe("CMS reads in the real React server renderer", () => {
 
   it("excludes unpublished content after a restart with old cache files and lost tags", () => {
     expect(evidence.restartIsolation).toBe(true);
+  });
+
+  it("applies visibility changes across requests without serving a stale homepage feed", () => {
+    expect(evidence.visibility).toBe(true);
   });
 });

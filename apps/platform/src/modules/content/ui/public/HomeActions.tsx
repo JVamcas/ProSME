@@ -1,4 +1,8 @@
 import {
+  isPublicPathVisible,
+  type PublicPageVisibility,
+} from "../../domain/PublicPageVisibility";
+import {
   ArrowRight,
   CalendarDays,
   CircleDollarSign,
@@ -9,8 +13,10 @@ import type { HomepageContent } from "@/modules/content/ContentTypes";
 
 export function HomeActions({
   content,
+  visibility = {},
 }: {
   content: Pick<HomepageContent, "actionCards">;
+  visibility?: PublicPageVisibility;
 }) {
   const actions = [
     {
@@ -37,26 +43,28 @@ export function HomeActions({
   ];
   return (
     <section className="container relative z-20 grid gap-3 py-5 md:grid-cols-3">
-      {actions.map(({ href, icon: Icon, title, text, background }) => (
-        <Link
-          href={href}
-          key={href}
-          className={`${background} group flex min-h-40 min-w-0 items-center gap-5 rounded-xl border border-white p-5 transition duration-500 hover:-translate-y-1 hover:shadow-lg`}
-        >
-          <div className="min-w-0 flex-1 wrap-break-word">
-            <span className="grid size-12 place-items-center rounded-full bg-brand-white text-brand-orange shadow-sm">
-              <Icon className="size-6" />
+      {actions
+        .filter((action) => isPublicPathVisible(visibility, action.href))
+        .map(({ href, icon: Icon, title, text, background }) => (
+          <Link
+            href={href}
+            key={href}
+            className={`${background} group flex min-h-40 min-w-0 items-center gap-5 rounded-xl border border-white p-5 transition duration-500 hover:-translate-y-1 hover:shadow-lg`}
+          >
+            <div className="min-w-0 flex-1 wrap-break-word">
+              <span className="grid size-12 place-items-center rounded-full bg-brand-white text-brand-orange shadow-sm">
+                <Icon className="size-6" />
+              </span>
+              <h2 className="mt-4 text-2xl font-bold text-navy">{title}</h2>
+              <p className="mt-2 max-w-[270px] text-sm leading-5 text-brand-navy/70">
+                {text}
+              </p>
+            </div>
+            <span className="grid size-9 shrink-0 place-items-center rounded-full bg-brand-white text-brand-orange">
+              <ArrowRight className="size-4 transition group-hover:translate-x-0.5" />
             </span>
-            <h2 className="mt-4 text-2xl font-bold text-navy">{title}</h2>
-            <p className="mt-2 max-w-[270px] text-sm leading-5 text-brand-navy/70">
-              {text}
-            </p>
-          </div>
-          <span className="grid size-9 shrink-0 place-items-center rounded-full bg-brand-white text-brand-orange">
-            <ArrowRight className="size-4 transition group-hover:translate-x-0.5" />
-          </span>
-        </Link>
-      ))}
+          </Link>
+        ))}
     </section>
   );
 }

@@ -26,6 +26,7 @@ import {
 } from "./FundingCallRichText";
 
 export type PublicFundingCallRecord = {
+  publicInteractionEnabled?: boolean;
   closesAt: Date;
   description: string;
   eligibilitySummary: string | null;
@@ -69,11 +70,13 @@ function latestPublicationCondition() {
 
 const publicSelection = {
   id: fundingCalls.id,
+  publicInteractionEnabled: fundingCalls.publicInteractionEnabled,
   snapshot: fundingCallPublicationRevisions.snapshot,
   status: sql<PublicFundingCallRecord["status"]>`${fundingCalls.status}`,
 };
 
 type PublicFundingCallSelection = {
+  publicInteractionEnabled: boolean;
   id: string;
   snapshot: FundingCallPublicationSnapshot;
   status: PublicFundingCallRecord["status"];
@@ -84,6 +87,7 @@ function toPublicFundingCallRecord(
 ): PublicFundingCallRecord {
   return {
     ...row.snapshot,
+    publicInteractionEnabled: row.publicInteractionEnabled,
     closesAt: new Date(row.snapshot.closesAt),
     description: sanitizeFundingCallDescription(row.snapshot.description),
     eligibilitySummary: sanitizeFundingCallEligibilitySummary(

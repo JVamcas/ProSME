@@ -1387,6 +1387,13 @@
       "when": 1801785600043,
       "tag": "0197_chatbot_knowledge_documents",
       "breakpoints": true
+    },
+    {
+      "idx": 198,
+      "version": "7",
+      "when": 1801785600044,
+      "tag": "0198_funding_call_public_interaction",
+      "breakpoints": true
     }
   ]
 }

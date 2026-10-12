@@ -1,3 +1,5 @@
+import { getPublicPageVisibility } from "@/modules/content/application/ServerPublicPageVisibilityService";
+import { isPublicPathVisible } from "@/modules/content/domain/PublicPageVisibility";
 import type { MetadataRoute } from "next";
 
 import { getServerEnvironment } from "@/lib/env/server";
@@ -9,8 +11,6 @@ import {
 import { getResourceSitemapEntries } from "@/modules/content/ServerResourceCentreService";
 import { newsArticleHref } from "@/modules/content/NewsArticlePath";
 import { listPublicFundingCalls } from "@/modules/funding-calls/application/ServerPublicFundingCallService";
-
-
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const environment = getServerEnvironment();
@@ -28,13 +28,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     "/privacy",
     "/terms",
   ];
-  const [news, resources, events, calls, settings] = await Promise.all([
-    getNews(),
-    getResourceSitemapEntries(),
-    getEvents(),
-    listPublicFundingCalls({ limit: 100 }),
-    getSiteSettings(),
-  ]);
+  const [news, resources, events, calls, settings, visibility] =
+    await Promise.all([
+      getNews(),
+      getResourceSitemapEntries(),
+      getEvents(),
+      listPublicFundingCalls({ limit: 100 }),
+      getSiteSettings(),
+      getPublicPageVisibility(),
+    ]);
 
   if (!settings.allowIndexing) {
     return [];
@@ -44,14 +46,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...news.filter(indexable).map((item) => newsArticleHref(item.id)),
     ...resources.map((item) => `/resources/${item.slug}`),
     ...events.filter(indexable).map((item) => `/events/${item.slug}`),
-    ...calls.items.map((item) => `/funding/${item.slug}`),
+    ...calls.items.filter((item) => item.publicInteractionEnabled !== false).map((item) => `/funding/${item.slug}`),
   ];
 
-  return [...routes, ...dynamicRoutes].map((route) => ({
-    url: `${environment.PUBLIC_SITE_URL}${route}`,
-    changeFrequency: route === "" ? "weekly" : "monthly",
-    priority: route === "" ? 1 : 0.7,
-  }));
+  return [...routes, ...dynamicRoutes]
+    .filter((route) => isPublicPathVisible(visibility, route || "/"))
+    .map((route) => ({
+      url: `${environment.PUBLIC_SITE_URL}${route}`,
+      changeFrequency: route === "" ? "weekly" : "monthly",
+      priority: route === "" ? 1 : 0.7,
+    }));
 }
 
 function indexable(item: { excludeFromSearch?: boolean | null }) {

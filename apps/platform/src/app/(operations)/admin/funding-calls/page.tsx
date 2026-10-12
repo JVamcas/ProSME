@@ -31,9 +31,20 @@ export default async function FundingCallsPage({
       title="Funding calls"
     >
       <FundingCallList
+        canEnablePublicInteraction={can(
+          user,
+          permissionCodes.fundingCallPublicInteractionEnableAll,
+        )}
+        canDisablePublicInteraction={can(
+          user,
+          permissionCodes.fundingCallPublicInteractionDisableAll,
+        )}
         canCreate={can(user, permissionCodes.fundingCallCreate)}
         canDelete={can(user, permissionCodes.fundingCallDelete)}
-        canWithdrawForAmendment={can(user, permissionCodes.fundingCallWithdrawForAmendmentAll)}
+        canWithdrawForAmendment={can(
+          user,
+          permissionCodes.fundingCallWithdrawForAmendmentAll,
+        )}
         fundingCallId={fundingCallId.success ? fundingCallId.data : undefined}
       />
     </PageShell>

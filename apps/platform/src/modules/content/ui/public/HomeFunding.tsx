@@ -1,3 +1,5 @@
+import { getPublicPageVisibility } from "../../application/ServerPublicPageVisibilityService";
+import { isPublicPageVisible } from "../../domain/PublicPageVisibility";
 import { SectionHeading } from "@/components/public/section-heading";
 import { EmptyState } from "@/components/ui/empty-state";
 import { getHomeNewsAndResources } from "@/modules/content/ServerContentQueries";
@@ -10,15 +12,21 @@ export async function HomeFunding({
   heading: string;
   introduction?: string;
 }) {
-  const items = await getHomeNewsAndResources();
+  const [items, visibility] = await Promise.all([
+    getHomeNewsAndResources(),
+    getPublicPageVisibility(),
+  ]);
+  const resourcesVisible = isPublicPageVisible(visibility, "resources");
+  if (!resourcesVisible && !isPublicPageVisible(visibility, "news"))
+    return null;
 
   return (
     <section className="mx-auto w-[min(1720px,calc(100%-2rem))] py-14 sm:w-[min(1720px,calc(100%-5rem))]">
       <SectionHeading
         title={heading}
         text={introduction}
-        link="Browse resources"
-        href="/resources"
+        link={resourcesVisible ? "Browse resources" : undefined}
+        href={resourcesVisible ? "/resources" : undefined}
       />
       {!items.length ? (
         <div className="mt-6">

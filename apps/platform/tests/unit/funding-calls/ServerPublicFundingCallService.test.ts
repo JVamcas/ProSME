@@ -55,6 +55,13 @@ beforeEach(() => {
 });
 
 describe("public funding-call read model", () => {
+  it("keeps disabled calls visible in listings but blocks direct public access", async () => {
+    vi.mocked(readPublicFundingCalls).mockResolvedValue({ items: [{ ...call, publicInteractionEnabled: false }], total: 1 });
+    const result = await listPublicFundingCalls({ limit: 10 });
+    expect(result.items[0]).toMatchObject({ publicInteractionEnabled: false, applicationsOpen: false, selfCheckAvailable: false });
+    vi.mocked(readPublicFundingCallById).mockResolvedValue({ ...call, publicInteractionEnabled: false });
+    expect(await findPublicFundingCallById(call.id)).toBeNull();
+  });
   it("rechecks funding dates on successive requests despite a leaked build flag", async () => {
     vi.stubEnv("SKIP_CMS_PRERENDER", "1");
     vi.mocked(readPublicFundingCalls).mockResolvedValue({ items: [call], total: 1 });
@@ -96,6 +103,7 @@ describe("public funding-call read model", () => {
     const result = await listPublicFundingCalls({ limit: 25 });
 
     expect(result.items[0]).toEqual({
+      publicInteractionEnabled: true,
       applicationsOpen: true,
       closesAt: call.closesAt.toISOString(),
       fundingInstrument: "Grant",

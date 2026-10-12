@@ -1,6 +1,8 @@
 import "server-only";
 
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
+
+import { alias } from "drizzle-orm/pg-core";
 
 import { getDatabase } from "@/db/client";
 import { formVersions } from "@/modules/forms/infrastructure/form.schema";
@@ -8,17 +10,32 @@ import { eligibilityRuleSetVersions } from "@/modules/eligibility/infrastructure
 import { workflowDefinitionVersions } from "@/modules/workflows/infrastructure/workflow.schema";
 import { fundingCallWorkingView } from "../domain/FundingCallVersion";
 import { fundingCallDraftVersions } from "./funding-call-version.schema";
-import { fundingCalls } from "./funding-call.schema";
+import {
+  fundingCalls,
+  fundingCallPublicationRevisions,
+} from "./funding-call.schema";
+
 import {
   sanitizeFundingCallDescription,
   sanitizeFundingCallEligibilitySummary,
 } from "./FundingCallRichText";
+
+const currentPublication = alias(
+  fundingCallPublicationRevisions,
+  "current_publication",
+);
+const sourcePublication = alias(
+  fundingCallPublicationRevisions,
+  "source_publication",
+);
 
 export async function readFundingCallDetail(id: string) {
   const [row] = await getDatabase()
     .select({
       call: fundingCalls,
       draft: fundingCallDraftVersions,
+      currentPublishedVersionNumber: currentPublication.revisionNumber,
+      sourcePublishedVersionNumber: sourcePublication.revisionNumber,
       formDefinitionId: formVersions.formDefinitionId,
       eligibilityRuleSetId: eligibilityRuleSetVersions.ruleSetId,
       workflowDefinitionId: workflowDefinitionVersions.definitionId,
@@ -27,6 +44,20 @@ export async function readFundingCallDetail(id: string) {
     .leftJoin(
       fundingCallDraftVersions,
       eq(fundingCallDraftVersions.fundingCallId, fundingCalls.id),
+    )
+    .leftJoin(
+      currentPublication,
+      and(
+        eq(currentPublication.id, fundingCalls.currentPublishedVersionId),
+        eq(currentPublication.fundingCallId, fundingCalls.id),
+      ),
+    )
+    .leftJoin(
+      sourcePublication,
+      and(
+        eq(sourcePublication.id, fundingCallDraftVersions.sourceVersionId),
+        eq(sourcePublication.fundingCallId, fundingCalls.id),
+      ),
     )
     .leftJoin(
       formVersions,
@@ -56,6 +87,8 @@ export async function readFundingCallDetail(id: string) {
     ...row,
     call: {
       ...fundingCallWorkingView(row.call, row.draft),
+      currentPublishedVersionNumber: row.currentPublishedVersionNumber,
+      sourcePublishedVersionNumber: row.sourcePublishedVersionNumber,
       description: sanitizeFundingCallDescription(
         row.draft?.snapshot.description ?? row.call.description,
       ),

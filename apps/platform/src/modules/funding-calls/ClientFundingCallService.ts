@@ -1,5 +1,7 @@
 "use client";
 
+import type { FundingCallVersionItem } from "./api/FundingCallTransport";
+
 import { requestData, requestJson } from "@/lib/client-http";
 import type {
   FundingCallCreateInput,
@@ -215,13 +217,7 @@ function prepareReplacement(
 
 function versions(id: string, page: number) {
   return requestData<{
-    items: {
-      id: string;
-      versionNumber: number;
-      publishedAt: string;
-      title: string;
-      current: boolean;
-    }[];
+    items: FundingCallVersionItem[];
     page: number;
     pageSize: number;
     total: number;
@@ -230,7 +226,23 @@ function versions(id: string, page: number) {
   });
 }
 
+function setPublicInteraction(
+  id: string,
+  input: import("./api/FundingCallPublicInteractionSchemas").FundingCallPublicInteractionInput,
+) {
+  return requestData<{
+    id: string;
+    publicInteractionEnabled: boolean;
+    rowVersion: number;
+  }>(`/api/admin/funding-calls/${id}/public-interaction`, {
+    method: "PATCH",
+    headers: jsonHeaders,
+    body: JSON.stringify(input),
+  });
+}
+
 export const clientFundingCallService = {
+  setPublicInteraction,
   changeLifecycleStatus,
   changeGovernanceStatus,
   clone,

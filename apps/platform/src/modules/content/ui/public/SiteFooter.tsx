@@ -1,3 +1,5 @@
+import { getPublicPageVisibility } from "../../application/ServerPublicPageVisibilityService";
+import { isPublicPathVisible } from "../../domain/PublicPageVisibility";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -25,9 +27,10 @@ const support = [
 ];
 
 export async function SiteFooter() {
-  const [content, contact] = await Promise.all([
+  const [content, contact, visibility] = await Promise.all([
     getFooter(),
     getContactDetails(),
+    getPublicPageVisibility(),
   ]);
 
   return (
@@ -41,21 +44,25 @@ export async function SiteFooter() {
             height={42}
             className="h-11 w-auto brightness-0 invert"
           />
-          <p className="mt-4 max-w-xs text-sm font-bold">
-            {content.tagline}
-          </p>
-          <p className="mt-2 max-w-xs text-sm leading-6">
-            {content.summary}
-          </p>
+          <p className="mt-4 max-w-xs text-sm font-bold">{content.tagline}</p>
+          <p className="mt-2 max-w-xs text-sm leading-6">{content.summary}</p>
         </div>
 
-        <FooterLinks title="Explore" links={explore} />
-        <FooterLinks title="Support" links={support} />
+        <FooterLinks
+          title="Explore"
+          links={explore.filter(([href]) =>
+            isPublicPathVisible(visibility, href),
+          )}
+        />
+        <FooterLinks
+          title="Support"
+          links={support.filter(([href]) =>
+            isPublicPathVisible(visibility, href),
+          )}
+        />
 
         <div>
-          <h2 className="text-base font-bold">
-            {content.newsletterHeading}
-          </h2>
+          <h2 className="text-base font-bold">{content.newsletterHeading}</h2>
           <p className="mt-3 max-w-xs text-sm leading-5">
             {content.newsletterSummary}
           </p>
@@ -76,26 +83,13 @@ export async function SiteFooter() {
   );
 }
 
-function FooterLinks({
-  title,
-  links,
-}: {
-  title: string;
-  links: string[][];
-}) {
+function FooterLinks({ title, links }: { title: string; links: string[][] }) {
   return (
     <div>
       <h2 className="text-base font-bold">{title}</h2>
-      <nav
-        className="mt-3 grid gap-2 text-sm"
-        aria-label={`${title} links`}
-      >
+      <nav className="mt-3 grid gap-2 text-sm" aria-label={`${title} links`}>
         {links.map(([href, label]) => (
-          <Link
-            href={href}
-            key={href}
-            className="hover:underline"
-          >
+          <Link href={href} key={href} className="hover:underline">
             {label}
           </Link>
         ))}

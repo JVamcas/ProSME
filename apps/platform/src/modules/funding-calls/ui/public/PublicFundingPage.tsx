@@ -1,3 +1,4 @@
+import { PublicVisibility } from "@/modules/content/ui/public/PublicVisibility";
 import type { EligibilityItem } from "@/modules/content/ContentTypes";
 import type { EligibilityFocusSection } from "@/modules/content/EligibilityPageContent";
 import type {
@@ -49,9 +50,15 @@ export function PublicFundingPage({
         <ApplicantJourney step={1} />
       </div>
       <PublicFundingCallList calls={calls} status={status} />
-      <FundingSupport content={support} />
-      <FundingPriorities content={priorities} />
-      <FocusSectors content={focus} items={sectors} />
+      <PublicVisibility pageKey="funding.overview.support">
+        <FundingSupport content={support} />
+      </PublicVisibility>
+      <PublicVisibility pageKey="funding.overview.priorities">
+        <FundingPriorities content={priorities} />
+      </PublicVisibility>
+      <PublicVisibility pageKey="funding.overview.sectors">
+        <FocusSectors content={focus} items={sectors} />
+      </PublicVisibility>
     </>
   );
 }

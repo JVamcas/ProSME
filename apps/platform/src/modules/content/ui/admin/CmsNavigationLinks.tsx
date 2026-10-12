@@ -15,6 +15,7 @@ import {
   Mail,
   Newspaper,
   CalendarDays,
+  Eye,
 } from "lucide-react";
 import {
   NavigationList,
@@ -124,6 +125,13 @@ const contentRoutes: readonly NavigationRoute[] = [
     href: "/cms/contact",
     label: "Contact Us",
     icon: Mail,
+  },
+  {
+    id: "cms-public-page-visibility",
+    section: "content",
+    href: "/cms/globals/public-page-visibility",
+    label: "Public Page Visibility",
+    icon: Eye,
   },
 ];
 

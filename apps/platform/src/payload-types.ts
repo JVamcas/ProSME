@@ -113,6 +113,7 @@ export interface Config {
     homepage: Homepage;
     'contact-details': ContactDetail;
     'site-settings': SiteSetting;
+    'public-page-visibility': PublicPageVisibility;
   };
   globalsSelect: {
     header: HeaderSelect<false> | HeaderSelect<true>;
@@ -120,6 +121,7 @@ export interface Config {
     homepage: HomepageSelect<false> | HomepageSelect<true>;
     'contact-details': ContactDetailsSelect<false> | ContactDetailsSelect<true>;
     'site-settings': SiteSettingsSelect<false> | SiteSettingsSelect<true>;
+    'public-page-visibility': PublicPageVisibilitySelect<false> | PublicPageVisibilitySelect<true>;
   };
   locale: null;
   widgets: {
@@ -417,6 +419,9 @@ export interface News {
     };
     [k: string]: unknown;
   };
+  /**
+   * Used on news cards and the article header.
+   */
   image?: (number | null) | Media;
   publishedAt?: string | null;
   reviewStatus: 'draft' | 'inReview' | 'approved';
@@ -512,9 +517,6 @@ export interface Event {
   location: string;
   image?: (number | null) | Media;
   eventType: 'information-session' | 'workshop' | 'roadshow' | 'stakeholder-forum' | 'webinar' | 'virtual-session';
-  /**
-   * Retained for existing links. Application registrations are managed in Operations.
-   */
   registrationUrl?: string | null;
   reviewStatus: 'draft' | 'inReview' | 'approved';
   /**
@@ -1420,6 +1422,24 @@ export interface SiteSetting {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "public-page-visibility".
+ */
+export interface PublicPageVisibility {
+  id: number;
+  visibility:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "header_select".
  */
 export interface HeaderSelect<T extends boolean = true> {
@@ -1605,6 +1625,16 @@ export interface SiteSettingsSelect<T extends boolean = true> {
   reviewStatus?: T;
   reviewNotes?: T;
   _status?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "public-page-visibility_select".
+ */
+export interface PublicPageVisibilitySelect<T extends boolean = true> {
+  visibility?: T;
   updatedAt?: T;
   createdAt?: T;
   globalType?: T;

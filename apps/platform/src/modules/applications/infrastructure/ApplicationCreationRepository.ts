@@ -136,6 +136,7 @@ async function createDraftInTransaction(
   const now = new Date();
   if (
     !call ||
+    call.publicInteractionEnabled === false ||
     !["LIVE", "SCHEDULED"].includes(call.status) ||
     now < call.opensAt ||
     now >= call.closesAt

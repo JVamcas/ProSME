@@ -15,6 +15,7 @@ export async function readApplicationFundingCallConfiguration(
   const [configuration] = await getDatabase()
     .select({
       status: fundingCalls.status,
+      publicInteractionEnabled: fundingCalls.publicInteractionEnabled,
       opensAt: fundingCalls.opensAt,
       closesAt: fundingCalls.closesAt,
       formVersionId: sql<
