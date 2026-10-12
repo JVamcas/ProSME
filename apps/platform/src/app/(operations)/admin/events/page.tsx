@@ -2,7 +2,8 @@ import Link from "next/link";
 import { getAuthenticatedPageUser } from "@/platform/auth/ServerAuthNavigation";
 import { getOperationsEventPage } from "@/modules/content/application/ServerEventOperationsService";
 import { EmptyState } from "@/shared/ui/EmptyState";
-import { formatLocalDateTime24 } from "@/lib/dateUtils";
+import { PageShell } from "@/shared/ui/PageShell";
+import { EventOperationsCard } from "@/modules/content/ui/operations/EventOperationsCard";
 
 export default async function OperationsEventsPage({
   searchParams,
@@ -15,21 +16,13 @@ export default async function OperationsEventsPage({
     { page: page || 1 },
   );
   return (
-    <main className="space-y-6">
-      <h1 className="text-3xl font-bold text-brand-navy">Events</h1>
+    <PageShell
+      title="Events"
+      description="Manage event registrations and delivery."
+    >
       <div className="grid gap-4">
         {result.items.map((event) => (
-          <Link
-            className="rounded-xl border border-slate-200 bg-white p-5 focus-visible:ring-2 focus-visible:ring-brand-orange"
-            href={`/admin/events/${event.id}`}
-            key={event.id}
-          >
-            <h2 className="text-xl font-bold">{event.title}</h2>
-            <p className="mt-2 text-slate-600">
-              {formatLocalDateTime24(event.startsAt, "—", event.timezone)} ·{" "}
-              {event.location}
-            </p>
-          </Link>
+          <EventOperationsCard event={event} key={event.id} />
         ))}
         {!result.items.length ? (
           <EmptyState
@@ -38,7 +31,7 @@ export default async function OperationsEventsPage({
           />
         ) : null}
       </div>
-      <nav aria-label="Events pagination" className="flex gap-6">
+      <nav aria-label="Events pagination" className="mt-6 flex gap-6">
         {result.page > 1 ? (
           <Link href={`/admin/events?page=${result.page - 1}`}>Previous</Link>
         ) : null}
@@ -46,6 +39,6 @@ export default async function OperationsEventsPage({
           <Link href={`/admin/events?page=${result.page + 1}`}>Next</Link>
         ) : null}
       </nav>
-    </main>
+    </PageShell>
   );
 }

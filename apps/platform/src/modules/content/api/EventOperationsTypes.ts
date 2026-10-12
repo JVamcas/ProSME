@@ -1,3 +1,4 @@
+import type { CmsImage } from "../ContentTypes";
 import type {
   EventParticipant,
   EventRegistrationSettings,
@@ -37,4 +38,14 @@ export type EventOperationsPage<T> = {
   total: number;
   page: number;
   pageSize: number;
+};
+
+export type EventOperationsListItem = {
+  id: number;
+  title: string;
+  summary: string;
+  image?: CmsImage;
+  startsAt: string;
+  timezone: string;
+  location: string;
 };

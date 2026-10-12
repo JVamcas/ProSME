@@ -39,7 +39,10 @@ export function ChatbotCaseStateForm({
   );
   return (
     <FormProvider {...form}>
-      <form className="space-y-4" onSubmit={submit}>
+      <form
+        className="space-y-4 rounded-xl border border-slate-200 p-4"
+        onSubmit={submit}
+      >
         <FormField
           label="Case state"
           htmlFor="case-state"
@@ -84,7 +87,10 @@ export function ChatbotCaseAssignmentForm({
   );
   return (
     <FormProvider {...form}>
-      <form className="space-y-4" onSubmit={submit}>
+      <form
+        className="space-y-4 rounded-xl border border-slate-200 p-4"
+        onSubmit={submit}
+      >
         <FormField
           label="Assigned staff member"
           htmlFor="case-assignee"

@@ -12,6 +12,7 @@ import {
   eventParticipantQuerySchema,
 } from "../api/EventRegistrationSchemas";
 import type { EventOperationsOverview } from "../api/EventOperationsTypes";
+import { readOperationsEventPage } from "../infrastructure/PayloadEventRepository";
 import * as operations from "../infrastructure/EventOperationsRepository";
 import * as registration from "../infrastructure/EventRegistrationRepository";
 
@@ -130,5 +131,5 @@ export async function getOperationsEventPage(
 ) {
   requireEventAccess(user);
   const query = eventParticipantQuerySchema.parse(values);
-  return operations.readOperationsEventPage(query.page);
+  return readOperationsEventPage(query.page);
 }

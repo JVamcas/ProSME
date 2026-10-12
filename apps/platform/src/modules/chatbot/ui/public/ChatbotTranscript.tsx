@@ -6,7 +6,7 @@ import { GeneralButton } from "@/shared/ui/Button";
 import { ArrowLink } from "@/shared/ui/Links";
 import { chatbotWelcomeMessage } from "../../domain/ChatbotAnswer";
 import type { VisitorChatbotTurn } from "../../domain/ChatbotConversation";
-import { ChatbotMessageBubble } from "./ChatbotMessageBubble";
+import { ChatbotMessageBubble } from "../ChatbotMessageBubble";
 
 const suggestedQuestions = [
   "What funding is available?",
@@ -116,10 +116,7 @@ export function ChatbotTranscript({
             <p className="whitespace-pre-wrap">{pendingQuestion}</p>
           </ChatbotMessageBubble>
           <ChatbotMessageBubble sender="assistant">
-            <p
-              role="status"
-              className="text-brand-navy/65"
-            >
+            <p role="status" className="text-brand-navy/65">
               <span className="sr-only">Thinking...</span>
               <span aria-hidden="true" className="inline-flex items-baseline">
                 Thinking

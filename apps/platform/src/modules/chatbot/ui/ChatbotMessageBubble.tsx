@@ -7,10 +7,14 @@ export function ChatbotMessageBubble({
   children,
   sender,
   showAvatar = false,
+  appearance = "public",
+  senderLabel,
 }: {
   children: ReactNode;
   sender: "assistant" | "visitor";
   showAvatar?: boolean;
+  appearance?: "public" | "support";
+  senderLabel?: string;
 }) {
   return (
     <div className={styles.row}>
@@ -21,11 +25,16 @@ export function ChatbotMessageBubble({
         />
       ) : null}
       <div
-        className={cn(styles.bubble, styles[sender])}
+        className={cn(
+          styles.bubble,
+          styles[sender],
+          appearance === "support" && styles.support,
+        )}
         data-chat-sender={sender}
       >
         <h3 className="sr-only">
-          {sender === "assistant" ? "Programme assistant" : "You"}
+          {senderLabel ??
+            (sender === "assistant" ? "Programme assistant" : "You")}
         </h3>
         {children}
       </div>

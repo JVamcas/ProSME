@@ -4,8 +4,12 @@ import { permissionCodes } from "@/auth/authorization/permissions";
 const fixture = vi.hoisted(() => ({
   user: null as AuthenticatedUser | null,
   transaction: vi.fn(),
+  readPage: vi.fn(),
 }));
 vi.mock("server-only", () => ({}));
+vi.mock("@/modules/content/infrastructure/PayloadEventRepository", () => ({
+  readOperationsEventPage: fixture.readPage,
+}));
 vi.mock("@/auth/authorization/current-user", () => ({
   resolveUserFromHeaders: () => fixture.user,
 }));
@@ -20,6 +24,7 @@ vi.mock(
   "@/modules/notifications/infrastructure/EventEmailDeliveryRepository",
   () => ({}),
 );
+import { getOperationsEventPage } from "@/modules/content/application/ServerEventOperationsService";
 import { GET as overview } from "@/app/api/admin/events/[eventId]/overview/route";
 import { GET as participants } from "@/app/api/admin/events/[eventId]/participants/route";
 import { GET as delivery } from "@/app/api/admin/events/[eventId]/delivery/route";
@@ -104,5 +109,45 @@ describe("Protected Operations event routes", () => {
       ).status,
     ).toBe(400);
     expect(fixture.transaction).not.toHaveBeenCalled();
+  });
+});
+
+describe("Operations event list authorization", () => {
+  it("denies unauthenticated, ungranted and disabled users before reading content", async () => {
+    const disabled: AuthenticatedUser = {
+      ...actor([permissionCodes.eventRegistrationsReadAll]),
+      status: "disabled",
+    };
+    for (const user of [null, actor([]), disabled]) {
+      await expect(getOperationsEventPage(user, {})).rejects.toThrow();
+    }
+    expect(fixture.readPage).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    permissionCodes.eventRegistrationsReadAll,
+    permissionCodes.eventRegistrationSettingsReadAll,
+    permissionCodes.eventEmailDeliveryReadAll,
+  ])("allows the existing scoped permission %s", async (permission) => {
+    fixture.readPage.mockResolvedValue({
+      items: [],
+      total: 0,
+      page: 2,
+      pageSize: 20,
+    });
+    expect(
+      await getOperationsEventPage(actor([permission]), { page: 2 }),
+    ).toMatchObject({ page: 2 });
+    expect(fixture.readPage).toHaveBeenCalledExactlyOnceWith(2);
+  });
+
+  it("rejects invalid pagination before the content query", async () => {
+    await expect(
+      getOperationsEventPage(
+        actor([permissionCodes.eventRegistrationsReadAll]),
+        { page: 0 },
+      ),
+    ).rejects.toThrow();
+    expect(fixture.readPage).not.toHaveBeenCalled();
   });
 });
