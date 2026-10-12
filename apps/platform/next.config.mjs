@@ -34,6 +34,12 @@ const nextConfig = {
   outputFileTracingRoot: repositoryRoot,
   outputFileTracingIncludes: {
     "/*": ["./node_modules/libpg-query/wasm/libpg-query.wasm"],
+    "/api/portal/applications/*/documents": [
+      "../../node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs",
+      "../../node_modules/@napi-rs/canvas/**/*",
+      "../../node_modules/@napi-rs/canvas-*/*.node",
+      "../../node_modules/@napi-rs/canvas-*/package.json",
+    ],
     "/api/admin/chatbot/knowledge/documents": [
       "../../node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs",
       // PDF.js uses createRequire at runtime, which tracing can miss.

@@ -26,6 +26,7 @@ import {
   type FormSection,
 } from "@/modules/forms/FormTypes";
 import { FormVisibilityConditionEditor } from "./FormVisibilityConditionEditor";
+import { DocumentFieldLimits } from "./DocumentFieldLimits";
 import { RepeatableGroupConfigurationEditor } from "./RepeatableGroupConfigurationEditor";
 
 type FieldDialogValues = z.input<typeof formFieldSchema>;
@@ -172,6 +173,10 @@ function FormFieldDialogContent({
       form.setValue("minLength", undefined);
       form.setValue("maxLength", undefined);
     }
+    if (type !== "DOCUMENT") {
+      form.setValue("maxPages", undefined);
+      form.setValue("maximumFileSizeMb", undefined);
+    }
     if (type !== "REPEATABLE_GROUP") {
       form.setValue("repeatable", undefined);
     } else if (!form.getValues("repeatable")) {
@@ -292,6 +297,7 @@ function FormFieldDialogContent({
               }}
             />
           ) : null}
+          {type === "DOCUMENT" ? <DocumentFieldLimits /> : null}
           {type === "REPEATABLE_GROUP" ? (
             <RepeatableGroupConfigurationEditor />
           ) : null}

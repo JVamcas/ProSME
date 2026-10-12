@@ -52,6 +52,14 @@ const formFieldSchemaBase = z.object({
   maximum: optionalNumber,
   minLength: optionalLength,
   maxLength: optionalLength,
+  maxPages: z.preprocess(
+    (value) => value === "" || value === null ? undefined : value,
+    z.coerce.number().int().positive().optional(),
+  ),
+  maximumFileSizeMb: z.preprocess(
+    (value) => value === "" || value === null ? undefined : value,
+    z.coerce.number().int().min(1).max(10).optional(),
+  ),
   order: z.coerce.number().int().positive(),
   options: z.array(formOptionSchema).max(100).optional(),
   repeatable: repeatableGroupConfigurationSchema.nullable().optional(),
@@ -65,6 +73,16 @@ export const formFieldSchema = formFieldSchemaBase.superRefine(
         code: "custom",
         message: "Field labels must contain at most 160 characters.",
         path: ["label"],
+      });
+    }
+    if (
+      field.type !== "DOCUMENT" &&
+      (field.maxPages !== undefined || field.maximumFileSizeMb !== undefined)
+    ) {
+      context.addIssue({
+        code: "custom",
+        message: "Only Document fields may have page or file-size limits.",
+        path: ["maxPages"],
       });
     }
     const supportsOptions = ["SINGLE_SELECT", "MULTI_SELECT"].includes(

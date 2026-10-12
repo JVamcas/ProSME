@@ -79,6 +79,16 @@ async function saveField(field?: FormField, type?: "CHECKBOX") {
 }
 
 describe("automatic form field keys", () => {
+  it("preserves document limits when editing a field", async () => {
+    const field = await saveField({
+      ...existing,
+      type: "DOCUMENT",
+      maxPages: 12,
+      maximumFileSizeMb: 4,
+    });
+    expect(field.maxPages).toBe(12);
+    expect(field.maximumFileSizeMb).toBe(4);
+  });
   it("can configure a checkbox through the field type selector", async () => {
     const field = await saveField(undefined, "CHECKBOX");
     expect(field.type).toBe("CHECKBOX");
