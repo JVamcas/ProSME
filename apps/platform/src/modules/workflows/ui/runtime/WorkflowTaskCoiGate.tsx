@@ -171,16 +171,14 @@ function DeclarationForm({ gate }: { gate: CoiGate }) {
   if (!gate.form) return <GateStatus gate={gate} />;
 
   function submit(formValues: DynamicFormValues) {
-    const hasConflict = formValues.HAS_CONFLICT === true;
-    const disclosure = formValues.DISCLOSURE_TEXT;
+    if (!gate.form) return;
     void mutation.mutateAsync({
-      decision: hasConflict ? "DISCLOSE" : "NO_CONFLICT",
-      disclosureText:
-        hasConflict && typeof disclosure === "string"
-          ? disclosure.trim()
-          : undefined,
       expectedRowVersion: gate.rowVersion,
-    },{onError:(error)=>toast.error(error.message)});
+      formVersionId: gate.form.versionId,
+      values: formValues,
+    }, {
+      onError: (error) => toast.error(error.message),
+    });
   }
 
   return (

@@ -1,3 +1,4 @@
+import type { WorkflowTaskSectionId } from "@/modules/workflows/domain/definitions/WorkflowTaskSectionOrder";
 import type { EligibilityFailureStatus } from "@/modules/workflows/domain/definitions/WorkflowEligibilityFailureStatus";
 import type { WorkflowActionAvailability } from "@/modules/workflows/domain/actions/WorkflowActionAvailability";
 import type { WorkflowTaskDisplayMode } from "@/modules/workflows/domain/definitions/WorkflowTaskDefinition";
@@ -110,6 +111,7 @@ export type TaskDetail = {
   formName: string | null;
   checklistCompleted: boolean;
   commentFields: CommentConfigurationItem[];
+  sectionOrder?: WorkflowTaskSectionId[];
   displayMode: WorkflowTaskDisplayMode;
   commentCompleted: boolean;
   resultComments: CommentResultItem[];

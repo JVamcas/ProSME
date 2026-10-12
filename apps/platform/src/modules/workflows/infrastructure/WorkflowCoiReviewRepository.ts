@@ -55,6 +55,8 @@ export async function readPendingWorkflowCoiReviews(
         SELECT event.occurred_at
         FROM app_workflow_application_coi_events event
         WHERE event.task_id = task.id AND event.to_state = 'PENDING_REVIEW'
+          AND event.subject_user_id = clearance.user_id
+          AND event.form_version_id = clearance.form_version_id
         ORDER BY event.occurred_at DESC, event.id DESC
         LIMIT 1
       ) disclosure ON TRUE
@@ -165,6 +167,8 @@ export async function readPendingWorkflowCoiReview(
       assignee.display_name AS "assignedUserName",
       assigned_role.name AS "assignedRoleName",
       disclosure.disclosure_text AS "disclosureText",
+      disclosure.form_values AS "formValues",
+      disclosure.form_definition_snapshot AS form,
       disclosure.occurred_at AS "submittedAt"
     FROM app_workflow_tasks task
     JOIN app_stage_task_definitions definition
@@ -181,9 +185,12 @@ export async function readPendingWorkflowCoiReview(
     LEFT JOIN app_roles assigned_role ON assigned_role.id = task.assigned_role_id
     JOIN app_workflow_application_coi clearance ON clearance.task_id = task.id
     JOIN LATERAL (
-      SELECT event.disclosure_text, event.occurred_at
+      SELECT event.disclosure_text, event.occurred_at,
+        event.form_values, event.form_definition_snapshot
       FROM app_workflow_application_coi_events event
       WHERE event.task_id = task.id AND event.to_state = 'PENDING_REVIEW'
+          AND event.subject_user_id = clearance.user_id
+          AND event.form_version_id = clearance.form_version_id
       ORDER BY event.occurred_at DESC, event.id DESC
       LIMIT 1
     ) disclosure ON TRUE

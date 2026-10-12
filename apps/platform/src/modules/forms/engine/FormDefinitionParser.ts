@@ -123,6 +123,13 @@ function fieldSchema(
   if (field.type === "DATE") {
     return { ...common, format: "date", type: "string" };
   }
+  if (field.type === "CHECKBOX") {
+    return {
+      ...common,
+      type: "boolean",
+      ...(requireCompletedFields && field.required ? { const: true } : {}),
+    };
+  }
   if (field.type === "YES_NO") {
     return {
       ...common,
@@ -185,6 +192,7 @@ export function buildFormValueSchema(
 }
 
 function scalarFieldUiSchema(field: ValueField): UiSchema {
+  if (field.type === "CHECKBOX") return { "ui:widget": "checkbox" };
   if (field.type === "TEXTAREA") return { "ui:widget": "textarea" };
   if (field.type === "RICH_TEXT") return { "ui:widget": "richText" };
   if (field.type === "YES_NO") {

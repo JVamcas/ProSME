@@ -20,6 +20,7 @@ const supportedBuilderTypes = repeatableItemFieldTypes.filter(
 );
 
 function typeLabel(type: RepeatableItemFieldType) {
+  if (type === "CHECKBOX") return "Checkbox";
   if (type === "YES_NO") return "Yes/No";
   return type
     .toLowerCase()

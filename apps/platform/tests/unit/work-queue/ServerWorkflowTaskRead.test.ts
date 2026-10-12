@@ -63,5 +63,16 @@ describe("assigned workflow task read projection", () => {
     expect(result).not.toHaveProperty("permissions");
     expect(result).not.toHaveProperty("result");
   });
+  it("projects section order from the pinned task configuration", async () => {
+    vi.mocked(readWorkflowTask).mockResolvedValue({
+      ...task,
+      config: { sectionOrder: ["documents", "form", "checklist"] },
+    });
+    vi.mocked(getWorkflowActionAvailability).mockResolvedValue(availableActions);
+    const result = await getWorkflowTask(actor, task.taskInstanceId);
+    expect(result.sectionOrder).toEqual([
+      "documents", "form", "checklist", "scoring", "comments",
+    ]);
+  });
 
 });

@@ -1,3 +1,5 @@
+import type { FormRuntimeSchema } from "@/modules/forms/FormTypes";
+
 export type WorkflowCoiReviewRow = {
   applicationReference: string;
   assignedRoleName: string | null;
@@ -29,6 +31,8 @@ export type WorkflowCoiReplacementCandidate = {
 export type WorkflowCoiReviewDetail = WorkflowCoiReviewRow & {
   applicantName: string;
   disclosureText: string;
+  form?: FormRuntimeSchema | null;
+  formValues?: Record<string, unknown> | null;
   businessName: string | null;
   replacementCandidates: WorkflowCoiReplacementCandidate[];
   rowVersion: number;

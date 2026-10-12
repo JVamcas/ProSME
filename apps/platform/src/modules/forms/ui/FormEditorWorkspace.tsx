@@ -2,7 +2,7 @@
 
 import { useFormEditorController } from "./useFormEditorController";
 import { FormEditorMutationError } from "@/modules/forms/ui/FormEditorLifecycleActions";
-import { FormEditorBody } from "@/components/admin/forms/FormEditorBody";
+import { FormEditorBody } from "@/modules/forms/ui/builder/FormEditorBody";
 import { FormEditorTopSection } from "@/modules/forms/ui/FormEditorTopSection";
 import { FormPreviewDialog } from "@/modules/forms/ui/renderer/FormPreviewDialog";
 

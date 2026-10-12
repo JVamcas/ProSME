@@ -199,3 +199,12 @@ describe("contributing task form progress", () => {
     });
   });
 });
+
+
+describe("task actions follow the saved final section", () => {
+  it("requires the final form step only when the form is last in the configured order", () => {
+    const review = { hasChecklist: true, formVersionId: "form-version" };
+    expect(readiness({ ...review, sectionOrder: ["checklist", "form"] }).formIsLastSection).toBe(true);
+    expect(readiness({ ...review, sectionOrder: ["form", "checklist"] }).formIsLastSection).toBe(false);
+  });
+});

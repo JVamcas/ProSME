@@ -25,6 +25,9 @@ function invalidFieldMessage(
   field: FormRuntimeSchema["fields"][number],
   value: unknown,
 ) {
+  if (field.type === "CHECKBOX" && field.required && value !== true) {
+    return "Select this checkbox before continuing.";
+  }
   if (typeof value === "number") {
     if (field.minimum != null && value < field.minimum) {
       return `Enter a value of at least ${field.minimum}.`;

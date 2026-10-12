@@ -3,6 +3,8 @@
 import Form, { type IChangeEvent } from "@rjsf/core";
 import type { ObjectFieldTemplateProps, RJSFSchema } from "@rjsf/utils";
 import validator from "@rjsf/validator-ajv8";
+import { FormCheckboxWidget } from "./FormCheckboxWidget";
+
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 
 import {
@@ -293,6 +295,7 @@ export function FormRenderer({
       ) : (
         <Form<DynamicFormValues, RJSFSchema, RendererContext>
           disabled={readOnly}
+          experimental_defaultFormStateBehavior={{ constAsDefaults: "never" }}
           formContext={context}
           formData={formData}
           extraErrors={extraErrors}
@@ -317,6 +320,7 @@ export function FormRenderer({
           uiSchema={uiSchema}
           validator={validator}
           widgets={{
+            CheckboxWidget: FormCheckboxWidget,
             currency: FormCurrencyWidget,
             DateWidget: FormDateWidget,
             percentage: FormPercentageWidget,

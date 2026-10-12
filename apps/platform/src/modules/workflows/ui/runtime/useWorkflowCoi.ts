@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
+import type { WorkflowCoiDeclarationInput } from "../../api/WorkflowCoiDeclarationSchema";
 import { clientWorkflowCoiService } from "../../ClientWorkflowCoiService";
 import { invalidateApplicationViews } from "@/modules/applications/ui/invalidateApplicationViews";
 
@@ -19,11 +20,7 @@ export function useWorkflowCoi(taskId: string, enabled = true) {
 export function useDeclareWorkflowCoi(taskId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: {
-      decision: "NO_CONFLICT" | "DISCLOSE";
-      disclosureText?: string;
-      expectedRowVersion: number;
-    }) => clientWorkflowCoiService.declare(taskId, input),
+    mutationFn: (input: WorkflowCoiDeclarationInput) => clientWorkflowCoiService.declare(taskId, input),
     onSuccess: () =>
       Promise.all([
         queryClient.invalidateQueries({ queryKey: gateKey(taskId) }),

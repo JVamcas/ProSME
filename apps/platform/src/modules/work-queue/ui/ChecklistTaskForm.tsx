@@ -304,6 +304,7 @@ export function ChecklistTaskForm({
     <FormProvider {...form}>
       <div className="space-y-5">
         <WorkflowTaskWorkSections
+          sectionOrder={task.sectionOrder}
           checklistItems={task.checklistItems}
           commentFields={task.commentFields}
           disabled={!readOnly && task.taskStatus === "COMPLETED"}

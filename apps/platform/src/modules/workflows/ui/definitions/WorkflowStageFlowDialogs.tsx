@@ -1,7 +1,7 @@
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { WorkflowStageDialog } from "@/modules/workflows/ui/definitions/WorkflowStageDialog";
 import { WorkflowTaskDialog } from "@/modules/workflows/ui/definitions/WorkflowTaskDialog";
-import { WorkflowTaskPreviewDialog } from "@/modules/workflows/ui/definitions/WorkflowTaskPreviewDialog";
+import { WorkflowTaskOrderPreview } from "@/modules/workflows/ui/definitions/WorkflowTaskOrderPreview";
 import { WorkflowActionOverlays } from "@/modules/workflows/ui/definitions/WorkflowActionOverlays";
 import { WorkflowStageChecklistDialog } from "@/modules/workflows/ui/definitions/WorkflowStageChecklistDialog";
 import { WorkflowStageDocumentRequirementDialog } from "@/modules/workflows/ui/definitions/WorkflowStageDocumentRequirementDialog";
@@ -45,6 +45,7 @@ export function WorkflowStageFlowDialogs({
     commentOverlays,
     scoringOverlays,
     editor,
+    isEditingLocked,
     deleteStage,
     deleteTask,
     deleteChecklistItem,
@@ -71,12 +72,13 @@ export function WorkflowStageFlowDialogs({
         />
       ) : null}
       {taskToPreview && selectedStage ? (
-        <WorkflowTaskPreviewDialog
-          definitionId={editor.definition.id}
+        <WorkflowTaskOrderPreview
+          key={`${editor.version.id}:${taskToPreview.stableKey}`}
+          canEdit={!isEditingLocked}
+          editor={editor}
           onClose={() => setTaskToPreview(null)}
-          stage={selectedStage}
-          task={taskToPreview}
-          versionId={editor.version.id}
+          stageKey={selectedStage.stableKey}
+          taskKey={taskToPreview.stableKey}
         />
       ) : null}
       {checklistDialog && selectedStage ? (

@@ -1,5 +1,7 @@
 "use client";
 
+import { taskSectionOrder, type WorkflowTaskSectionId } from "../../domain/definitions/WorkflowTaskSectionOrder";
+
 import { DraggableDialog } from "@/shared/ui/DraggableDialog";
 import {
   usePublishedFormRuntime,
@@ -28,12 +30,16 @@ import {
 } from "./WorkflowTaskEligibilityPreview";
 
 export function WorkflowTaskPreviewDialog({
+  onSectionOrderChange,
+  orderingPending,
   definitionId,
   onClose,
   stage,
   task,
   versionId,
 }: {
+  onSectionOrderChange?: (ids: WorkflowTaskSectionId[]) => void;
+  orderingPending?: boolean;
   definitionId: string;
   onClose: () => void;
   stage: WorkflowStageInput;
@@ -101,6 +107,13 @@ export function WorkflowTaskPreviewDialog({
       size="2xl"
       title={`${task.name} - Reviewer's preview`}
     >
+      {onSectionOrderChange && displayMode === "STEP_PROGRESS" ? (
+        <p className="mb-4 text-sm text-brand-navy/65" role="status">
+          {orderingPending
+            ? "Saving step order…"
+            : "Drag the handles to rearrange steps. Changes save to this draft. You can also use Space and the arrow keys."}
+        </p>
+      ) : null}
       <WorkflowTaskReviewLayout
         actions={showActionsInFinalStep ? undefined : previewActions}
         description={task.description}
@@ -114,6 +127,9 @@ export function WorkflowTaskPreviewDialog({
         }
       >
         <WorkflowTaskWorkSections
+          sectionOrder={taskSectionOrder(task.config)}
+          onSectionOrderChange={onSectionOrderChange}
+          orderingPending={orderingPending}
           checklistItems={taskChecklistItems.map((item) => ({
             code: item.key,
             label: item.text,

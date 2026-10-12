@@ -22,7 +22,7 @@ export function ApplicationFilterFields({ register }: {
   register: UseFormRegister<FilterInput>;
 }) {
   return (
-    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="col-span-full grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <div>
         <Label htmlFor="application-search">Search</Label>
         <Input
@@ -79,37 +79,40 @@ export function ApplicationFilterFields({ register }: {
       </div>
       <div>
         <Label htmlFor="application-sector">Business sector</Label>
-        <Input
-          id="application-sector"
-          list="application-sector-options"
-          placeholder="All sectors"
-          {...register("sector")}
-        />
-        <datalist id="application-sector-options">
+        <Select id="application-sector" {...register("sector")}>
+          <option value="">All sectors</option>
           {businessSectors.map((sector) => (
-            <option key={sector} value={sector} />
+            <option key={sector} value={sector}>
+              {sector}
+            </option>
           ))}
-        </datalist>
+        </Select>
       </div>
       <div>
         <Label htmlFor="application-stage">Workflow stage</Label>
         <Input id="application-stage" placeholder="All stages" {...register("stage")} />
       </div>
-      <div>
-        <Label htmlFor="application-submitted-from">Submission start date</Label>
-        <Input
-          id="application-submitted-from"
-          type="date"
-          {...register("submittedFrom")}
-        />
-      </div>
-      <div>
-        <Label htmlFor="application-submitted-to">Submission end date</Label>
-        <Input
-          id="application-submitted-to"
-          type="date"
-          {...register("submittedTo")}
-        />
+      <div
+        aria-label="Submission date range"
+        className="grid w-full max-w-lg gap-4 sm:col-span-2 sm:grid-cols-2"
+        role="group"
+      >
+        <div>
+          <Label htmlFor="application-submitted-from">Submission start date</Label>
+          <Input
+            id="application-submitted-from"
+            type="date"
+            {...register("submittedFrom")}
+          />
+        </div>
+        <div>
+          <Label htmlFor="application-submitted-to">Submission end date</Label>
+          <Input
+            id="application-submitted-to"
+            type="date"
+            {...register("submittedTo")}
+          />
+        </div>
       </div>
     </div>
   );

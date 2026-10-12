@@ -1,5 +1,7 @@
 import "server-only";
 
+import { taskSectionOrder } from "@/modules/workflows/domain/definitions/WorkflowTaskSectionOrder";
+
 import {
   requireAuthenticatedUser,
   requirePermission,
@@ -249,6 +251,7 @@ export async function getWorkflowTask(
       }),
     checklistItems: task.checklistItems,
     commentFields,
+    sectionOrder: taskSectionOrder(config),
     displayMode: taskDisplayMode(config),
     commentCompleted:
       commentFields.length > 0 &&

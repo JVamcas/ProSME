@@ -29,6 +29,13 @@ function validateItemField(
   field: z.infer<typeof repeatableItemFieldBaseSchema>,
   context: z.RefinementCtx,
 ) {
+  if (field.type !== "CHECKBOX" && field.label.length > 160) {
+    context.addIssue({
+      code: "custom",
+      message: "Field labels must contain at most 160 characters.",
+      path: ["label"],
+    });
+  }
   const select = ["SINGLE_SELECT", "MULTI_SELECT"].includes(field.type);
   const options = field.options ?? [];
   if (select !== Boolean(options.length)) {
@@ -89,7 +96,7 @@ const repeatableItemFieldBaseSchema = z.object({
   ),
   helpText: z.string().trim().max(500).nullable().optional(),
   key: stableKey,
-  label: z.string().trim().min(1).max(160),
+  label: z.string().trim().min(1).max(1000),
   maximum: optionalNumber,
   maxLength: optionalLength,
   minimum: optionalNumber,

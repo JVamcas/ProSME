@@ -15,9 +15,10 @@ import type { z } from "zod";
 import { GeneralButton } from "@/components/ui/button";
 import { DraggableDialog } from "@/shared/ui/DraggableDialog";
 import { CheckboxField } from "@/components/ui/form-field";
-import { FormInput, FormSelect } from "@/components/ui/form-fields";
+import { FormInput, FormSelect, FormTextarea } from "@/components/ui/form-fields";
 import type { ConditionGroup } from "@/modules/conditions/domain/ConditionGroup";
 import { formFieldSchema } from "@/modules/forms/api/FormSchemas";
+import { uniqueStableKeyFromLabel } from "@/modules/workflows/domain/WorkflowStableKey";
 import {
   formFieldTypes,
   type FormField,
@@ -40,6 +41,7 @@ const fieldTypeLabels: Record<FormFieldType, string> = {
   TEXT: "Text",
   TEXTAREA: "Textarea",
   YES_NO: "Yes/No",
+  CHECKBOX: "Checkbox",
   REPEATABLE_GROUP: "Repeatable Group",
   RICH_TEXT: "Rich Text",
 };
@@ -119,6 +121,7 @@ function SelectOptions({
 function FormFieldDialogContent({
   field,
   fields,
+  visibilityFields,
   nextOrder,
   onClose,
   onSave,
@@ -127,19 +130,32 @@ function FormFieldDialogContent({
 }: {
   field?: FormField;
   fields: readonly FormField[];
+  visibilityFields: readonly FormField[];
   nextOrder: number;
   onClose: () => void;
   onSave: (field: FormField) => Promise<void>;
   sectionColumnSpan: FormSection["columnSpan"];
   sectionId: string;
 }) {
+  const resolveField = zodResolver(formFieldSchema);
   const form = useForm<
     z.input<typeof formFieldSchema>,
     unknown,
     z.output<typeof formFieldSchema>
   >({
     defaultValues: field ?? defaultField(sectionId, nextOrder),
-    resolver: zodResolver(formFieldSchema),
+    resolver: (values, context, options) => resolveField(
+      {
+        ...values,
+        key: field?.key ?? uniqueStableKeyFromLabel(
+          values.label,
+          fields.map((item) => item.key),
+          "FIELD",
+        ),
+      },
+      context,
+      options,
+    ),
   });
   const type = useWatch({ control: form.control, name: "type" });
   const options = useFieldArray({ control: form.control, name: "options" });
@@ -198,13 +214,11 @@ function FormFieldDialogContent({
     >
       <FormProvider {...form}>
         <form className="grid gap-4" onSubmit={submit}>
-          <FormInput
-            label="Field key"
-            name="key"
-            placeholder="REGISTERED_NAME"
-            required
-          />
-          <FormInput label="Label" name="label" required />
+          {type === "CHECKBOX" ? (
+            <FormTextarea label="Label" name="label" required />
+          ) : (
+            <FormInput label="Label" name="label" required />
+          )}
           <FormSelect
             items={formFieldTypes.map((value) => ({
               label: fieldTypeLabels[value],
@@ -231,7 +245,7 @@ function FormFieldDialogContent({
             name="visibilityCondition"
             render={({ field: condition }) => (
               <FormVisibilityConditionEditor
-                fields={fields.filter((item) => item.id !== field?.id)}
+                fields={visibilityFields.filter((item) => item.id !== field?.id)}
                 onChange={condition.onChange}
                 value={condition.value as ConditionGroup | null | undefined}
               />
@@ -298,6 +312,7 @@ function FormFieldDialogContent({
 export function FormFieldDialog({
   field,
   fields,
+  visibilityFields = fields,
   isOpen,
   nextOrder,
   onClose,
@@ -307,6 +322,7 @@ export function FormFieldDialog({
 }: {
   field?: FormField;
   fields: readonly FormField[];
+  visibilityFields?: readonly FormField[];
   isOpen: boolean;
   nextOrder: number;
   onClose: () => void;
@@ -319,6 +335,7 @@ export function FormFieldDialog({
     <FormFieldDialogContent
       field={field}
       fields={fields}
+      visibilityFields={visibilityFields}
       key={field?.id ?? `${sectionId}-${nextOrder}`}
       nextOrder={nextOrder}
       onClose={onClose}

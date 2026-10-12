@@ -25,7 +25,6 @@ vi.mock(
 
 import { readWorkflowTaskAccess } from "@/modules/workflows/infrastructure/WorkflowTaskAccessRepository";
 import { permissionCodes } from "@/auth/authorization/permissions";
-import type { AuthenticatedUser } from "@/auth/types";
 import { getPublishedSystemFormRuntimeVersion } from "@/modules/forms/application/ServerSystemFormService";
 import {
   declareWorkflowTaskCoi,
@@ -40,33 +39,11 @@ import {
 import { readPendingWorkflowCoiReview } from "@/modules/workflows/infrastructure/WorkflowCoiReviewRepository";
 import { replaceWorkflowReviewer } from "@/modules/workflows/infrastructure/WorkflowReviewerReplacementRepository";
 
-const actor: AuthenticatedUser = {
-  capabilities: new Set([
-    permissionCodes.workflowTaskAssignedRead,
-    permissionCodes.workflowTaskAssignedProcess,
-    permissionCodes.workflowCoiAllReview,
-  ]),
-  createdAt: new Date(),
-  displayName: "Reviewer",
-  email: "reviewer@example.test",
-  id: "11111111-1111-4111-8111-111111111111",
-  identitySubject: "reviewer",
-  lastLoginAt: null,
-  roleCodes: new Set(["programme_officer"]),
-  status: "active",
-  updatedAt: new Date(),
-  userType: "staff",
-};
-const taskId = "22222222-2222-4222-8222-222222222222";
-const form = {
-  displayMode: "SINGLE_PAGE" as const,
-  fields: [],
-  instructions: "Select the statement that applies.",
-  sections: [],
-  submitLabel: "Submit declaration",
-  versionId: "88888888-8888-4888-8888-888888888888",
-  versionNumber: 1,
-};
+import {
+  coiActor as actor, coiTaskId as taskId, coiSectionId as sectionId,
+  coiAnswers as answers, coiForm as form,
+} from "../../support/WorkflowCoiFixture";
+
 const review = {
   taskId,
   expectedRowVersion: 2,
@@ -79,6 +56,11 @@ const review = {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.mocked(readTaskCoiGate).mockResolvedValue({
+    assignedUserId: actor.id, coiFormVersionId: form.versionId, gated: true,
+    rowVersion: 2, stageInstanceId: sectionId, state: "DECLARATION_REQUIRED",
+    status: "PENDING", taskId, taskName: "Review",
+  });
   vi.mocked(getPublishedSystemFormRuntimeVersion).mockResolvedValue(form);
 });
 
@@ -137,7 +119,8 @@ describe("workflow COI service", () => {
       declareWorkflowTaskCoi(actor, {
         taskId,
         expectedRowVersion: 2,
-        decision: "NO_CONFLICT",
+        formVersionId: form.versionId,
+        values: answers,
       }),
     ).resolves.toEqual({ state: "CLEARED_NO_CONFLICT" });
     expect(changeTaskCoi).toHaveBeenCalledWith(
@@ -153,8 +136,8 @@ describe("workflow COI service", () => {
       declareWorkflowTaskCoi(actor, {
         taskId,
         expectedRowVersion: 2,
-        decision: "DISCLOSE",
-        disclosureText: " ",
+        formVersionId: form.versionId,
+        values: { ...answers, HAS_CONFLICT: true, DISCLOSURE_TEXT: " " },
       }),
     ).rejects.toThrow("A disclosure is required.");
     expect(changeTaskCoi).not.toHaveBeenCalled();
