@@ -113,6 +113,7 @@ describe("protected dashboard transports", () => {
     expect(readAdminDashboard).toHaveBeenCalledWith({
       actorId: actor.id,
       since: null,
+      until: expect.any(Date),
       visibility: "assigned",
     });
   });

@@ -15,6 +15,7 @@ import {
   revalidateCollectionDelete,
 } from "@/payload/hooks/revalidate-public-content";
 import { newsPreviewUrl } from "@/payload/admin/preview-url";
+import { newsArticleEditor } from "@/payload/fields/NewsArticleEditor";
 
 export const News: CollectionConfig = {
   slug: "news",
@@ -42,7 +43,13 @@ export const News: CollectionConfig = {
     afterDelete: [recordCollectionDelete, revalidateCollectionDelete],
     beforeChange: [collectionPublishGuard("news", { approveOnPublish: true })],
   },
-  versions: { drafts: true, maxPerDoc: 50 },
+  versions: {
+    drafts: {
+      autosave: { interval: 2000, showSaveDraftButton: true },
+      validate: false,
+    },
+    maxPerDoc: 50,
+  },
   fields: (
     [
       {
@@ -65,7 +72,17 @@ export const News: CollectionConfig = {
             admin: { hidden: true },
           },
           { name: "excerpt", label: "Summary", type: "textarea", required: true },
-          { name: "body", label: "Article", type: "richText", required: true },
+          {
+            name: "body",
+            label: "Article",
+            type: "richText",
+            required: true,
+            editor: newsArticleEditor,
+            admin: {
+              description:
+                "Use the toolbar or / menu to add layout sections. Drag the handle beside a section to reorder it; use its controls to edit or remove it.",
+            },
+          },
           {
             name: "image",
             label: "Article Cover Image",

@@ -3,6 +3,7 @@ export const applicantSnapshotFields = [
   ["email", "Email"],
   ["phoneNumber", "Phone"],
   ["dateOfBirth", "Date of birth"],
+  ["gender", "Gender"],
   ["nationality", "Nationality"],
   ["position", "Position"],
   ["postalAddress", "Postal address"],

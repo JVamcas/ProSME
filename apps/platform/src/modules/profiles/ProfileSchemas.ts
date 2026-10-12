@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { applicantGenders } from "./ProfileOptions";
+
 const requiredText = (label: string, maximum = 120) =>
   z.string().trim().min(1, `${label} is required`).max(maximum);
 
@@ -23,6 +25,7 @@ export const applicantPersonalProfileSchema = z.object({
   surname: requiredText("Surname", 80),
   position: requiredText("Position", 120),
   dateOfBirth: optionalText(10).refine(isPastCalendarDate, "Use a valid past date"),
+  gender: z.union([z.enum(applicantGenders), z.literal("")]).optional(),
   nationality: requiredText("Nationality", 80),
   region: requiredText("Region", 80),
 });

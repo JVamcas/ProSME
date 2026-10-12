@@ -5,11 +5,12 @@ import type { GroupFieldClientProps } from "payload";
 
 import type { ListingItem } from "../../ContentTypes";
 import { ContentListingCard } from "../public/ContentListingCard";
-import { CmsRichText } from "../public/CmsRichText";
+import { NewsArticleContent } from "../public/NewsArticleContent";
 import { PublicPageHeader } from "../public/PublicPageHeader";
 import { CmsHomeSectionGroupField } from "./CmsHomeSectionGroupField";
 import { useCmsMediaPreview } from "./useCmsMediaPreview";
 import { CmsRichTextMediaPreview } from "./CmsRichTextMediaPreview";
+import { CmsArticleImagePreview } from "./CmsArticleImagePreview";
 
 export default function CmsNewsContentGroupField(props: GroupFieldClientProps) {
   const { id } = useDocumentInfo();
@@ -41,7 +42,7 @@ export default function CmsNewsContentGroupField(props: GroupFieldClientProps) {
     <CmsHomeSectionGroupField
       fieldProps={props}
       editor={{ anchor: "news-content", title: "News" }}
-      description="Edit the article, summary and image, then save a draft or publish using the page controls."
+      description="Changes automatically save as a draft after two seconds without edits. Check the saving status in the page controls. Publish when the article is ready."
       previewLabel="Live news preview"
     >
       <div className="p-4 sm:p-6">
@@ -60,8 +61,12 @@ export default function CmsNewsContentGroupField(props: GroupFieldClientProps) {
         summary={item.summary}
       />
       {body ? (
-        <div className="mx-auto max-w-3xl p-6">
-          <CmsRichText data={body} MediaUpload={CmsRichTextMediaPreview} />
+        <div className="mx-auto w-full max-w-6xl p-6">
+          <NewsArticleContent
+            data={body}
+            MediaUpload={CmsRichTextMediaPreview}
+            Image={CmsArticleImagePreview}
+          />
         </div>
       ) : null}
     </CmsHomeSectionGroupField>

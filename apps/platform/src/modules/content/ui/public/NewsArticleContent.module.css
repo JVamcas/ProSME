@@ -1,0 +1,75 @@
+.article > :global(.cms-rich-text) > :not([data-article-layout]) {
+  max-width: 48rem;
+  margin-inline: auto;
+}
+
+.article > :global(.cms-rich-text) > [data-article-layout] {
+  margin-block: 2.5rem;
+}
+
+.columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 2rem;
+  align-items: start;
+}
+
+.text {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.text > * + * {
+  margin-top: 1.25rem;
+}
+
+.figure {
+  min-width: 0;
+  margin: 0;
+}
+
+.image {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.caption {
+  margin-top: 0.75rem;
+  font-size: 0.875rem;
+  color: #475569;
+}
+
+.button {
+  padding-block: 0.5rem;
+}
+
+.article .buttonLink {
+  color: white;
+  text-decoration: none;
+}
+
+.article .buttonLink:hover {
+  color: var(--color-brand-navy);
+}
+
+@media (min-width: 768px) {
+  .columns {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 3rem;
+  }
+
+  .columns[data-image-position="left"] > .figure {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .columns[data-image-position="left"] > .text {
+    grid-column: 2;
+    grid-row: 1;
+  }
+}
+.article :global(.cms-rich-text) {
+  font-size: 1.0625rem;
+}
+

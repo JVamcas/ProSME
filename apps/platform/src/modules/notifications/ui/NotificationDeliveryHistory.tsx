@@ -206,6 +206,94 @@ export function NotificationDeliveryHistory({
 
   return (
     <div className="space-y-6">
+      <FormProvider {...filters}>
+        <form onSubmit={submitFilters}>
+          <DataTableFilter
+            contentClassName="md:grid-cols-2 xl:grid-cols-4"
+            defaultExpanded={false}
+            description="Filter and sort notification delivery attempts."
+            isApplying={deliveries.isFetching}
+            onApply={submitFilters}
+            onClear={clearFilters}
+            title="Delivery filters"
+          >
+            <FormInput
+              label="Event key"
+              name="eventKey"
+              placeholder="application.submitted"
+            />
+            <FormSelect
+              items={[
+                { label: "Pending", value: "PENDING" },
+                { label: "Processing", value: "PROCESSING" },
+                { label: "Sent", value: "SENT" },
+                { label: "Failed", value: "FAILED" },
+              ]}
+              label="Status"
+              name="status"
+              placeholder="All statuses"
+            />
+            <FormInput
+              label="Application reference"
+              name="applicationReference"
+            />
+            <FormInput label="Recipient name or email" name="recipient" />
+            <FormInput label="From" name="dateFrom" type="datetime-local" />
+            <FormInput label="To" name="dateTo" type="datetime-local" />
+            <FormSelect
+              items={[
+                { label: "Created time", value: "createdAt" },
+                { label: "Next attempt", value: "nextAttemptAt" },
+                { label: "Status", value: "status" },
+              ]}
+              label="Sort by"
+              name="sortField"
+            />
+            <FormSelect
+              items={[
+                { label: "Newest / descending", value: "desc" },
+                { label: "Oldest / ascending", value: "asc" },
+              ]}
+              label="Sort direction"
+              name="sortDirection"
+            />
+          </DataTableFilter>
+        </form>
+      </FormProvider>
+      {deliveries.error ? (
+        <p className="text-sm text-red-700" role="alert">
+          {deliveries.error.message}
+        </p>
+      ) : null}
+      <DataTable
+        columns={deliveryColumns({ canRetry, onRetry: setRetryId })}
+        data={deliveries.data?.items ?? []}
+        emptyMessage={emptyMessage}
+        footer={deliveries.data ? (
+          <Pagination
+            disabled={deliveries.isFetching}
+            hasNextPage={deliveries.data.page < deliveries.data.totalPages}
+            onNext={() => setQuery((current) => ({
+              ...current,
+              page: current.page + 1,
+            }))}
+            onPageSizeChange={(pageSize) => setQuery((current) => ({
+              ...current,
+              page: 1,
+              pageSize,
+            }))}
+            onPrevious={() => setQuery((current) => ({
+              ...current,
+              page: current.page - 1,
+            }))}
+            page={deliveries.data.page}
+            pageSize={deliveries.data.pageSize}
+            total={deliveries.data.total}
+          />
+        ) : undefined}
+        minWidth={960}
+        rowKey={(item) => item.deliveryId}
+      />
       <RightDrawer
         footer={
           <div className="mt-4 flex gap-3">

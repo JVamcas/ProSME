@@ -91,40 +91,6 @@ select {
   background: white;
   box-shadow: 0 12px 35px rgba(8, 42, 74, 0.06);
 }
-.cms-rich-text {
-  color: #334155;
-  font-size: 1rem;
-  line-height: 1.8;
-}
-.cms-rich-text > * + * {
-  margin-top: 1.25rem;
-}
-.cms-rich-text h2 {
-  color: #0a183b;
-  font-size: 1.75rem;
-  font-weight: 700;
-  line-height: 1.2;
-}
-.cms-rich-text h3 {
-  color: #0a183b;
-  font-size: 1.3rem;
-  font-weight: 700;
-}
-.cms-rich-text ul,
-.cms-rich-text ol {
-  padding-left: 1.5rem;
-}
-.cms-rich-text ul {
-  list-style: disc;
-}
-.cms-rich-text ol {
-  list-style: decimal;
-}
-.cms-rich-text a {
-  color: var(--color-brand-navy);
-  font-weight: 700;
-  text-decoration: underline;
-}
 .rich-text-content > * + * {
   margin-top: 0.75rem;
 }

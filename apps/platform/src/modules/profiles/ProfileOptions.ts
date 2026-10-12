@@ -26,3 +26,5 @@ export const businessTypes = [
 
 export const selectItems = (values: readonly string[]) =>
   values.map((value) => ({ label: value, value }));
+
+export const applicantGenders = ["Female", "Male", "Other", "Prefer not to say"] as const;

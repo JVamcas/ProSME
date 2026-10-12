@@ -13,6 +13,7 @@ import {
   findApplicantProfile,
   saveApplicantProfile,
 } from "./infrastructure/ApplicantProfileRepository";
+import { applicantGenders } from "./ProfileOptions";
 import type { ApplicantProfileUpdateInput } from "./ProfileSchemas";
 import type {
   ApplicantDashboardSummary,
@@ -30,6 +31,7 @@ function applicantProfileView(
   return {
     ...profile,
     dateOfBirth: profile.dateOfBirth ?? "",
+    gender: applicantGenders.find((gender) => gender === profile.gender) ?? "",
     updatedAt: isoDate(profile.updatedAt),
   };
 }
@@ -90,6 +92,7 @@ export async function getApplicantProfile(
     position: "",
     phoneNumber: "",
     dateOfBirth: "",
+    gender: "",
     nationality: "Namibian",
     region: "",
     postalAddress: "",

@@ -58,6 +58,7 @@ export async function createSubmissionSnapshot(
   const snapshotContent: ApplicationSubmissionSnapshotContent = {
     applicant: {
       dateOfBirth: input.applicant.dateOfBirth,
+      gender: input.applicant.gender ?? null,
       displayName: input.applicant.displayName,
       email: input.applicant.email,
       firstName: input.applicant.firstName,

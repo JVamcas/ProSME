@@ -1,3 +1,5 @@
+import { dashboardApplicationHref } from "../domain/DashboardApplicationLinks";
+
 import { ClipboardList, FileQuestion, Gavel, ScanSearch } from "lucide-react";
 
 import type { AdminDashboardView } from "@/modules/dashboard/AdminDashboardTypes";
@@ -17,24 +19,28 @@ function DashboardMetrics({ dashboard }: { dashboard: AdminDashboardView }) {
         supportingText="Submitted during the selected period"
         icon={ClipboardList}
         label="Total applications"
+        href={dashboardApplicationHref(dashboard, "all")}
         value={dashboard.metrics.totalApplications.toLocaleString("en-NA")}
       />
       <DashboardMetricCard
         supportingText="Currently in a configured review stage"
         icon={ScanSearch}
         label="Under review"
+        href={dashboardApplicationHref(dashboard, "under-review")}
         value={dashboard.metrics.underReview.toLocaleString("en-NA")}
       />
       <DashboardMetricCard
-        supportingText="Awaiting applicant responses for applications in this period"
+        supportingText="Applications pending information from the applicant."
         icon={FileQuestion}
         label="Information requests"
+        href={dashboardApplicationHref(dashboard, "action-required")}
         value={dashboard.metrics.informationRequests.toLocaleString("en-NA")}
       />
       <DashboardMetricCard
         supportingText="Applications with an active decision task"
         icon={Gavel}
         label="Pending decision"
+        href={dashboardApplicationHref(dashboard, "pending-decision")}
         value={dashboard.metrics.pendingDecision.toLocaleString("en-NA")}
       />
     </section>

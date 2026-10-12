@@ -62,6 +62,13 @@ async function listAdminApplications(
   if (input.after) query.set("after", input.after);
   if (input.search) query.set("search", input.search);
   if (input.stage) query.set("stage", input.stage);
+  for (const key of [
+    "ageMin", "ageMax", "gender", "region", "sector", "submittedFrom", "submittedTo",
+    "submittedAfter", "submittedBefore",
+  ] as const) {
+    const value = input[key];
+    if (value !== undefined && value !== "") query.set(key, String(value));
+  }
   const envelope = await requestJson<AdminApplicationEnvelope>(
     `/api/admin/applications?${query.toString()}`,
     { cache: "no-store" },

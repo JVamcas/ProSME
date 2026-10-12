@@ -145,6 +145,7 @@ async function readSubmissionConfigurationContext(
     transaction
       .select({
         dateOfBirth: applicantProfiles.dateOfBirth,
+        gender: applicantProfiles.gender,
         displayName: users.displayName,
         email: users.email,
         firstName: applicantProfiles.firstName,

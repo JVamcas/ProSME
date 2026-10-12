@@ -14,7 +14,7 @@ import {
   useUpdateApplicantProfile,
 } from "@/modules/profiles/ProfileHooks";
 import { ApplicantProfileFields } from "./ApplicantProfileFields";
-import { ProfileFormActions } from "./ProfileFormActions";
+import { ProfileFormActions } from "@/components/applicant/profile/ProfileFormActions";
 import { PortalErrorState } from "@/shared/ui/portal/PortalErrorState";
 import { PortalLoadingState } from "@/shared/ui/portal/PortalLoadingState";
 
@@ -23,6 +23,7 @@ const defaults: ApplicantPersonalProfileInput = {
   surname: "",
   position: "",
   dateOfBirth: "",
+  gender: "",
   nationality: "Namibian",
   region: "",
 };
@@ -42,7 +43,10 @@ export function PersonalProfileForm({ readOnly }: { readOnly: boolean }) {
   }, [form, profile.data]);
 
   if (profile.isPending) {
-    return <PortalLoadingState title="Loading your profile" description="Just a moment..." />;
+    return <PortalLoadingState
+        title="Loading your profile"
+        description="Just a moment..."
+      />;
   }
 
   if (profile.isError || !profile.data) {

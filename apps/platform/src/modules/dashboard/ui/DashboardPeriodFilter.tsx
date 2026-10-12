@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 
-import { Select } from "@/shared/ui/FormPrimitives";
+import { FormSelect } from "@/components/ui/form-fields";
 import type { AdminDashboardPeriod } from "@/modules/dashboard/AdminDashboardTypes";
 
 const periods: Array<{ label: string; value: AdminDashboardPeriod }> = [
@@ -19,22 +19,16 @@ export function DashboardPeriodFilter({
 }) {
   const router = useRouter();
   return (
-    <label className="text-xs font-semibold text-brand-navy" htmlFor="period">
-      Reporting period
-      <Select
-        className="mt-1 h-11 min-w-40"
-        id="period"
-        onChange={(event) => {
-          router.replace(`/admin?period=${event.currentTarget.value}`);
-        }}
-        value={period}
-      >
-        {periods.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </Select>
-    </label>
+    <FormSelect
+      className="h-11 min-w-40"
+      id="period"
+      items={periods}
+      label="Reporting period"
+      labelClassName="text-xs font-semibold text-brand-navy"
+      onChange={(event) => {
+        router.replace(`/admin?period=${event.currentTarget.value}`);
+      }}
+      value={period}
+    />
   );
 }

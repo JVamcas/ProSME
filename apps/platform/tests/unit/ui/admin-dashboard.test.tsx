@@ -25,6 +25,7 @@ const dashboard: AdminDashboardView = {
     underReview: 3,
   },
   period: "30",
+  submissionWindow: { from: "2026-09-12T10:00:00.000Z", to: "2026-10-12T10:00:00.000Z" },
   statuses: [
     { count: 3, label: "Completeness screening" },
     { count: 2, label: "Committee decision" },
@@ -42,10 +43,19 @@ describe("admin dashboard", () => {
     expect(markup).toContain("Pending decision");
     expect(markup).toContain("SMEF-2026-000001");
     expect(markup).toContain("Application submitted");
-    expect(markup).toContain("Awaiting applicant responses");
+    expect(markup).toContain("Applications pending information from the applicant.");
     expect(markup).not.toContain("Request tracking is not available yet");
     expect(markup).toContain('id="period"');
     expect(markup).not.toContain("128");
+  });
+
+  it("links all four cards to their application status and exact reporting window", () => {
+    const markup = renderToStaticMarkup(<AdminDashboard dashboard={dashboard} />);
+    for (const status of ["all", "under-review", "action-required", "pending-decision"]) {
+      expect(markup).toContain(`/admin/applications?status=${status}&amp;submittedAfter=`);
+    }
+    expect(markup).toContain("submittedAfter=2026-09-12T10%3A00%3A00.000Z");
+    expect(markup).toContain("submittedBefore=2026-10-12T10%3A00%3A00.000Z");
   });
 
   it("renders truthful empty states", () => {

@@ -36,11 +36,17 @@ export const recordCollectionChange: CollectionAfterChangeHook = async ({
 }) => {
   const wasPublished = previousDoc?._status === "published";
   const isPublished = doc?._status === "published";
-  const action = !wasPublished && isPublished
-    ? "published"
-    : wasPublished && !isPublished
-      ? "unpublished"
-      : operation;
+  const isNewsAutosave =
+    collection.slug === "news" &&
+    (req.query?.autosave === true || req.query?.autosave === "true");
+  let action: string = operation;
+  if (isNewsAutosave) {
+    action = "autosaved";
+  } else if (!wasPublished && isPublished) {
+    action = "published";
+  } else if (wasPublished && !isPublished) {
+    action = "unpublished";
+  }
   await recordAudit(req, collection.slug, String(doc.id), action);
   return doc;
 };

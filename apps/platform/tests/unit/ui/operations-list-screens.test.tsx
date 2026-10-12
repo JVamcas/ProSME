@@ -33,7 +33,7 @@ vi.mock("@/modules/applications/ui/useApplications", () => ({
   }),
 }));
 
-import { ApplicationsTable } from "@/modules/applications/ui/staff/ApplicationsTable";
+import { StaffApplicationsTable } from "@/modules/applications/ui/staff/StaffApplicationsTable";
 import { ApplicationReview } from "@/components/admin/applications/ApplicationReview";
 import { WorkQueueTable } from "@/modules/work-queue/ui/WorkQueueTable";
 
@@ -113,7 +113,7 @@ describe("operations list screens", () => {
   it("renders the real application projection fields", () => {
     const markup = renderToStaticMarkup(
       <QueryClientProvider client={new QueryClient()}>
-        <ApplicationsTable />
+        <StaffApplicationsTable />
       </QueryClientProvider>,
     );
     expect(markup).toContain("Application ID");
