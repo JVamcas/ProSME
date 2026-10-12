@@ -1,3 +1,4 @@
+import { orderTaskSections, type WorkflowTaskSectionId } from "@/modules/workflows/domain/definitions/WorkflowTaskSectionOrder";
 import type { TaskDetail } from "../TaskTypes";
 import type { ReviewDraftState } from "./ChecklistTaskForm";
 import { isWorkflowStageDecisionAction } from "@/modules/workflows/domain/actions/WorkflowActionDefinition";
@@ -125,6 +126,19 @@ export function workflowTaskReviewReadiness(
           ?.unavailableReason ?? "No stage decision is currently available.");
   }
 
+  const orderedSections = orderTaskSections(
+    ([
+      ["form", Boolean(task.formVersionId)],
+      ["checklist", task.hasChecklist],
+      ["documents", task.documentRequirements.length > 0],
+      ["scoring", Boolean(task.scoring?.criteria.length)],
+      ["comments", task.commentFields.length > 0],
+    ] as [WorkflowTaskSectionId, boolean][])
+      .filter(([, present]) => present)
+      .map(([id]) => ({ id })),
+    task.sectionOrder,
+  );
+
   return {
     actionTask,
     canComplete,
@@ -139,6 +153,6 @@ export function workflowTaskReviewReadiness(
     submitsFormWithTaskAction,
     taskProgressStatus,
     taskBlockedReason,
-    formIsLastSection: Boolean(task.formVersionId) && !hasReviewFields,
+    formIsLastSection: orderedSections.at(-1)?.id === "form",
   };
 }

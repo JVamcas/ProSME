@@ -1,5 +1,6 @@
 "use client";
 
+import type { ComponentType, ReactNode } from "react";
 import { Check } from "lucide-react";
 import { Button } from "react-aria-components";
 
@@ -11,7 +12,18 @@ export type StepProgressItem<TId extends string = string> = {
   label: string;
 };
 
-type StepProgressProps<TId extends string> = {
+export type StepProgressContainerProps = {
+  children: ReactNode;
+  className: string;
+  id: string;
+};
+
+function DefaultStepContainer({ children, className }: StepProgressContainerProps) {
+  return <li className={className}>{children}</li>;
+}
+
+export type StepProgressProps<TId extends string> = {
+  StepContainer?: ComponentType<StepProgressContainerProps>;
   ariaLabel?: string;
   className?: string;
   completedStepIds?: readonly TId[];
@@ -45,22 +57,31 @@ function stepState(
 }
 
 type ProgressStepProps<TId extends string> = {
+  StepContainer: ComponentType<StepProgressContainerProps>;
   complete: boolean;
   current: boolean;
   disabled: boolean;
   hideLabel: boolean;
   index: number;
   onChange?: (id: TId, index: number) => void | Promise<void>;
+  previousComplete: boolean;
   step: StepProgressItem<TId>;
   total: number;
 };
 
-function StepConnector({ complete }: { complete: boolean }) {
+function StepConnector({
+  complete,
+  side,
+}: {
+  complete: boolean;
+  side: "before" | "after";
+}) {
   return (
     <span
       aria-hidden="true"
       className={cn(
-        "absolute left-1/2 top-[1.375rem] h-px w-full",
+        "absolute top-[1.375rem] h-px w-1/2",
+        side === "before" ? "left-0" : "right-0",
         complete ? "bg-brand-green" : "bg-brand-navy/20",
       )}
     />
@@ -68,26 +89,36 @@ function StepConnector({ complete }: { complete: boolean }) {
 }
 
 function ProgressStep<TId extends string>({
+  StepContainer,
   complete,
   current,
   disabled,
   hideLabel,
   index,
   onChange,
+  previousComplete,
   step,
   total,
 }: ProgressStepProps<TId>) {
   const state = stepState(complete, current, Boolean(step.disabled));
   const inactive = disabled || current || step.disabled || !onChange;
   return (
-    <li className="relative flex min-w-24 flex-1 justify-center">
-      {index < total - 1 ? <StepConnector complete={complete} /> : null}
+    <StepContainer
+      id={step.id}
+      className="relative flex min-w-max flex-[1_0_auto] justify-center px-4"
+    >
+      {index > 0 ? (
+        <StepConnector complete={previousComplete} side="before" />
+      ) : null}
+      {index < total - 1 ? (
+        <StepConnector complete={complete} side="after" />
+      ) : null}
       <Button
         aria-current={current ? "step" : undefined}
         aria-label={`${step.label}, ${state}`}
         className={({ isFocusVisible }) =>
           cn(
-            "group relative z-10 flex min-w-0 flex-col items-center gap-2 rounded-md outline-none",
+            "group relative z-10 flex shrink-0 flex-col items-center gap-2 rounded-md outline-none",
             inactive ? "cursor-default" : "cursor-pointer",
             isFocusVisible && "ring-2 ring-brand-orange ring-offset-2",
           )
@@ -121,11 +152,12 @@ function ProgressStep<TId extends string>({
           {step.label}
         </span>
       </Button>
-    </li>
+    </StepContainer>
   );
 }
 
 export function StepProgress<TId extends string>({
+  StepContainer = DefaultStepContainer,
   ariaLabel = "Progress",
   className,
   completedStepIds = [],
@@ -139,11 +171,12 @@ export function StepProgress<TId extends string>({
   return (
     <nav
       aria-label={ariaLabel}
-      className={cn("w-full overflow-x-auto", className)}
+      className={cn("w-full min-w-0 max-w-full overflow-x-auto pb-2", className)}
     >
-      <ol className="flex min-w-max items-start sm:min-w-full">
+      <ol className="flex w-max min-w-full items-start">
         {steps.map((step, index) => (
           <ProgressStep
+            StepContainer={StepContainer}
             complete={completed.has(step.id)}
             current={step.id === currentStepId}
             disabled={disabled}
@@ -151,6 +184,7 @@ export function StepProgress<TId extends string>({
             index={index}
             key={step.id}
             onChange={onStepChange}
+            previousComplete={index > 0 && completed.has(steps[index - 1].id)}
             step={step}
             total={steps.length}
           />

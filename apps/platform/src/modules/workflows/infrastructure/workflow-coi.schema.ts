@@ -1,6 +1,7 @@
 import {
   index,
   integer,
+  jsonb,
   pgTable,
   primaryKey,
   text,
@@ -8,6 +9,7 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 
+import type { FormRuntimeSchema } from "@/modules/forms/FormTypes";
 import { users } from "@/db/schema/identity";
 import { applications } from "@/modules/applications/infrastructure/application.schema";
 import { workflowTasks } from "./workflow-runtime.schema";
@@ -55,6 +57,8 @@ export const workflowApplicationCoiEvents = pgTable(
     fromState: text("from_state"),
     toState: text("to_state").notNull(),
     disclosureText: text("disclosure_text"),
+    formValues: jsonb("form_values").$type<Record<string, unknown>>(),
+    formDefinitionSnapshot: jsonb("form_definition_snapshot").$type<FormRuntimeSchema>(),
     reason: text("reason"),
     occurredAt: timestamp("occurred_at", { withTimezone: true })
       .notNull().defaultNow(),

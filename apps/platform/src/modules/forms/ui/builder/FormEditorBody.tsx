@@ -125,7 +125,8 @@ export function FormEditorBody({
       />
       <FormFieldDialog
         field={field?.id ? field : undefined}
-        fields={fieldVisibilityFields}
+        fields={fields}
+        visibilityFields={fieldVisibilityFields}
         isOpen={dialogOpen}
         nextOrder={nextFieldOrder}
         onClose={onCloseDialog}

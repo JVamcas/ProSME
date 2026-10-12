@@ -45,3 +45,19 @@ describe("workflow COI review projection", () => {
     expect(query.params).toContain(taskId);
   });
 });
+
+
+it("projects the captured form and answers only in the scoped review detail", async () => {
+  const answers = { HAS_CONFLICT: true, SIGNATURE: "Reviewer", ACKNOWLEDGEMENT: true };
+  const form = { versionId: "33333333-3333-4333-8333-333333333333" };
+  execute.mockResolvedValueOnce({ rows: [{
+    taskId, subjectUserId: "44444444-4444-4444-8444-444444444444",
+    submittedAt: "2026-10-12T12:00:00Z", formValues: answers, form,
+  }] }).mockResolvedValueOnce({ rows: [] });
+  const detail = await readPendingWorkflowCoiReview(actorId, taskId);
+  expect(detail).toMatchObject({ formValues: answers, form });
+  const query = compiledQuery();
+  expect(query.sql).toContain('disclosure.form_values AS "formValues"');
+  expect(query.sql).toContain("event.subject_user_id = clearance.user_id");
+  expect(query.sql).toContain("event.form_version_id = clearance.form_version_id");
+});

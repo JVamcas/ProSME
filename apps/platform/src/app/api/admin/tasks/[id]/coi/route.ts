@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { workflowCoiDeclarationSchema } from "@/modules/workflows/api/WorkflowCoiDeclarationSchema";
 
 import { resolveUserFromHeaders } from "@/auth/authorization/current-user";
 import {
@@ -11,18 +12,6 @@ import {
   getWorkflowTaskCoi,
   reviewWorkflowTaskCoi,
 } from "@/modules/workflows/application/runtime/ServerWorkflowCoiService";
-
-const declarationSchema = z.discriminatedUnion("decision", [
-  z.object({
-    decision: z.literal("NO_CONFLICT"),
-    expectedRowVersion: z.number().int().positive(),
-  }).strict(),
-  z.object({
-    decision: z.literal("DISCLOSE"),
-    disclosureText: z.string().trim().min(1).max(4000),
-    expectedRowVersion: z.number().int().positive(),
-  }).strict(),
-]);
 
 const reviewSchema = z.discriminatedUnion("decision", [
   z.object({
@@ -66,7 +55,7 @@ export async function POST(request: Request, context: RouteContext) {
     ]);
     return portalRouteSuccess(
       await declareWorkflowTaskCoi(user, {
-        ...declarationSchema.parse(body),
+        ...workflowCoiDeclarationSchema.parse(body),
         taskId: z.uuid().parse(params.id),
       }),
       correlationId,

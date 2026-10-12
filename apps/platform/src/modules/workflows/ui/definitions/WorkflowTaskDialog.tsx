@@ -119,7 +119,19 @@ export function WorkflowTaskDialog({
       title={task ? "Edit workflow task" : "Add workflow task"}
     >
       <FormProvider {...controller.form}>
-        <form onSubmit={submit}>
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            const submitter = (event.nativeEvent as SubmitEvent).submitter;
+            if (
+              currentStep === "assignment"
+              && submitter instanceof HTMLButtonElement
+              && submitter.name === "saveTask"
+            ) {
+              void submit(event);
+            }
+          }}
+        >
           <StepProgress
             ariaLabel="Workflow task configuration"
             className="border-b border-brand-navy/10 pb-5"
@@ -155,6 +167,8 @@ export function WorkflowTaskDialog({
             {currentStep === "assignment" ? (
               <GeneralButton
                 disabled={controller.mutation.isPending}
+                key="save"
+                name="saveTask"
                 type="submit"
               >
                 {controller.mutation.isPending ? "Saving…" : "Save task"}
@@ -162,6 +176,7 @@ export function WorkflowTaskDialog({
             ) : (
               <GeneralButton
                 disabled={controller.mutation.isPending}
+                key="continue"
                 onClick={() => void continueToNextStep()}
                 type="button"
               >

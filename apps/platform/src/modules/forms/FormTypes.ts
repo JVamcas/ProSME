@@ -39,6 +39,7 @@ export const formFieldTypes = [
   "PERCENTAGE",
   "DATE",
   "YES_NO",
+  "CHECKBOX",
   "SINGLE_SELECT",
   "MULTI_SELECT",
   "DOCUMENT",
@@ -55,6 +56,7 @@ export const repeatableItemFieldTypes = [
   "PERCENTAGE",
   "DATE",
   "YES_NO",
+  "CHECKBOX",
   "SINGLE_SELECT",
   "MULTI_SELECT",
 ] as const;

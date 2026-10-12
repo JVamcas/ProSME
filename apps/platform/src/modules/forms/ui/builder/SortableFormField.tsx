@@ -4,12 +4,14 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical } from "lucide-react";
 
+import { GeneralButton } from "@/shared/ui/Button";
 import { DeleteButton, EditButton } from "@/components/ui/action-buttons";
 import { cn } from "@/lib/utils";
 import { formFieldIdentity } from "@/modules/forms/domain/FormFieldOrdering";
 import type { FormField } from "@/modules/forms/FormTypes";
 
 function fieldTypeLabel(type: FormField["type"]) {
+  if (type === "CHECKBOX") return "Checkbox";
   if (type === "YES_NO") return "Yes/No";
   return type
     .toLowerCase()
@@ -61,16 +63,18 @@ export function SortableFormField({
     >
       <div className="min-w-0 flex-1">
         <div className="flex items-start gap-2">
-          <button
+          <GeneralButton
             aria-label={`Reorder ${field.label}`}
             className="mt-1 cursor-grab touch-none text-brand-navy/45 disabled:cursor-default"
             disabled={!canEdit}
+            size="icon-compact"
             type="button"
+            variant="ghost"
             {...attributes}
             {...listeners}
           >
             <GripVertical className="size-4" />
-          </button>
+          </GeneralButton>
           <span className="text-xs font-bold text-brand-orange">
             {field.order}
           </span>

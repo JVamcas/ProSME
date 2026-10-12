@@ -30,6 +30,7 @@ const allConditionTypes = [
 ] as const satisfies readonly ConditionFieldType[];
 
 const formConditionTypes = {
+  CHECKBOX: "BOOLEAN",
   CURRENCY: "NUMBER",
   DATE: "DATE",
   NUMBER: "NUMBER",

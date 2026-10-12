@@ -1,5 +1,6 @@
 import "server-only";
 
+import type { FormRuntimeSchema } from "@/modules/forms/FormTypes";
 import { sql } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
@@ -59,12 +60,18 @@ export async function changeTaskCoi(input: {
   disclosureText?: string;
   reason?: string;
   independentReview: boolean;
+  declaration?: {
+    formVersionId: string;
+    values: Record<string, unknown>;
+    form: FormRuntimeSchema;
+  };
 }) {
   return getDatabase().transaction(async (transaction) => {
     await transaction.execute(sql`
       SELECT stage.id FROM app_workflow_stage_instances stage
       JOIN app_workflow_tasks task ON task.stage_instance_id = stage.id
       WHERE task.id = ${input.taskId}::uuid AND stage.status = 'ACTIVE'
+        AND workflow.status = 'ACTIVE'
       FOR UPDATE OF stage
     `);
     const locked = await transaction.execute(sql`
@@ -86,6 +93,7 @@ export async function changeTaskCoi(input: {
         AND clearance.user_id = task.assigned_user_id
         AND clearance.form_version_id = stage_definition.coi_form_version_id
       WHERE task.id = ${input.taskId}::uuid AND stage.status = 'ACTIVE'
+        AND workflow.status = 'ACTIVE'
       FOR UPDATE OF task, workflow
     `);
     const row = locked.rows[0] as {
@@ -103,6 +111,12 @@ export async function changeTaskCoi(input: {
       || !["PENDING", "IN_PROGRESS"].includes(row.status)) return null;
 
     const self = row.assignedUserId === input.actorId;
+    if (!input.independentReview && (
+      !input.declaration
+      || input.declaration.formVersionId !== row.coiFormVersionId
+      || input.declaration.form.versionId !== row.coiFormVersionId
+      || row.state !== null
+    )) return null;
     let next: CoiState;
     if (input.decision === "NO_CONFLICT") {
       if (!self || row.state !== null) return null;
@@ -135,13 +149,15 @@ export async function changeTaskCoi(input: {
     await transaction.execute(sql`
       INSERT INTO app_workflow_application_coi_events (
         application_id, task_id, subject_user_id, actor_id, from_state, to_state,
-        disclosure_text, reason, form_version_id
+        disclosure_text, reason, form_version_id, form_values, form_definition_snapshot
       ) VALUES (
         ${row.applicationId}::uuid, ${input.taskId}::uuid,
         ${row.assignedUserId}::uuid,
         ${input.actorId}::uuid, ${row.state}, ${next},
         ${input.disclosureText ?? null}, ${input.reason ?? null},
-        ${row.coiFormVersionId}::uuid
+        ${row.coiFormVersionId}::uuid,
+        ${input.declaration ? JSON.stringify(input.declaration.values) : null}::jsonb,
+        ${input.declaration ? JSON.stringify(input.declaration.form) : null}::jsonb
       )
     `);
     return { state: next };

@@ -34,3 +34,46 @@ describe("workflow COI gate projection", () => {
     expect(query.params).toContain(taskId);
   });
 });
+
+describe("atomic COI answer capture", () => {
+  async function write(patch: Record<string, unknown> = {}) {
+    const { changeTaskCoi } = await import("@/modules/workflows/infrastructure/WorkflowCoiRepository");
+    const values = { HAS_CONFLICT: false, SIGNATURE: "Reviewer", CONSENT: true, TOTAL: 0, OPTIONAL: false };
+    const form = { displayMode: "SINGLE_PAGE" as const, fields: [], sections: [], instructions: null,
+      submitLabel: "Declare", versionId: "33333333-3333-4333-8333-333333333333", versionNumber: 2 };
+    execute.mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({ rows: [{
+      applicationId: "44444444-4444-4444-8444-444444444444",
+      assignedUserId: actorId, coiFormVersionId: form.versionId,
+      gated: true, rowVersion: 2, state: null, status: "PENDING", ...patch,
+    }] });
+    const transaction = vi.fn(async (callback) => callback({ execute }));
+    vi.mocked(getDatabase).mockReturnValue({ transaction } as never);
+    const result = await changeTaskCoi({
+      actorId, taskId, expectedRowVersion: 2, decision: "NO_CONFLICT", independentReview: false,
+      declaration: { formVersionId: form.versionId, values, form },
+    });
+    return { result, transaction, values, form };
+  }
+
+  it("writes the full answers and exact version snapshot with the clearance in one transaction", async () => {
+    const { result, transaction, values, form } = await write();
+    expect(result).toEqual({ state: "CLEARED_NO_CONFLICT" });
+    expect(transaction).toHaveBeenCalledTimes(1);
+    const query = new PgDialect().sqlToQuery(execute.mock.calls[3]![0]);
+    expect(query.sql).toContain("form_values, form_definition_snapshot");
+    expect(query.params).toContain(JSON.stringify(values));
+    expect(query.params).toContain(JSON.stringify(form));
+    expect(query.params).toContain(form.versionId);
+  });
+
+  it.each([
+    { coiFormVersionId: "55555555-5555-4555-8555-555555555555" },
+    { assignedUserId: "55555555-5555-4555-8555-555555555555" },
+    { state: "PENDING_REVIEW" },
+    { rowVersion: 3 },
+  ])("rejects changed context under the transaction lock: %j", async (patch) => {
+    const { result } = await write(patch);
+    expect(result).toBeNull();
+    expect(execute).toHaveBeenCalledTimes(2);
+  });
+});

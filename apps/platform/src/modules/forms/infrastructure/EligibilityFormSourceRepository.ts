@@ -8,6 +8,7 @@ import type { ConditionFieldType } from "@/modules/conditions/domain/ConditionCo
 import { formFields, formSections } from "./form.schema";
 
 const conditionTypes = {
+  CHECKBOX: "BOOLEAN",
   CURRENCY: "NUMBER",
   DATE: "DATE",
   NUMBER: "NUMBER",

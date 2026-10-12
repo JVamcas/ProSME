@@ -6,6 +6,7 @@ import type { AuthenticatedUser } from "@/auth/types";
 import {
   ResourceConflictError,
   ResourceNotFoundError,
+  RequestValidationError,
 } from "@/lib/resource-errors";
 import { getPublishedSystemFormRuntimeVersion } from "@/modules/forms/application/ServerSystemFormService";
 import {
@@ -16,6 +17,10 @@ import { readWorkflowTaskAccess } from "../../infrastructure/WorkflowTaskAccessR
 import { WorkflowTaskUnavailableError } from "./ServerWorkflowTaskReadService";
 import { readPendingWorkflowCoiReview } from "../../infrastructure/WorkflowCoiReviewRepository";
 import { replaceWorkflowReviewer } from "../../infrastructure/WorkflowReviewerReplacementRepository";
+import type { WorkflowCoiDeclarationInput } from "../../api/WorkflowCoiDeclarationSchema";
+import { captureFormResponseValues, InvalidFormRuntimeBindingError } from "@/modules/forms/engine/FormRuntimeContext";
+import { activeFormDefinition, sanitizeFormResponseValues } from "@/modules/forms/engine/FormVisibility";
+import { validateFormValues } from "@/modules/forms/FormValidation";
 
 export async function getWorkflowTaskCoi(
   user: AuthenticatedUser | null,
@@ -70,22 +75,55 @@ export async function getWorkflowTaskCoi(
 
 export async function declareWorkflowTaskCoi(
   user: AuthenticatedUser | null,
-  input: {
-    taskId: string;
-    expectedRowVersion: number;
-    decision: "NO_CONFLICT" | "DISCLOSE";
-    disclosureText?: string;
-  },
+  input: WorkflowCoiDeclarationInput & { taskId: string },
 ) {
   const actor = requirePermission(
     user,
     permissionCodes.workflowTaskAssignedProcess,
   );
-  if (input.decision === "DISCLOSE" && !input.disclosureText?.trim()) {
+  const gate = await readTaskCoiGate(actor.id, input.taskId);
+  if (
+    !gate
+    || gate.assignedUserId !== actor.id
+    || !gate.gated
+    || gate.state !== "DECLARATION_REQUIRED"
+    || gate.rowVersion !== input.expectedRowVersion
+    || gate.coiFormVersionId !== input.formVersionId
+    || !["PENDING", "IN_PROGRESS"].includes(gate.status)
+  ) {
+    throw new ResourceConflictError("The COI state or task changed.");
+  }
+  const form = await getPublishedSystemFormRuntimeVersion(gate.coiFormVersionId);
+  let captured: Record<string, unknown>;
+  try {
+    captured = captureFormResponseValues(form.fields, input.values);
+  } catch (error) {
+    if (error instanceof InvalidFormRuntimeBindingError) {
+      throw new RequestValidationError(error.message);
+    }
+    throw error;
+  }
+  const values = sanitizeFormResponseValues(form, captured);
+  const active = activeFormDefinition(form, captured);
+  if (!validateFormValues(active.fields, values, true)) {
+    throw new RequestValidationError("Complete all required COI form fields with valid values.");
+  }
+  if (typeof values.HAS_CONFLICT !== "boolean") {
+    throw new RequestValidationError("The COI form must contain a conflict declaration answer.");
+  }
+  const decision = values.HAS_CONFLICT ? "DISCLOSE" : "NO_CONFLICT";
+  const disclosureText = typeof values.DISCLOSURE_TEXT === "string"
+    ? values.DISCLOSURE_TEXT.trim()
+    : undefined;
+  if (decision === "DISCLOSE" && !disclosureText) {
     throw new ResourceConflictError("A disclosure is required.");
   }
   const result = await changeTaskCoi({
-    ...input,
+    taskId: input.taskId,
+    expectedRowVersion: input.expectedRowVersion,
+    decision,
+    disclosureText,
+    declaration: { formVersionId: form.versionId, values, form },
     actorId: actor.id,
     independentReview: false,
   });

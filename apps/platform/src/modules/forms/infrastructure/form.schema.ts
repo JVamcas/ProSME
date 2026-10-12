@@ -211,7 +211,7 @@ export const formFields = pgTable(
     }).onDelete("restrict"),
     check(
       "app_form_fields_type_check",
-      sql`${table.type} in ('TEXT', 'TEXTAREA', 'RICH_TEXT', 'NUMBER', 'CURRENCY', 'PERCENTAGE', 'DATE', 'YES_NO', 'SINGLE_SELECT', 'MULTI_SELECT', 'DOCUMENT', 'REPEATABLE_GROUP')`,
+      sql`${table.type} in ('TEXT', 'TEXTAREA', 'RICH_TEXT', 'NUMBER', 'CURRENCY', 'PERCENTAGE', 'DATE', 'YES_NO', 'CHECKBOX', 'SINGLE_SELECT', 'MULTI_SELECT', 'DOCUMENT', 'REPEATABLE_GROUP')`,
     ),
     check("app_form_fields_order_check", sql`${table.order} > 0`),
     check(

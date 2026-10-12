@@ -124,6 +124,7 @@ export interface ButtonProps
   extends
     React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {
+  ref?: React.Ref<HTMLButtonElement>;
   asChild?: boolean;
 }
 

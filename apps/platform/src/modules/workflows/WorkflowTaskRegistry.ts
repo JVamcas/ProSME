@@ -1,3 +1,4 @@
+import { workflowTaskSectionOrderSchema } from "./domain/definitions/WorkflowTaskSectionOrder";
 import { z } from "zod";
 import { eligibilityFailureStatusSchema } from "./domain/definitions/WorkflowEligibilityFailureStatus";
 import { formPurposes } from "@/modules/forms/domain/FormPurpose";
@@ -115,6 +116,7 @@ export function taskDisplayMode(config: unknown): WorkflowTaskDisplayMode {
 }
 
 const taskConfigurationSchema = z.object({
+  sectionOrder: workflowTaskSectionOrderSchema.optional(),
   formPurpose: z.enum(formPurposes).optional(),
   hardFailureStatus: eligibilityFailureStatusSchema.optional(),
   command: z.literal("AUTHORITATIVE_ELIGIBILITY").optional(),

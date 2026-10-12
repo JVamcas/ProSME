@@ -1401,6 +1401,20 @@
       "when": 1801785600045,
       "tag": "0199_applicant_profile_gender",
       "breakpoints": true
+    },
+    {
+      "idx": 200,
+      "version": "7",
+      "when": 1801785600046,
+      "tag": "0200_form_checkbox_field",
+      "breakpoints": true
+    },
+    {
+      "idx": 201,
+      "version": "7",
+      "when": 1801785600047,
+      "tag": "0201_coi_form_answers",
+      "breakpoints": true
     }
   ]
 }

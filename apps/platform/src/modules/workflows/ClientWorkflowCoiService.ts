@@ -1,5 +1,6 @@
 "use client";
 
+import type { WorkflowCoiDeclarationInput } from "./api/WorkflowCoiDeclarationSchema";
 import { requestData } from "@/lib/client-http";
 import type { FormRuntimeSchema } from "@/modules/forms/FormTypes";
 
@@ -24,11 +25,7 @@ export const clientWorkflowCoiService = {
   },
   declare(
     taskId: string,
-    input: {
-      decision: "NO_CONFLICT" | "DISCLOSE";
-      disclosureText?: string;
-      expectedRowVersion: number;
-    },
+    input: WorkflowCoiDeclarationInput,
   ) {
     return requestData<{ state: string }>(
       `/api/admin/tasks/${taskId}/coi`,

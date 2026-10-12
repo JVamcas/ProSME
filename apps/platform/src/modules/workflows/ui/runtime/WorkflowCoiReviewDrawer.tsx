@@ -16,6 +16,7 @@ import {
   useDecideWorkflowCoiReview,
   useWorkflowCoiReview,
 } from "./useWorkflowCoiReviews";
+import { FormRenderer } from "@/modules/forms/ui/renderer/FormRenderer";
 import { toast } from "@/shared/ui/Toast";
 
 type DecisionValues = z.input<typeof workflowCoiReviewDecisionSchema>;
@@ -60,9 +61,22 @@ function ReviewDetails({ review }: { review: WorkflowCoiReviewDetail }) {
       </section>
       <section>
         <h3 className="font-bold text-brand-navy">Conflict disclosure</h3>
-        <p className="mt-3 whitespace-pre-wrap rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm leading-6 text-brand-navy">
-          {review.disclosureText}
-        </p>
+        {review.form && review.formValues ? (
+          <div className="mt-3">
+            <FormRenderer
+              definition={review.form}
+              formData={review.formValues}
+              onChange={() => undefined}
+              onSubmit={() => undefined}
+              readOnly
+              showCompleteness={false}
+            />
+          </div>
+        ) : (
+          <p className="mt-3 whitespace-pre-wrap rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm leading-6 text-brand-navy">
+            {review.disclosureText}
+          </p>
+        )}
       </section>
     </div>
   );

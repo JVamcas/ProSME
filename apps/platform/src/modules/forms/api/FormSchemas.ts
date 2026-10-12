@@ -44,7 +44,7 @@ const formFieldSchemaBase = z.object({
     .number()
     .pipe(z.union([z.literal(1), z.literal(2), z.literal(3)])),
   key: code,
-  label: z.string().trim().min(1).max(160),
+  label: z.string().trim().min(1).max(1000),
   type: z.enum(formFieldTypes),
   required: z.boolean(),
   helpText: z.string().trim().max(500).nullable().optional(),
@@ -60,6 +60,13 @@ const formFieldSchemaBase = z.object({
 
 export const formFieldSchema = formFieldSchemaBase.superRefine(
   (field, context) => {
+    if (field.type !== "CHECKBOX" && field.label.length > 160) {
+      context.addIssue({
+        code: "custom",
+        message: "Field labels must contain at most 160 characters.",
+        path: ["label"],
+      });
+    }
     const supportsOptions = ["SINGLE_SELECT", "MULTI_SELECT"].includes(
       field.type,
     );
