@@ -37,10 +37,15 @@ export function applicationDocumentRequirements(
         throw new Error(`Document requirement ${field.key} has no section.`);
       }
       return {
-        acceptedExtensions: Object.keys(applicationDocumentAllowedFiles),
+        acceptedExtensions: field.maxPages === undefined
+          ? Object.keys(applicationDocumentAllowedFiles)
+          : [".pdf"],
         key: field.key,
         label: field.label,
-        maximumBytes: applicationDocumentMaximumBytes,
+        maximumBytes: field.maximumFileSizeMb === undefined
+          ? applicationDocumentMaximumBytes
+          : field.maximumFileSizeMb * 1024 * 1024,
+        maxPages: field.maxPages,
         maximumFiles: 1,
         required: field.required,
         sectionKey: section.key,

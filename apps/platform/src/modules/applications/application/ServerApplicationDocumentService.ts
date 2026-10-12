@@ -21,12 +21,13 @@ import {
   applicationDocumentRequirementKeySchema,
   applicationDocumentVersionIdSchema,
   type ApplicationDocumentRegister,
+  type ApplicationDocumentRequirement,
 } from "../api/ApplicationDocumentSchemas";
 import {
   applicationDocumentAllowedFiles,
-  applicationDocumentMaximumBytes,
   applicationDocumentRequirements,
 } from "../domain/ApplicationDocumentPolicy";
+import { validateApplicationDocumentPages } from "./ApplicationDocumentPageValidation";
 import {
   safeApplicationDocumentName,
   validApplicationDocumentSignature,
@@ -104,15 +105,22 @@ async function documentRegister(
   };
 }
 
-function validateFile(file: File) {
-  if (file.size === 0 || file.size > applicationDocumentMaximumBytes) {
+function validateFile(file: File, requirement: ApplicationDocumentRequirement) {
+  if (file.size === 0 || file.size > requirement.maximumBytes) {
     throw new InvalidApplicationDocumentError(
-      "Choose a non-empty file no larger than 10 MB.",
+      `Choose a non-empty file no larger than ${requirement.maximumBytes / (1024 * 1024)} MB.`,
     );
   }
   const extension = path.extname(file.name).toLowerCase() as
     keyof typeof applicationDocumentAllowedFiles;
   const allowed = applicationDocumentAllowedFiles[extension];
+  if (!requirement.acceptedExtensions.includes(extension)) {
+    throw new InvalidApplicationDocumentError(
+      requirement.maxPages === undefined
+        ? "Choose a PDF, JPEG, PNG, or DOCX file."
+        : "Choose a PDF so its page count can be checked.",
+    );
+  }
   if (!allowed) {
     throw new InvalidApplicationDocumentError(
       "Choose a PDF, JPEG, PNG, or DOCX file.",
@@ -152,18 +160,22 @@ export async function uploadOwnApplicationDocument(
     requirementKeyInput,
   );
   const context = await loadDocumentContext(actor.id, applicationId, true);
-  if (!context.requirements.some((item) => item.key === requirementKey)) {
+  const requirement = context.requirements.find(
+    (item) => item.key === requirementKey,
+  );
+  if (!requirement) {
     throw new InvalidApplicationDocumentError(
       "The selected document requirement is not available for this application.",
     );
   }
-  const validated = validateFile(file);
+  const validated = validateFile(file, requirement);
   const body = Buffer.from(await file.arrayBuffer());
   if (!validApplicationDocumentSignature(body, validated.signature)) {
     throw new InvalidApplicationDocumentError(
       "The file content does not match its selected type.",
     );
   }
+  await validateApplicationDocumentPages(body, requirement.maxPages);
   const objectKey = resolveGcsObjectPath(
     ...gcsObjectPathSegments.users,
     actor.id,

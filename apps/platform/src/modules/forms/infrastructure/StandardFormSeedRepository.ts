@@ -73,26 +73,28 @@ export async function insertMissingStandardForms(
     );
 
     await transaction.insert(formSections).values(
-      records.flatMap(({ form, versionId }) => form.sections.map((section) => ({
-        columnSpan: section.columnSpan,
-        description: section.description,
-        formVersionId: versionId,
-        id: section.id!,
-        key: section.key,
-        order: section.order,
-        showContainer: section.showContainer,
-        visibilityCondition: section.visibilityCondition ?? null,
-        title: section.title,
-      }))),
+      records.flatMap(({ form, versionId }) =>
+        form.sections.map((section) => ({
+          columnSpan: section.columnSpan,
+          description: section.description,
+          formVersionId: versionId,
+          id: section.id!,
+          key: section.key,
+          order: section.order,
+          showContainer: section.showContainer,
+          visibilityCondition: section.visibilityCondition ?? null,
+          title: section.title,
+        })),
+      ),
     );
 
-    const seededFields = records.flatMap(({ form, versionId }) => (
+    const seededFields = records.flatMap(({ form, versionId }) =>
       form.fields.map((field) => ({
         field,
         fieldId: crypto.randomUUID(),
         versionId,
-      }))
-    ));
+      })),
+    );
     await transaction.insert(formFields).values(
       seededFields.map(({ field, fieldId, versionId }) => ({
         columnSpan: field.columnSpan,
@@ -102,6 +104,8 @@ export async function insertMissingStandardForms(
         key: field.key,
         label: field.label,
         maximum: field.maximum ?? null,
+        maxPages: field.maxPages ?? null,
+        maximumFileSizeMb: field.maximumFileSizeMb ?? null,
         maxLength: field.maxLength ?? null,
         minimum: field.minimum ?? null,
         minLength: field.minLength ?? null,
@@ -114,14 +118,14 @@ export async function insertMissingStandardForms(
       })),
     );
 
-    const seededOptions = seededFields.flatMap(({ field, fieldId }) => (
+    const seededOptions = seededFields.flatMap(({ field, fieldId }) =>
       (field.options ?? []).map((option) => ({
         fieldId,
         key: option.key,
         label: option.label,
         order: option.order,
-      }))
-    ));
+      })),
+    );
     if (seededOptions.length) {
       await transaction.insert(formFieldOptions).values(seededOptions);
     }

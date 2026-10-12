@@ -188,6 +188,8 @@ export const formFields = pgTable(
     maximum: doublePrecision("maximum"),
     minLength: integer("min_length"),
     maxLength: integer("max_length"),
+    maxPages: integer("max_pages"),
+    maximumFileSizeMb: integer("maximum_file_size_mb"),
     repeatableConfiguration: jsonb(
       "repeatable_configuration",
     ).$type<RepeatableGroupConfiguration>(),
@@ -233,6 +235,14 @@ export const formFields = pgTable(
     check(
       "app_form_fields_length_limits_check",
       sql`(${table.minLength} is null and ${table.maxLength} is null) or (${table.type} in ('TEXT', 'TEXTAREA') and coalesce(${table.minLength}, 0) >= 0 and coalesce(${table.maxLength}, 0) >= 0 and (${table.minLength} is null or ${table.maxLength} is null or ${table.minLength} <= ${table.maxLength}))`,
+    ),
+    check(
+      "app_form_fields_document_limits_check",
+      sql`(${table.maxPages} is null and ${table.maximumFileSizeMb} is null)
+        or (${table.type} = 'DOCUMENT'
+          and (${table.maxPages} is null or ${table.maxPages} > 0)
+          and (${table.maximumFileSizeMb} is null
+            or ${table.maximumFileSizeMb} between 1 and 10))`,
     ),
     check(
       "app_form_fields_repeatable_configuration_check",

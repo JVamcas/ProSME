@@ -22,6 +22,7 @@ export type ApplicationDocumentRequirement = {
   key: string;
   label: string;
   maximumBytes: number;
+  maxPages?: number;
   maximumFiles: 1;
   required: boolean;
   sectionKey: string;

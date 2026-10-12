@@ -99,6 +99,8 @@ export type FormField = {
   key: string;
   label: string;
   type: FormFieldType;
+  maxPages?: number;
+  maximumFileSizeMb?: number;
   required: boolean;
   helpText?: string | null;
   minimum?: number;

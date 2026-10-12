@@ -63,7 +63,14 @@ function RequirementRow({
             {requirement.required ? <span className="ml-1 text-brand-orange">*</span> : null}
           </p>
           <p className="truncate text-xs text-brand-navy/60">
-            {document?.fileName ?? `${requirement.acceptedExtensions.join(", ")} · maximum 10 MB`}
+            {document?.fileName ?? "Not uploaded"}
+          </p>
+          <p className="text-xs text-brand-navy/60">
+            {requirement.acceptedExtensions.join(", ")}
+            {` · maximum ${requirement.maximumBytes / (1024 * 1024)} MB`}
+            {requirement.maxPages === undefined
+              ? ""
+              : ` · maximum ${requirement.maxPages} pages`}
           </p>
           <p className="text-xs font-medium text-brand-navy/75">
             {statusText(document)}
@@ -165,7 +172,7 @@ export function ApplicationDocumentRegisterPanel({
   );
 }
 
-export function ApplicationDocumentsPanel({
+export function ApplicantDocumentUploadPanel({
   applicationId,
 }: {
   applicationId: string;
