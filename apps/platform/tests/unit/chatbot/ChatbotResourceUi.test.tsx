@@ -8,6 +8,7 @@ const ui = vi.hoisted(() => ({
   save: vi.fn(),
   read: vi.fn(),
   pages: {} as Record<number, ChatbotResourcePage>,
+  upload: vi.fn(),
 }));
 vi.mock("@/shared/ui/portal/capability-context", () => ({
   useCapabilities: () => ui.grants,
@@ -18,6 +19,17 @@ vi.mock("@/modules/chatbot/ui/operations/useChatbotResources", () => ({
     ui.read(input);
     return { data: ui.pages[input.page], isFetching: false, isError: false };
   },
+}));
+vi.mock("@/modules/chatbot/ui/operations/useChatbotDocuments", () => ({
+  useUploadChatbotDocument: () => ({
+    mutateAsync: ui.upload,
+    isPending: false,
+  }),
+  useChatbotDocument: () => ({
+    data: undefined,
+    isFetching: false,
+    isError: false,
+  }),
 }));
 import { permissionCodes } from "@/auth/authorization/permissions";
 import { ChatbotKnowledgeWorkspace } from "@/modules/chatbot/ui/operations/ChatbotKnowledgeWorkspace";
@@ -97,6 +109,20 @@ const button = (label: string) =>
   )!;
 
 describe("simple resource table", () => {
+  it("places activation controls and permission-gated document upload in the table toolbar", async () => {
+    ui.grants.add(permissionCodes.chatbotKnowledgeDocumentUploadAll);
+    await render();
+    const toolbar = button("Activate").closest("div.border-b")!;
+    expect(toolbar).not.toBeNull();
+    expect(toolbar.contains(button("Deactivate"))).toBe(true);
+    expect(toolbar.contains(button("Upload document"))).toBe(true);
+    expect(
+      container.querySelector<HTMLInputElement>('input[type="file"]')?.accept,
+    ).toBe(".pdf,.docx,.txt");
+    ui.grants.delete(permissionCodes.chatbotKnowledgeDocumentUploadAll);
+    await render();
+    expect(button("Upload document")).toBeUndefined();
+  });
   it("shows linked resources, all four types, status and last update without an approval flow", async () => {
     await render();
     for (const label of [

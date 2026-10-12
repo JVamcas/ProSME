@@ -1,3 +1,4 @@
+import { eventEmailFields } from "./NotificationEventRegistration";
 import { chatbotNotificationFields } from "./NotificationChatbotEvent";
 import { reportingNotificationFields } from "./NotificationReportingEvent";
 import { workflowHoldResumedNotificationFields } from "./NotificationWorkflowHoldEvent";
@@ -16,6 +17,7 @@ export const globalNotificationTemplateFields = [
 ] as const;
 
 export const notificationCatalogTemplateFields = {
+  EVENTS: eventEmailFields,
   REPORTING: globalNotificationTemplateFields,
   CHATBOT: globalNotificationTemplateFields,
   AUTHENTICATION: [...globalNotificationTemplateFields, "actionUrl"],
@@ -37,6 +39,8 @@ export const notificationCatalogTemplateFields = {
 } as const satisfies Record<NotificationCatalogKey, readonly string[]>;
 
 export const notificationEventTemplateFields = {
+  "event.registration.confirmed": eventEmailFields,
+  "event.registration.reminder": eventEmailFields,
   "chatbot.case.created": chatbotNotificationFields,
   "reporting.generation.started": reportingNotificationFields,
   "reporting.generation.completed": reportingNotificationFields,

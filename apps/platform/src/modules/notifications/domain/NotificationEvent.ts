@@ -1,3 +1,15 @@
+import { applicationSubmittedContextSchema } from "./NotificationApplicationSubmittedEvent";
+export { applicationSubmittedContextSchema } from "./NotificationApplicationSubmittedEvent";
+import { authenticationEventContextSchema } from "./NotificationAuthenticationEvent";
+export {
+  authenticationEventContextSchema,
+  type AuthenticationEventKey,
+} from "./NotificationAuthenticationEvent";
+import {
+  eventEmailKeys,
+  eventEmailCatalogue,
+  eventEmailContextSchema,
+} from "./NotificationEventRegistration";
 import { fundingCallLifecycleContextSchema } from "./NotificationFundingCallEvent";
 export { fundingCallLifecycleContextSchema } from "./NotificationFundingCallEvent";
 import {
@@ -25,8 +37,6 @@ import {
 import {
   applicationOwnerSnapshotSchema,
   identifierSchema,
-  snapshotEmailSchema,
-  snapshotNameSchema,
   timestampSchema,
   uuidSchema,
 } from "./NotificationEventSchemaFields";
@@ -35,21 +45,6 @@ import {
   notificationErrorCodes,
   NotificationValidationError,
 } from "./NotificationErrors";
-
-export const applicationSubmittedContextSchema = z
-  .object({
-    applicationId: uuidSchema,
-    applicationOwnerUserId: uuidSchema,
-    applicationReference: z.string().trim().min(1).max(100),
-    correlationId: identifierSchema,
-    fundingOpportunityTitle: z.string().trim().min(1).max(300),
-    ownerDisplayName: snapshotNameSchema,
-    ownerEmail: snapshotEmailSchema,
-    sourceIdempotencyKey: identifierSchema,
-    submittedAt: timestampSchema,
-    workflowInstanceId: uuidSchema,
-  })
-  .strict();
 
 const informationRequestContextSchema = z.object({
   applicationId: uuidSchema,
@@ -94,18 +89,10 @@ export const informationRequestExpiredContextSchema =
     })
     .strict();
 
-export const authenticationEventContextSchema = z
-  .object({
-    firebaseUid: z.string().min(1).max(128),
-    recipientEmail: snapshotEmailSchema,
-  })
-  .strict();
-
-export type AuthenticationEventKey =
-  "auth.email.verification" | "auth.password.reset";
 export type NotificationRuleEligibility = "CONFIGURABLE" | "SYSTEM_ONLY";
 
 export const notificationEventKeys = [
+  ...eventEmailKeys,
   ...reportingEventKeys,
   "chatbot.case.created",
   "auth.email.verification",
@@ -138,6 +125,7 @@ export const notificationEventKeys = [
 
 export type NotificationEventKey = (typeof notificationEventKeys)[number];
 export const notificationCatalogKeys = [
+  "EVENTS",
   "REPORTING",
   "CHATBOT",
   "AUTHENTICATION",
@@ -169,6 +157,8 @@ export type FundingCallLifecycleContext = z.infer<
 >;
 
 export type NotificationEventContextByKey = {
+  "event.registration.confirmed": z.infer<typeof eventEmailContextSchema>;
+  "event.registration.reminder": z.infer<typeof eventEmailContextSchema>;
   "chatbot.case.created": ChatbotCaseEvent;
   "reporting.generation.started": ReportingEventContext;
   "reporting.generation.completed": ReportingEventContext;
@@ -213,6 +203,7 @@ type NotificationEventDefinition<Key extends NotificationEventKey> = {
 };
 
 export const notificationEventCatalogue = {
+  ...eventEmailCatalogue,
   ...reportingEventCatalogue,
   "chatbot.case.created": {
     catalogKey: "CHATBOT",

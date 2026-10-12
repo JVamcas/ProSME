@@ -127,8 +127,8 @@ describe("P3.1 capability-aware portal navigation", () => {
     );
     expect(routes.map((route) => route.href)).toEqual([
       "/admin",
-      "/admin/work-queue",
       "/admin/applications",
+      "/admin/work-queue",
     ]);
     expect(
       groupNavigationRoutes(routes).find((group) => group.id === "queue"),
@@ -173,6 +173,7 @@ describe("P3.1 capability-aware portal navigation", () => {
     const groups = groupNavigationRoutes(routes);
     const queueIndex = groups.findIndex((group) => group.id === "queue");
 
+    expect(groups[queueIndex - 1]?.label).toBe("Application management");
     expect(groups[queueIndex + 1]?.label).toBe("Process Monitor");
     expect(groups[queueIndex + 2]?.label).toBe("Analytics");
     expect(groups[queueIndex]?.routes.map((route) => route.label)).toEqual([

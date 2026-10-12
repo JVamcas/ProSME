@@ -1,18 +1,26 @@
+vi.mock("@/modules/notifications/application/ServerEventEmailService", () => ({
+  prepareEventEmailDeliveries: vi.fn(),
+  renderEventEmail: vi.fn(),
+  dispatchCurrentEventEmail: vi.fn(),
+}));
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 vi.mock("@/integrations/monitoring/logger", () => ({
   logger: { info: vi.fn(), warn: vi.fn() },
 }));
-vi.mock("@/modules/notifications/application/ServerNotificationEmailBranding", () => ({
-  loadNotificationBrandingLogoAttachment: vi.fn().mockResolvedValue({
-    cid: "sme-fund-branding-logo",
-    content: Buffer.from("logo"),
-    contentType: "image/png",
-    filename: "sme-fund-logo.png",
+vi.mock(
+  "@/modules/notifications/application/ServerNotificationEmailBranding",
+  () => ({
+    loadNotificationBrandingLogoAttachment: vi.fn().mockResolvedValue({
+      cid: "sme-fund-branding-logo",
+      content: Buffer.from("logo"),
+      contentType: "image/png",
+      filename: "sme-fund-logo.png",
+    }),
+    notificationBrandingLogoUrl: "cid:sme-fund-branding-logo",
   }),
-  notificationBrandingLogoUrl: "cid:sme-fund-branding-logo",
-}));
+);
 vi.mock("@/platform/auth/firebase/ServerAuthEmailService", () => ({
   generateAuthenticationActionUrl: vi
     .fn()
@@ -95,9 +103,11 @@ describe("system-only authentication dispatch", () => {
         to: delivery.recipientEmail,
         html: expect.stringContaining("https://fund.example/auth/action"),
         plainText: expect.stringContaining("oobCode=secure-code"),
-        attachments: [expect.objectContaining({
-          cid: "sme-fund-branding-logo",
-        })],
+        attachments: [
+          expect.objectContaining({
+            cid: "sme-fund-branding-logo",
+          }),
+        ],
       }),
     );
     const message = send.mock.calls[0]?.[0];

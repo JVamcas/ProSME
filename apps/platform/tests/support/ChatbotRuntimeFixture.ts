@@ -67,6 +67,7 @@ export async function installChatbotRuntimeFixture(
     "0191_chatbot_application_settings",
     "0192_chatbot_resource_activation",
     "0193_chatbot_case_references",
+    "0197_chatbot_knowledge_documents",
   ]) {
     const migration = await readFile(
       new URL(`../../drizzle/${name}.sql`, import.meta.url),

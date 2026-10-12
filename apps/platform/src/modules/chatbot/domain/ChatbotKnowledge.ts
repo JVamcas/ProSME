@@ -1,11 +1,12 @@
 export type KnowledgeSourceKind =
-  "funding-call" | "eligibility" | "faq" | "contact";
+  "funding-call" | "eligibility" | "faq" | "contact" | "document";
 
 export type KnowledgeSelection = {
   fundingCallIds: string[];
   faqIds: string[];
   contact?: boolean;
   eligibilityCallIds?: string[];
+  documentIds?: string[];
 };
 
 export type KnowledgeSource = {
@@ -19,7 +20,8 @@ export type KnowledgeSource = {
 
 export type KnowledgeRecord = {
   id: string;
-  kind: "funding-call" | "eligibility-criterion" | "faq" | "contact";
+  kind:
+    "funding-call" | "eligibility-criterion" | "faq" | "contact" | "document";
   title: string;
   source: KnowledgeSource;
   scope: { fundingCallId: string; rulesetVersionId: string | null } | null;

@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { permissionCodes } from "@/auth/authorization/permissions";
 import {
   canAccessApplicantPortal,
+  canAccessOperationsPortal,
   getAvailablePortalSpaces,
   getDefaultAuthenticatedPath,
 } from "@/auth/authorization/portal-access";
@@ -28,6 +29,32 @@ function user(
 }
 
 describe("portal access policy", () => {
+  it.each([
+    permissionCodes.eventRegistrationsReadAll,
+    permissionCodes.eventRegistrationSettingsReadAll,
+    permissionCodes.eventEmailDeliveryReadAll,
+  ])("allows event-only operations access with %s", (permission) => {
+    const eventReader = user([permission]);
+    expect(canAccessOperationsPortal(eventReader)).toBe(true);
+    expect(getAvailablePortalSpaces(eventReader)).toEqual(["operations"]);
+    expect(getDefaultAuthenticatedPath(eventReader)).toBe("/admin");
+  });
+
+  it.each(["suspended", "disabled"] as const)(
+    "denies event operations access to a %s user",
+    (status) => {
+      const inactiveEventReader = user(
+        [permissionCodes.eventRegistrationsReadAll],
+        status,
+      );
+      expect(canAccessOperationsPortal(inactiveEventReader)).toBe(false);
+    },
+  );
+
+  it("denies operations access without an operations permission", () => {
+    const applicant = user([permissionCodes.userProfileOwnRead]);
+    expect(canAccessOperationsPortal(applicant)).toBe(false);
+  });
   it("allows operations access with only all-task read permission", () => {
     const reader = user([permissionCodes.workflowTaskAllRead]);
     expect(getAvailablePortalSpaces(reader)).toEqual(["operations"]);

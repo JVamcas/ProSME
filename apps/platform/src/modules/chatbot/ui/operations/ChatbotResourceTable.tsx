@@ -1,11 +1,10 @@
 "use client";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { FormProvider, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { DataTable, type DataTableColumn } from "@/shared/ui/DataTable";
 import { GeneralButton } from "@/shared/ui/Button";
 import { Checkbox, FieldError } from "@/shared/ui/FormPrimitives";
-import { Badge } from "@/shared/ui/Badge";
 import { ArrowLink } from "@/shared/ui/Links";
 import { permissionCodes } from "@/auth/authorization/permissions";
 import { useCapabilities } from "@/shared/ui/portal/capability-context";
@@ -17,12 +16,15 @@ import {
 import { useUpdateChatbotResources } from "./useChatbotResources";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { formatLocalDateTime24 } from "@/lib/dateUtils";
+import { ChatbotDocumentUpload } from "./ChatbotDocumentUpload";
+import { ChatbotDocumentPreview } from "./ChatbotDocumentPreview";
 
 const typeLabels = {
   funding: "Funding",
   eligibility: "Eligibility",
   faq: "FAQ",
   contact: "Contact",
+  document: "Document",
 };
 
 export function ChatbotResourceTable({
@@ -38,6 +40,10 @@ export function ChatbotResourceTable({
     permissionCodes.chatbotKnowledgeDeactivateAll,
   );
   const mutation = useUpdateChatbotResources();
+  const [documentId, setDocumentId] = useState<string | null>(null);
+  const canUpload = grants.has(
+    permissionCodes.chatbotKnowledgeDocumentUploadAll,
+  );
   const form = useForm<ChatbotResourceSelection>({
     resolver: zodResolver(chatbotResourceSelectionSchema),
     defaultValues: { resourceKeys: [] },
@@ -95,9 +101,19 @@ export function ChatbotResourceTable({
       accessorKey: "name",
       header: "Resource name",
       enableSorting: false,
-      cell: ({ row }) => (
-        <ArrowLink href={row.original.url}>{row.original.name}</ArrowLink>
-      ),
+      cell: ({ row }) =>
+        row.original.type === "document" ? (
+          <GeneralButton
+            type="button"
+            variant="ghost"
+            className="h-auto justify-start p-0 text-left text-brand-orange"
+            onClick={() => setDocumentId(row.original.key.slice(9))}
+          >
+            {row.original.name}
+          </GeneralButton>
+        ) : (
+          <ArrowLink href={row.original.url}>{row.original.name}</ArrowLink>
+        ),
     },
     {
       accessorKey: "type",
@@ -127,40 +143,50 @@ export function ChatbotResourceTable({
   return (
     <FormProvider {...form}>
       <form className="space-y-4" onSubmit={update(true)}>
-        {canActivate || canDeactivate ? (
-          <div className="flex flex-wrap items-end gap-3">
-            <span>{selected.length} selected</span>
-            {canActivate ? (
-              <GeneralButton
-                size="compact"
-                type="submit"
-                disabled={mutation.isPending || !selected.length}
-              >
-                Activate
-              </GeneralButton>
-            ) : null}
-            {canDeactivate ? (
-              <GeneralButton
-                size="compact"
-                type="button"
-                variant="outline"
-                disabled={mutation.isPending || !selected.length}
-                onClick={update(false)}
-              >
-                Deactivate
-              </GeneralButton>
-            ) : null}
-          </div>
-        ) : null}
         <FieldError message={form.formState.errors.resourceKeys?.message} />
         <DataTable
           columns={columns}
           data={items}
           rowKey={(row) => row.key}
-          emptyMessage="No published resources available."
+          emptyMessage="No knowledge resources available."
           footer={footer}
+          toolbar={{
+            title: "Knowledge resources",
+            description: `${selected.length} selected`,
+            actions: (
+              <div className="flex flex-wrap items-end gap-3">
+                {canActivate ? (
+                  <GeneralButton
+                    size="compact"
+                    type="submit"
+                    disabled={mutation.isPending || !selected.length}
+                  >
+                    Activate
+                  </GeneralButton>
+                ) : null}
+                {canDeactivate ? (
+                  <GeneralButton
+                    size="compact"
+                    type="button"
+                    variant="outline"
+                    disabled={mutation.isPending || !selected.length}
+                    onClick={update(false)}
+                  >
+                    Deactivate
+                  </GeneralButton>
+                ) : null}
+                {canUpload ? (
+                  <ChatbotDocumentUpload onUploaded={setDocumentId} />
+                ) : null}
+              </div>
+            ),
+          }}
         />
       </form>
+      <ChatbotDocumentPreview
+        id={documentId}
+        onClose={() => setDocumentId(null)}
+      />
     </FormProvider>
   );
 }

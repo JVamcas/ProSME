@@ -25,7 +25,9 @@ export async function openFundingOverviewFixture(connectionString: string) {
       return client.query(query.sql, query.params);
     },
   } as unknown as MigrateUpArgs["db"];
-  for (const migration of migrations.slice(0, -1)) {
+  for (const migration of migrations.filter((migration) =>
+    migration.name !== "20261007_200000_independent_funding_overview",
+  )) {
     await migration.up({ db } as MigrateUpArgs);
   }
   await createFundingOverviewSectorTables(db);

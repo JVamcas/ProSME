@@ -1,31 +1,52 @@
 import type { CollectionConfig } from "payload";
 
+import { prepareEvent } from "@/modules/content/EventPublishing";
 import { collectionPublishGuard } from "@/payload/access/can-publish-content";
 import { cmsCollectionAccess } from "@/payload/access/cms-resource-access";
-import { publishingFields } from "@/payload/fields/publishing";
-import { seoFields } from "@/payload/fields/seo";
-import { recordCollectionChange, recordCollectionDelete } from "@/payload/hooks/record-content-audit";
-import { revalidateCollection, revalidateCollectionDelete } from "@/payload/hooks/revalidate-public-content";
-import { eventPreviewUrl } from "@/payload/admin/preview-url";
+import { eventContentFields } from "@/payload/fields/EventContentFields";
+import { withAppFormInputs } from "@/payload/fields/withAppFormInputs";
+import {
+  recordCollectionChange,
+  recordCollectionDelete,
+} from "@/payload/hooks/record-content-audit";
+import {
+  revalidateCollection,
+  revalidateCollectionDelete,
+} from "@/payload/hooks/revalidate-public-content";
+import { eventPreviewUrl } from "@/modules/content/EventPreviewUrl";
 
 export const Events: CollectionConfig = {
   slug: "events",
   dbName: "cms_events",
-  admin: { group: "Content", useAsTitle: "title", defaultColumns: ["title", "startsAt", "_status"], preview: eventPreviewUrl },
+  admin: {
+    group: "Content",
+    useAsTitle: "title",
+    defaultColumns: ["title", "startsAt", "_status"],
+    preview: eventPreviewUrl,
+    components: {
+      views: {
+        edit: {
+          default: {
+            Component: "./modules/content/ui/admin/CmsEventEditView.tsx",
+          },
+        },
+      },
+      edit: {
+        SaveDraftButton:
+          "./modules/content/ui/admin/CmsDocumentButtons.tsx#CmsSaveDraftButton",
+        PublishButton: "./modules/content/ui/admin/CmsEventPublishButton.tsx",
+      },
+    },
+  },
   access: cmsCollectionAccess("events"),
-  hooks: { afterChange: [recordCollectionChange, revalidateCollection], afterDelete: [recordCollectionDelete, revalidateCollectionDelete], beforeChange: [collectionPublishGuard("events")] },
+  hooks: {
+    beforeValidate: [prepareEvent],
+    afterChange: [recordCollectionChange, revalidateCollection],
+    afterDelete: [recordCollectionDelete, revalidateCollectionDelete],
+    beforeChange: [
+      collectionPublishGuard("events", { approveOnPublish: true }),
+    ],
+  },
   versions: { drafts: true, maxPerDoc: 50 },
-  fields: [
-    { name: "title", type: "text", required: true },
-    { name: "slug", type: "text", required: true, unique: true, index: true },
-    { name: "summary", type: "textarea", required: true },
-    { name: "body", type: "richText", required: true },
-    { name: "image", type: "upload", relationTo: "media" },
-    { name: "startsAt", type: "date", required: true },
-    { name: "endsAt", type: "date" },
-    { name: "location", type: "text", required: true },
-    { name: "registrationUrl", type: "text" },
-    ...publishingFields,
-    ...seoFields,
-  ],
+  fields: eventContentFields.map(withAppFormInputs),
 };

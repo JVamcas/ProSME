@@ -5,6 +5,7 @@ import {
 } from "./PermissionCodes";
 
 export type PermissionGroupId =
+  | "events"
   | "user"
   | "business"
   | "funding-calls"
@@ -34,6 +35,16 @@ export type PermissionGroup = {
 
 export const permissionGroups: readonly PermissionGroup[] = [
   {
+    id: "events",
+    label: "Events and registrations",
+    permissionCodes: [
+      permissionCodes.eventRegistrationsReadAll,
+      permissionCodes.eventRegistrationSettingsReadAll,
+      permissionCodes.eventRegistrationSettingsUpdateAll,
+      permissionCodes.eventEmailDeliveryReadAll,
+    ],
+  },
+  {
     id: "chatbot-settings",
     label: "Chatbot settings",
     permissionCodes: [
@@ -46,6 +57,7 @@ export const permissionGroups: readonly PermissionGroup[] = [
     label: "Chatbot knowledge",
     permissionCodes: [
       permissionCodes.chatbotKnowledgeReadAll,
+      permissionCodes.chatbotKnowledgeDocumentUploadAll,
       permissionCodes.chatbotKnowledgeActivateAll,
       permissionCodes.chatbotKnowledgeDeactivateAll,
       permissionCodes.chatbotKnowledgePrepareAll,

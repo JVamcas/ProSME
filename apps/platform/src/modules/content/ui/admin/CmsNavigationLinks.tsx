@@ -14,6 +14,7 @@ import {
   CircleHelp,
   Mail,
   Newspaper,
+  CalendarDays,
 } from "lucide-react";
 import {
   NavigationList,
@@ -68,6 +69,13 @@ const contentRoutes: readonly NavigationRoute[] = [
     icon: Library,
   },
   {
+    id: "cms-events",
+    section: "content",
+    href: "/cms/collections/events",
+    label: "Events & Programmes",
+    icon: CalendarDays,
+  },
+  {
     id: "cms-news",
     section: "content",
     href: "/cms/collections/news",
@@ -86,12 +94,14 @@ const contentRoutes: readonly NavigationRoute[] = [
         href: cmsFundingOverviewHref,
         label: "Overview",
         icon: Info,
-        children: Object.entries(fundingOverviewSections).map(([slug, section]) => ({
-          id: `cms-${slug}`,
-          href: section.href,
-          label: section.title,
-          icon: Info,
-        })),
+        children: Object.entries(fundingOverviewSections).map(
+          ([slug, section]) => ({
+            id: `cms-${slug}`,
+            href: section.href,
+            label: section.title,
+            icon: Info,
+          }),
+        ),
       },
       {
         id: "cms-funding-application-guide",

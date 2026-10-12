@@ -1,11 +1,11 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { postgresAdapter } from "@payloadcms/db-postgres";
 import { lexicalEditor } from "@payloadcms/richtext-lexical";
 import { gcsStorage } from "@payloadcms/storage-gcs";
 import { buildConfig } from "payload";
 import sharp from "sharp";
+import { createPayloadPostgresAdapter } from "@/platform/database/PayloadPostgresAdapter";
 
 import { getServerEnvironment } from "@/lib/env/server";
 import {
@@ -87,7 +87,7 @@ export default buildConfig({
     NewsletterSubscriptions,
     ContentAuditEntries,
   ],
-  db: postgresAdapter({
+  db: createPayloadPostgresAdapter({
     migrationDir: path.resolve(dirname, "payload/migrations"),
     pool: { connectionString: environment.DATABASE_URL },
     push: false,

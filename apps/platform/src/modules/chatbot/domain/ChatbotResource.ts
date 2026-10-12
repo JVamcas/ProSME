@@ -1,4 +1,5 @@
-export type ChatbotResourceType = "funding" | "eligibility" | "faq" | "contact";
+export type ChatbotResourceType =
+  "funding" | "eligibility" | "faq" | "contact" | "document";
 
 export type ChatbotResource = {
   key: string;

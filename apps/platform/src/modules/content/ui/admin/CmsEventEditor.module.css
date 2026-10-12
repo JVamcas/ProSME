@@ -1,0 +1,318 @@
+.frame {
+  background: #f7f5e9;
+  color: var(--sme-brand-navy, #071b45);
+  min-height: calc(100dvh - 64px);
+}
+
+.frame :global(.doc-controls:not(:has(.doc-controls__locked-controls))) {
+  display: none;
+}
+
+.frame :global(.document-fields__edit) {
+  padding: 0 24px 24px;
+}
+
+.editor {
+  font-family: Arial, Helvetica, sans-serif;
+  width: 100%;
+}
+
+.header,
+.heading,
+.actions,
+.footer,
+.editorial {
+  display: flex;
+  align-items: center;
+}
+
+.header {
+  justify-content: space-between;
+  gap: 16px;
+  padding: 24px 0 20px;
+}
+
+.heading {
+  gap: 14px;
+}
+.heading h1 {
+  margin: 0;
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: -0.7px;
+}
+.actions {
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.button,
+.actions button,
+.actions a {
+  border-radius: 4px;
+  min-height: 40px;
+}
+
+.editorFields :global(.group-field) {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.editorFields
+  > :global(.group-field)
+  > :global(.group-field__wrap)
+  > :global(.render-fields) {
+  display: grid;
+  grid-template-columns: minmax(0, 1.78fr) minmax(280px, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.editorFields :global(.event-form-main) {
+  background: white;
+  border-radius: 8px;
+  padding: 22px;
+}
+
+.editorFields
+  :global(.event-form-aside)
+  > :global(.group-field__wrap)
+  > :global(.render-fields) {
+  display: grid;
+  gap: 20px;
+}
+
+.editorFields :global(.field-label) {
+  font-weight: 700;
+  font-size: 13px;
+}
+.editorFields label {
+  font-size: 13px;
+}
+.editorFields input,
+.editorFields select,
+.editorFields textarea {
+  border-radius: 4px;
+  font-size: 13px;
+}
+.editorFields input,
+.editorFields select {
+  min-height: 36px;
+  height: 40px;
+}
+.editorFields :global(.event-form-main .rich-text-lexical) {
+  border: 1px solid #ced4df;
+  border-radius: 4px;
+}
+.editorFields :global(.event-form-main .ContentEditable__root) {
+  min-height: 140px;
+}
+
+.panel {
+  background: white;
+  border-radius: 8px;
+  padding: 22px;
+}
+
+.panel h2 {
+  margin: 0 0 24px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.panel :global(.group-field__header) {
+  display: none;
+}
+.panel :global(.render-fields) {
+  display: block;
+}
+.panel :global(.render-fields > div) {
+  margin-bottom: 16px;
+}
+.panel label {
+  font-weight: 400;
+}
+
+.publicationRows {
+  display: grid;
+  gap: 14px;
+}
+.publicationRows > div {
+  display: grid;
+  grid-template-columns: 90px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+}
+.publicationRows label,
+.recording label {
+  margin: 0;
+}
+.publicationRows input {
+  width: 100%;
+}
+.saved {
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.registrationNotice {
+  display: flex;
+  gap: 12px;
+  background: #edf4ff;
+  border-radius: 5px;
+  padding: 16px;
+  margin-bottom: 12px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.registrationNotice svg {
+  flex-shrink: 0;
+  color: #0750c5;
+  margin-top: 2px;
+}
+.registrationNotice p {
+  margin: 4px 0 0;
+  color: #50617d;
+}
+.registrationLink {
+  width: 100%;
+  border-radius: 4px;
+  color: #ff6900;
+  border-color: #ff6900;
+}
+.guidance {
+  display: flex;
+  gap: 8px;
+  margin: 20px 0 0;
+  color: #6a7893;
+  font-size: 12px;
+}
+
+.footer {
+  justify-content: space-between;
+  border-top: 1px solid #dce0d9;
+  gap: 16px;
+  padding: 18px 0 0;
+  margin-top: 18px;
+}
+.editorial {
+  gap: 10px;
+  font-size: 13px;
+}
+.editorial span {
+  color: #6a7893;
+  font-size: 12px;
+  border-left: 1px solid #d7dcd4;
+  padding-left: 12px;
+}
+
+.imageLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(150px, 1fr);
+  gap: 16px;
+}
+.imageActions {
+  display: flex;
+  gap: 8px;
+}
+.imageActions button {
+  border-radius: 4px;
+  padding: 8px 12px;
+  font-size: 12px;
+}
+.imageHelp {
+  color: #6a7893;
+  font-size: 12px;
+  line-height: 1.6;
+  margin-top: 14px;
+}
+
+@media (max-width: 1000px) {
+  .editorFields
+    > :global(.group-field)
+    > :global(.group-field__wrap)
+    > :global(.render-fields) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .frame :global(.document-fields__edit) {
+    padding: 0 12px 16px;
+  }
+  .header,
+  .footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .heading h1 {
+    font-size: 26px;
+  }
+  .imageLayout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .editorial {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+  .editorFields :global(.event-form-main),
+  .panel {
+    padding: 16px;
+  }
+}
+
+.publication :global(.render-fields > div) {
+  display: grid;
+  grid-template-columns: 90px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+}
+
+.editorFields :global(.ant-picker) {
+  min-height: 40px;
+  height: 40px;
+  border-radius: 4px;
+}
+
+.editorFields :global(.ant-picker input) {
+  min-height: 0;
+  height: auto;
+}
+
+.publication select {
+  background: white;
+  color: #bc581c;
+  opacity: 1;
+}
+
+.editorFields textarea {
+  min-height: 78px;
+}
+
+/* Text inputs have an adapter wrapper; selects render their field directly. */
+.recording :global(.render-fields div:has(> div > input)),
+.recording :global(.render-fields div:has(> select)) {
+  display: grid;
+  grid-template-columns: 90px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+}
+
+.recording :global(.render-fields div:has(> div > input) > div),
+.recording :global(.render-fields div:has(> select) > select) {
+  min-width: 0;
+}
+
+.recording input,
+.recording select {
+  width: 100%;
+}
+
+.recording :global(.render-fields div:has(> div > input) > p),
+.recording :global(.render-fields div:has(> select) > p) {
+  grid-column: 2;
+}

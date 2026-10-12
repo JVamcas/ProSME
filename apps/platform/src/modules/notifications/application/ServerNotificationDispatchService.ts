@@ -1,3 +1,8 @@
+import {
+  dispatchCurrentEventEmail,
+  prepareEventEmailDeliveries,
+  renderEventEmail,
+} from "./ServerEventEmailService";
 import { requireChatbotDeliveryRecipient } from "./ChatbotCaseNotifications";
 import { resolveReportDeliveryAttachments } from "./ReportDeliveryAttachments";
 import "server-only";
@@ -131,27 +136,29 @@ async function dispatchDelivery(input: {
         input.delivery.ruleId ?? null,
       );
     }
-    const rendered = systemOnly
-      ? await renderAuthenticationEmail(
-          input.delivery,
-          context as { firebaseUid: string; recipientEmail: string },
-        )
-      : renderNotificationTemplate(
-          {
-            htmlTemplate: input.delivery.htmlTemplate!,
-            plainTextTemplate: input.delivery.plainTextTemplate!,
-            subjectTemplate: input.delivery.subjectTemplate!,
-          },
-          notificationEventTemplateFields[input.delivery.eventKey],
-          buildServerNotificationRenderValues({
-            context,
-            eventKey: input.delivery.eventKey,
-            recipient: {
-              displayName: input.delivery.recipientName,
-              userId: input.delivery.recipientUserId!,
+    const rendered = input.delivery.eventKey.startsWith("event.registration.")
+      ? await renderEventEmail(input.delivery)
+      : systemOnly
+        ? await renderAuthenticationEmail(
+            input.delivery,
+            context as { firebaseUid: string; recipientEmail: string },
+          )
+        : renderNotificationTemplate(
+            {
+              htmlTemplate: input.delivery.htmlTemplate!,
+              plainTextTemplate: input.delivery.plainTextTemplate!,
+              subjectTemplate: input.delivery.subjectTemplate!,
             },
-          }),
-        );
+            notificationEventTemplateFields[input.delivery.eventKey],
+            buildServerNotificationRenderValues({
+              context,
+              eventKey: input.delivery.eventKey,
+              recipient: {
+                displayName: input.delivery.recipientName,
+                userId: input.delivery.recipientUserId!,
+              },
+            }),
+          );
     const result = await input.emailSender.send({
       ...rendered,
       attachments: [
@@ -206,6 +213,7 @@ export async function processNotificationBatch(
   const owner = dependencies.owner ?? randomUUID();
   const startedAt = now();
   const deadline = startedAt.getTime() + dependencies.executionTimeoutMs;
+  await prepareEventEmailDeliveries(dependencies.batchSize);
   const occurrences = await claimDueNotificationOccurrences({
     batchSize: dependencies.batchSize,
     lockTimeoutMs: dependencies.lockTimeoutMs,
@@ -230,15 +238,19 @@ export async function processNotificationBatch(
 
   for (const delivery of deliveries) {
     if (now().getTime() >= deadline) break;
-    const outcome = await dispatchDelivery({
-      brandingAttachment: brandingAttachment!,
-      delivery,
-      emailSender: dependencies.emailSender,
-      now: now(),
-      owner,
-      random,
-    });
-    result[outcome] += 1;
+    const send = () =>
+      dispatchDelivery({
+        brandingAttachment: brandingAttachment!,
+        delivery,
+        emailSender: dependencies.emailSender,
+        now: now(),
+        owner,
+        random,
+      });
+    const outcome = delivery.eventKey.startsWith("event.registration.")
+      ? await dispatchCurrentEventEmail(delivery, send)
+      : await send();
+    if (outcome) result[outcome] += 1;
     result.processed += 1;
   }
 

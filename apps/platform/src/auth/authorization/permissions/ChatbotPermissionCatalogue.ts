@@ -2,6 +2,12 @@ import { permissionCodes } from "./PermissionCodes";
 
 export const chatbotPermissionCatalogue = [
   {
+    code: permissionCodes.chatbotKnowledgeDocumentUploadAll,
+    label: "Upload chatbot knowledge documents",
+    description:
+      "Upload programme documents and extract readable text for staff review. Does not grant activation or case access.",
+  },
+  {
     code: permissionCodes.chatbotSettingsReadAll,
     label: "Read all chatbot settings",
     description:

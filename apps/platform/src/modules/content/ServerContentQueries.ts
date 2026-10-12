@@ -20,6 +20,7 @@ import {
 } from "./infrastructure/PayloadContentRepository";
 
 import { cache } from "react";
+import { getEventBySlug } from "./application/ServerEventContentService";
 import { getNewsArticle } from "./ServerNewsService";
 import { defaultHomeActionCards } from "./ContentDefaults";
 
@@ -257,7 +258,6 @@ export const getEligibilityContent = cache(
 export const getListingItem = cache(
   async function getListingItem(kind: "news" | "events", identifier: string) {
     if (kind === "news") return getNewsArticle(identifier);
-    const items = await getEvents();
-    return items.find((item) => item.slug === identifier) ?? null;
+    return getEventBySlug(identifier);
   },
 );

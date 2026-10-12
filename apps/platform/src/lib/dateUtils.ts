@@ -183,7 +183,11 @@ export function formatLocalDate(value?: string | null, fallback = "—"): string
   }).format(parsed);
 }
 
-export function formatLocalTime24(value?: string | null, fallback = "--:--"): string {
+export function formatLocalTime24(
+  value?: string | null,
+  fallback = "--:--",
+  timeZone?: string,
+): string {
   const parsed = parseDateInput(value);
   if (!parsed) {
     return fallback;
@@ -193,10 +197,15 @@ export function formatLocalTime24(value?: string | null, fallback = "--:--"): st
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
+    timeZone,
   }).format(parsed);
 }
 
-export function formatLocalDateTime24(value?: string | null, fallback = "—"): string {
+export function formatLocalDateTime24(
+  value?: string | null,
+  fallback = "—",
+  timeZone?: string,
+): string {
   const parsed = parseDateInput(value);
   if (!parsed) {
     return fallback;
@@ -209,6 +218,7 @@ export function formatLocalDateTime24(value?: string | null, fallback = "—"): 
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
+    timeZone,
   }).format(parsed);
 }
 

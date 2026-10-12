@@ -10,6 +10,8 @@ import {
   readResourceSitemap,
 } from "./PayloadResourceCentreRepository";
 
+import { readEventBySlug } from "./PayloadEventRepository";
+
 const publishedMode = {
   draft: false,
   where: { _status: { equals: "published" } },
@@ -117,4 +119,10 @@ export const readPublishedResourceSitemap = cachePublishedContent(
   readResourceSitemap,
   "resource-sitemap",
   ["resources"],
+);
+
+export const readPublishedEvent = cachePublishedContent(
+  (slug: string) => readEventBySlug(slug, publishedMode),
+  "event-detail",
+  ["events"],
 );

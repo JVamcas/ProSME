@@ -1,6 +1,11 @@
 # Events & Programmes Implementation Plan
 
-Status: implementation plan; implementation and acceptance remain pending.
+Status: phases 1–5 implemented locally. Automated acceptance for Operations,
+notifications and recording queries passed; desktop/mobile screenshot acceptance,
+application-database migration acceptance and real email receipt remain pending.
+See [phase 1–2 evidence](SME_Fund_Events_Programmes_Phases_1_2_Gate.md),
+[phase 3 evidence](SME_Fund_Events_Programmes_Phase_3_Gate.md) and
+[phase 4–5 evidence](SME_Fund_Events_Programmes_Phases_4_5_Gate.md).
 
 ## 1. Scope and source of requirements
 
@@ -50,13 +55,21 @@ Implement the screen as shown:
 - **Past webinars & recordings** section with search, category filter, recording
   cards, and **Play recording** links.
 
-The registration panel must clearly refer to the event being displayed/selected.
+User update, 12 October 2026: registration remains in the existing right drawer;
+do not restore the pictured adjacent form. Use the same selected-event fields,
+labels, consent, validation and confirmation within that drawer.
+
+The registration form must clearly refer to the event being displayed/selected.
 Use `/events` for this public screen and preserve `/events/[slug]` for the existing
 event detail destination. Keep the detail page consistent with UI-01; no separate
 detail-page redesign is specified. The dated event listing is the calendar
 presentation in this scope; do not add an unpictured month/week calendar interface.
 
 ### UI-02 — CMS event editor
+
+User update, 11 October 2026: replace **Submit for review** with **Publish**.
+Authorized editors publish directly from draft; keep the existing CMS publish
+permission and audit/version protections.
 
 File: [cms-event-editor-concept.png](design/events-programmes/cms-event-editor-concept.png)
 
@@ -223,9 +236,9 @@ payments, attendance/check-in, certificates, exports, or a separate programme
 management system under this plan.
 
 The email checkbox is event-specific; it must not subscribe visitors to marketing.
-Its unchecked-state behaviour needs to be resolved against the required automatic
-confirmation/reminder flow before implementing that submission rule. This is a
-behaviour clarification, not an additional screen or feature.
+On 11 October 2026, the user confirmed that the checkbox is required to register.
+Reject unchecked submissions; consent applies only to that event's confirmation
+and reminder emails.
 
 The 24-hour timing comes from UI-03, not from an explicit timing rule in the client
 Terms of Reference. Sample counts and dates are replaced with actual persisted data.

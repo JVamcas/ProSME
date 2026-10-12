@@ -8,7 +8,7 @@ import type { ChatbotResource } from "../domain/ChatbotResource";
 import type { KnowledgeSelection } from "../domain/ChatbotKnowledge";
 import type { ChatbotResourceQuery } from "../api/ChatbotResourceSchemas";
 
-// Explicit public projections: no drafts, editor notes, private contacts or full snapshots.
+// Structured sources use public projections; uploaded documents list metadata only.
 const publishedResources = sql`
   SELECT 'funding:' || c.id::text AS key, p.snapshot->>'title' AS name,
     'funding' AS type, p.published_at AS last_updated,
@@ -31,6 +31,10 @@ const publishedResources = sql`
   SELECT 'contact:contact-details', 'Contact details', 'contact', max(updated_at), '/contact'
   FROM cms_contact_details WHERE _status = 'published' AND review_status = 'approved'
   HAVING count(*) > 0
+  UNION ALL
+  SELECT 'document:' || id::text, name, 'document', created_at,
+    '/api/public/chatbot/documents/' || id::text
+  FROM app_chatbot_documents
 `;
 
 export async function listChatbotResources(
@@ -40,11 +44,13 @@ export async function listChatbotResources(
   const result = await (transaction ?? getDatabase()).execute(sql`
     WITH resources AS (${publishedResources}), page_rows AS (
     SELECT r.key, r.name, r.type, r.url, coalesce(s.active, false) AS active,
-      r.last_updated AS "lastUpdated"
+      r.last_updated AS "lastUpdated",
+      CASE r.type WHEN 'funding' THEN 0 WHEN 'eligibility' THEN 1
+        WHEN 'document' THEN 2 WHEN 'faq' THEN 3 ELSE 4 END AS sort_order
     FROM resources r LEFT JOIN app_chatbot_resources s ON s.resource_key = r.key
-    ORDER BY r.key LIMIT ${input.pageSize} OFFSET ${(input.page - 1) * input.pageSize}
+    ORDER BY sort_order, r.key LIMIT ${input.pageSize} OFFSET ${(input.page - 1) * input.pageSize}
     )
-    SELECT coalesce(jsonb_agg(page_rows ORDER BY page_rows.key), '[]'::jsonb) AS items,
+    SELECT coalesce(jsonb_agg(to_jsonb(page_rows) - 'sort_order' ORDER BY page_rows.sort_order, page_rows.key), '[]'::jsonb) AS items,
       (SELECT count(*)::int FROM resources) AS total FROM page_rows
   `);
   const row = result.rows[0] as { items: ChatbotResource[]; total: number };
@@ -75,7 +81,7 @@ export async function readActiveResourceSelection(
     WITH resources AS (${publishedResources})
     SELECT r.key FROM resources r
     JOIN app_chatbot_resources s ON s.resource_key = r.key AND s.active
-    ORDER BY r.key LIMIT 1202
+    ORDER BY r.key LIMIT 1302
   `);
   const keys = result.rows.map((row) => row.key as string);
   const selection: KnowledgeSelection = {
@@ -88,6 +94,13 @@ export async function readActiveResourceSelection(
     eligibilityCallIds: keys
       .filter((key) => key.startsWith("eligibility:"))
       .map((key) => key.slice(12)),
+    ...(keys.some((key) => key.startsWith("document:"))
+      ? {
+          documentIds: keys
+            .filter((key) => key.startsWith("document:"))
+            .map((key) => key.slice(9)),
+        }
+      : {}),
     ...(keys.includes("contact:contact-details") ? { contact: true } : {}),
   };
   return selection;

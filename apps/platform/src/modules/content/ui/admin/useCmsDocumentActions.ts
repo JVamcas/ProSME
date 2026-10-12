@@ -33,10 +33,13 @@ export function useCmsDocumentActions() {
     !blocked &&
     (operation !== "update" || modified);
   const canSaveDraft = canSave;
+  const canSubmitForReview = Boolean(document.hasSavePermission) && !blocked;
   const canPublish =
     Boolean(document.hasPublishPermission) &&
     !blocked &&
-    (modified || document.unpublishedVersionCount > 0 || !document.hasPublishedDoc);
+    (modified ||
+      document.unpublishedVersionCount > 0 ||
+      !document.hasPublishedDoc);
   const resourcePath: `/${string}` = document.globalSlug
     ? `/globals/${document.globalSlug}`
     : `/${document.collectionSlug}${document.id ? `/${document.id}` : ""}`;
@@ -66,6 +69,18 @@ export function useCmsDocumentActions() {
     }
   }
 
+  async function submitForReview() {
+    if (!canSubmitForReview) return;
+    const result = await submit({
+      action: actionUrl(true),
+      method: document.collectionSlug && document.id ? "PATCH" : "POST",
+      overrides: { _status: "draft", reviewStatus: "inReview" },
+    });
+    if (result) {
+      document.setUnpublishedVersionCount((count) => count + 1);
+    }
+  }
+
   async function save() {
     if (!canSave) return;
     await submit();
@@ -88,11 +103,13 @@ export function useCmsDocumentActions() {
     busy,
     canSave,
     canSaveDraft,
+    canSubmitForReview,
     canPublish,
     hasSavePermission: document.hasSavePermission,
     hasPublishPermission: document.hasPublishPermission,
     save,
     saveDraft,
+    submitForReview,
     publish,
   };
 }

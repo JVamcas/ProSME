@@ -12,10 +12,6 @@ export function newsPreviewUrl({ id }: { id?: number | string | null }) {
   return publicPath(id ? newsArticleHref(id) : "/news");
 }
 
-export function eventPreviewUrl({ slug }: { slug?: string | null }) {
-  return publicPath(slug ? `/events/${slug}` : "/events");
-}
-
 export function resourcePreviewUrl({ slug }: { slug?: string | null }) {
   return publicPath(slug ? `/resources/${slug}` : "/resources");
 }

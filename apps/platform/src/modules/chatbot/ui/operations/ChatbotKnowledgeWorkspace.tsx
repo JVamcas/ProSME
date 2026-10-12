@@ -18,7 +18,7 @@ function ResourceWorkspace() {
   return (
     <PageShell
       title="Chatbot knowledge base"
-      description="Choose which published resources the chatbot can use. Active resources update automatically when their published content changes."
+      description="Choose published resources or upload programme documents for chatbot answers. Review uploaded text before activating it. Structured resources update automatically when published content changes."
     >
       <QuerySection
         query={query}

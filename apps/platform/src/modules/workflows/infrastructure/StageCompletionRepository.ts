@@ -112,8 +112,14 @@ async function readCompletionTargets(
       fundingCall: {
         closesAt: fundingCalls.closesAt,
         id: fundingCalls.id,
-        maximumAmount: sql<string>`coalesce(${fundingCallPublicationRevisions.snapshot}->>'maximumGrantAmount', ${fundingCalls.maximumGrantAmount})`,
-        minimumAmount: sql<string>`coalesce(${fundingCallPublicationRevisions.snapshot}->>'minimumGrantAmount', ${fundingCalls.minimumGrantAmount})`,
+        maximumAmount: sql<string>`coalesce(
+          ${fundingCallPublicationRevisions.snapshot}->>'maximumGrantAmount',
+          ${fundingCalls.maximumGrantAmount}::text
+        )`,
+        minimumAmount: sql<string>`coalesce(
+          ${fundingCallPublicationRevisions.snapshot}->>'minimumGrantAmount',
+          ${fundingCalls.minimumGrantAmount}::text
+        )`,
         opensAt: fundingCalls.opensAt,
         slug: fundingCalls.slug,
         status: fundingCalls.status,

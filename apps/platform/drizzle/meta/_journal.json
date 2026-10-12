@@ -1359,6 +1359,34 @@
       "when": 1801785600039,
       "tag": "0193_chatbot_case_references",
       "breakpoints": true
+    },
+    {
+      "idx": 194,
+      "version": "7",
+      "when": 1801785600040,
+      "tag": "0194_event_registration_foundation",
+      "breakpoints": true
+    },
+    {
+      "idx": 195,
+      "version": "7",
+      "when": 1801785600041,
+      "tag": "0195_event_email_delivery",
+      "breakpoints": true
+    },
+    {
+      "idx": 196,
+      "version": "7",
+      "when": 1801785600042,
+      "tag": "0196_chatbot_support_role",
+      "breakpoints": true
+    },
+    {
+      "idx": 197,
+      "version": "7",
+      "when": 1801785600043,
+      "tag": "0197_chatbot_knowledge_documents",
+      "breakpoints": true
     }
   ]
 }
