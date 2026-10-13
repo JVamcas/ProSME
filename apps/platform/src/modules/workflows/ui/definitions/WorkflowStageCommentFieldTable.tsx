@@ -1,4 +1,5 @@
 "use client";
+import { WorkflowSearchTarget } from "./search/WorkflowSearchTarget";
 
 import { Plus } from "lucide-react";
 
@@ -27,16 +28,30 @@ function columns(
     {
       id: "task",
       header: "Workflow task",
-      cell: ({ row }) => taskNames.get(row.original.taskStableKey)
-        ?? row.original.taskStableKey,
+      cell: ({ row }) =>
+        taskNames.get(row.original.taskStableKey) ?? row.original.taskStableKey,
     },
     { accessorKey: "displayOrder", header: "Order" },
     {
       accessorKey: "key",
       header: "Key",
-      cell: ({ row }) => <span className="font-mono text-xs">{row.original.key}</span>,
+      cell: ({ row }) => (
+        <span className="font-mono text-xs">{row.original.key}</span>
+      ),
     },
-    { accessorKey: "label", header: "Label" },
+    {
+      accessorKey: "label",
+      header: "Label",
+      cell: ({ row }) => (
+        <WorkflowSearchTarget
+          tab="comments"
+          itemKey={row.original.key}
+          taskKey={row.original.taskStableKey}
+        >
+          {row.original.label}
+        </WorkflowSearchTarget>
+      ),
+    },
     {
       accessorKey: "helpText",
       header: "Help",

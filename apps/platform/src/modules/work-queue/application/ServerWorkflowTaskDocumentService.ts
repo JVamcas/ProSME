@@ -1,3 +1,4 @@
+import { readValidatedWorkflowEvidence } from "@/modules/workflows/application/evidence/WorkflowEvidenceFileValidation";
 import "server-only";
 
 import { randomUUID } from "node:crypto";
@@ -13,7 +14,6 @@ import { GoogleCloudDocumentStorage } from "@/integrations/storage/GoogleCloudDo
 import { RequestValidationError, ResourceNotFoundError } from "@/lib/resource-errors";
 import {
   safeWorkflowEvidenceFileName,
-  validateWorkflowEvidenceFile,
 } from "@/modules/workflows/application/evidence/WorkflowEvidenceFilePolicy";
 import {
   createDocumentEvidenceVersion,
@@ -60,7 +60,7 @@ export async function uploadWorkflowTaskDocument(
       "This document must be uploaded by the applicant.",
     );
   }
-  const validated = validateWorkflowEvidenceFile(file, requirement);
+  const validated = await readValidatedWorkflowEvidence(file, requirement);
   const objectKey = resolveGcsObjectPath(
     ...gcsObjectPathSegments.users,
     actor.id,
@@ -70,7 +70,7 @@ export async function uploadWorkflowTaskDocument(
     `${randomUUID()}${validated.extension}`,
   );
   await storage.put({
-    body: Buffer.from(await file.arrayBuffer()),
+    body: validated.body,
     contentType: validated.contentType,
     objectKey,
   });

@@ -182,6 +182,14 @@ export const formFields = pgTable(
     key: text("key").notNull(),
     label: text("label").notNull(),
     type: text("type").$type<FormFieldType>().notNull(),
+    workflowDocument:
+      jsonb("workflow_document").$type<
+        import("../domain/FormWorkflowDocument").FormWorkflowDocument
+      >(),
+    scoringAggregate:
+      jsonb("scoring_aggregate").$type<
+        import("../domain/FormScoring").ScoringAggregate
+      >(),
     required: boolean("required").notNull().default(false),
     helpText: text("help_text"),
     minimum: doublePrecision("minimum"),
@@ -193,6 +201,7 @@ export const formFields = pgTable(
       .$type<import("../domain/FormDocumentTypes").FormDocumentExtension[]>(),
     maxPages: integer("max_pages"),
     maximumFileSizeMb: integer("maximum_file_size_mb"),
+    uploadedBy: text("uploaded_by").$type<import("../domain/FormDocumentConfiguration").DocumentUploader>(),
     repeatableConfiguration: jsonb(
       "repeatable_configuration",
     ).$type<RepeatableGroupConfiguration>(),
@@ -218,7 +227,24 @@ export const formFields = pgTable(
     }).onDelete("restrict"),
     check(
       "app_form_fields_type_check",
-      sql`${table.type} in ('TEXT', 'TEXTAREA', 'RICH_TEXT', 'NUMBER', 'CURRENCY', 'PERCENTAGE', 'DATE', 'YES_NO', 'CHECKBOX', 'SINGLE_SELECT', 'MULTI_SELECT', 'DOCUMENT', 'REPEATABLE_GROUP')`,
+      sql`${table.type} in ('TEXT', 'TEXTAREA', 'RICH_TEXT', 'NUMBER', 'CURRENCY', 'PERCENTAGE', 'SCORE', 'SCORING_AGGREGATE', 'DATE', 'YES_NO', 'CHECKBOX', 'SINGLE_SELECT', 'MULTI_SELECT', 'DOCUMENT', 'REPEATABLE_GROUP')`,
+    ),
+    check(
+      "app_form_fields_scoring_aggregate_check",
+      sql`
+      (${table.type} = 'SCORING_AGGREGATE' AND ${table.scoringAggregate} IS NOT NULL AND jsonb_typeof(${table.scoringAggregate}) = 'object')
+      OR (${table.type} <> 'SCORING_AGGREGATE' AND ${table.scoringAggregate} IS NULL)
+    `,
+    ),
+    check(
+      "app_form_fields_uploaded_by_check",
+      sql`${table.uploadedBy} IS NULL OR (${table.type} = 'DOCUMENT' AND ${table.uploadedBy} IN ('APPLICANT', 'ANY', 'ASSIGNED_REVIEWER'))`,
+    ),
+    check(
+      "app_form_fields_workflow_document_check",
+      sql`
+      ${table.workflowDocument} IS NULL OR (${table.type} = 'DOCUMENT' AND jsonb_typeof(${table.workflowDocument}) = 'object')
+    `,
     ),
     check("app_form_fields_order_check", sql`${table.order} > 0`),
     check(
@@ -235,7 +261,7 @@ export const formFields = pgTable(
     ),
     check(
       "app_form_fields_number_limits_check",
-      sql`(${table.minimum} is null and ${table.maximum} is null) or (${table.type} in ('NUMBER', 'CURRENCY', 'PERCENTAGE') and (${table.minimum} is null or ${table.maximum} is null or ${table.minimum} <= ${table.maximum}) and (${table.type} <> 'PERCENTAGE' or (coalesce(${table.minimum}, 0) >= 0 and coalesce(${table.maximum}, 100) <= 100)))`,
+      sql`(${table.minimum} is null and ${table.maximum} is null) or (${table.type} in ('NUMBER', 'CURRENCY', 'PERCENTAGE', 'SCORE') and (${table.minimum} is null or ${table.maximum} is null or ${table.minimum} <= ${table.maximum}) and (${table.type} <> 'PERCENTAGE' or (coalesce(${table.minimum}, 0) >= 0 and coalesce(${table.maximum}, 100) <= 100)))`,
     ),
     check(
       "app_form_fields_length_limits_check",

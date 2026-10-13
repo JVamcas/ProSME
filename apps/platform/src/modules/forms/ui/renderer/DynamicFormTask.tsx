@@ -174,6 +174,7 @@ function LoadedDynamicFormTask({
     <>
       {evaluation.confirmationDialog}
       <FormRenderer
+        workflowTaskId={taskId}
         definition={data.schema}
         onFinalStepChange={onFinalStepChange}
         formData={controller.values}
@@ -281,6 +282,7 @@ export function DynamicFormTask({
   if (readOnly || query.data.readOnly) {
     return (
       <FormRenderer
+        workflowTaskId={taskId}
         definition={query.data.schema}
         formData={query.data.response?.values ?? {}}
         onChange={() => undefined}

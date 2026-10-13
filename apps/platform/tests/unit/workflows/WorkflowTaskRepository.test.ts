@@ -28,7 +28,7 @@ describe("workflow task detail projection", () => {
 
     expect(task?.formName).toBe("Eligibility screening form");
     const query = new PgDialect().sqlToQuery(execute.mock.calls[0]![0]);
-    expect(query.sql).toContain('form_definition.name AS "formName"');
+    expect(query.sql).toContain("coalesce(form_version.metadata->>'name', form_definition.name) AS \"formName\"");
     expect(query.sql).toContain("LEFT JOIN app_form_versions form_version");
     expect(query.sql).toContain(
       "LEFT JOIN app_form_definitions form_definition",
@@ -40,6 +40,8 @@ describe("workflow task detail projection", () => {
       "response.values = (task.result -> 'evaluatedFormValues')",
     );
     expect(query.sql).toContain("task.assigned_user_id =");
+    expect(query.sql).toContain("'maxPages', document.max_pages");
+    expect(query.sql).toContain("'acceptedExtensions', document.accepted_extensions");
     expect(query.sql).toContain("document_target.id = task.id");
     expect(query.sql).toContain(
       "task_evidence.document_version_id = evidence.id",

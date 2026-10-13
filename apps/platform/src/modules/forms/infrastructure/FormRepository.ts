@@ -197,6 +197,7 @@ export async function readFormFields(
         acceptedExtensions: formFields.acceptedExtensions,
         maxPages: formFields.maxPages,
         maximumFileSizeMb: formFields.maximumFileSizeMb,
+        uploadedBy: formFields.uploadedBy,
         maxLength: formFields.maxLength,
         minimum: formFields.minimum,
         minLength: formFields.minLength,
@@ -207,6 +208,8 @@ export async function readFormFields(
         type: formFields.type,
         visibilityCondition: formFields.visibilityCondition,
         rules: formFields.rules,
+        scoringAggregate: formFields.scoringAggregate,
+        workflowDocument: formFields.workflowDocument,
       })
       .from(formFields)
       .innerJoin(formSections, eq(formSections.id, formFields.sectionId))
@@ -254,6 +257,7 @@ export async function readFormFields(
     acceptedExtensions: field.acceptedExtensions ?? undefined,
     maxPages: field.maxPages ?? undefined,
     maximumFileSizeMb: field.maximumFileSizeMb ?? undefined,
+    uploadedBy: field.uploadedBy ?? undefined,
     maxLength: field.maxLength ?? undefined,
     minimum: field.minimum ?? undefined,
     minLength: field.minLength ?? undefined,
@@ -265,6 +269,8 @@ export async function readFormFields(
     type: field.type,
     visibilityCondition: field.visibilityCondition,
     rules: field.rules ?? undefined,
+    scoringAggregate: field.scoringAggregate ?? undefined,
+    workflowDocument: field.workflowDocument ?? undefined,
   }));
 }
 
@@ -332,6 +338,7 @@ export async function getFormEditor(definitionId: string, versionId?: string) {
 
 export async function getFormRuntime(
   versionId: string,
+  allowDraft = false,
 ): Promise<FormRuntimeSchema | null> {
   const database = getDatabase();
   const [version] = await database
@@ -339,7 +346,12 @@ export async function getFormRuntime(
     .from(formVersions)
     .where(eq(formVersions.id, versionId))
     .limit(1);
-  if (!version || !["PUBLISHED", "RETIRED"].includes(version.status)) {
+  if (
+    !version ||
+    !(
+      allowDraft ? ["DRAFT", "PUBLISHED", "RETIRED"] : ["PUBLISHED", "RETIRED"]
+    ).includes(version.status)
+  ) {
     return null;
   }
   const [fields, sections] = await Promise.all([

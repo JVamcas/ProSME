@@ -51,3 +51,5 @@ export * from "@/modules/chatbot/infrastructure/chatbot-settings.schema";
 
 export * from "@/modules/content/infrastructure/event-registration.schema";
 export * from "@/modules/notifications/infrastructure/event-notification-intent.schema";
+
+export * from "@/modules/workflows/infrastructure/workflow-form-migration.schema";

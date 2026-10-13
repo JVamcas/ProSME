@@ -5,8 +5,8 @@ import { createRoot } from "react-dom/client";
 import { FormProvider } from "react-hook-form";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@/modules/forms/FormHooks", () => ({
-  usePublishedForms: () => ({ data: [], isPending: false }),
+vi.mock("@/modules/forms/ui/useTaskFormConfiguration", () => ({
+  useTaskFormOptions: () => ({ data: [], isPending: false }),
 }));
 const { mutateAsync } = vi.hoisted(() => ({ mutateAsync: vi.fn() }));
 vi.mock("@/modules/workflows/WorkflowHooks", () => ({
@@ -18,9 +18,11 @@ import { referenceWorkflow } from "../../../support/ReferenceWorkflowFixture";
 import { useWorkflowTaskDialogController } from "@/modules/workflows/ui/definitions/WorkflowTaskDialogController";
 import { WorkflowTaskDetailsStep } from "@/modules/workflows/ui/definitions/WorkflowTaskDetailsStep";
 
-(globalThis as typeof globalThis & {
-  IS_REACT_ACT_ENVIRONMENT: boolean;
-}).IS_REACT_ACT_ENVIRONMENT = true;
+(
+  globalThis as typeof globalThis & {
+    IS_REACT_ACT_ENVIRONMENT: boolean;
+  }
+).IS_REACT_ACT_ENVIRONMENT = true;
 
 afterEach(() => {
   vi.clearAllMocks();
@@ -70,14 +72,20 @@ describe("generated workflow task keys", () => {
         expect(await view.controller.validateStep("details")).toBe(true);
         await view.controller.save(view.controller.form.getValues());
       });
-      expect(mutateAsync).toHaveBeenCalledWith(expect.objectContaining({
-        stages: expect.arrayContaining([expect.objectContaining({
-          tasks: expect.arrayContaining([expect.objectContaining({
-            name: "Finance review",
-            stableKey: "FINANCE_REVIEW_2",
-          })]),
-        })]),
-      }));
+      expect(mutateAsync).toHaveBeenCalledWith(
+        expect.objectContaining({
+          stages: expect.arrayContaining([
+            expect.objectContaining({
+              tasks: expect.arrayContaining([
+                expect.objectContaining({
+                  name: "Finance review",
+                  stableKey: "FINANCE_REVIEW_2",
+                }),
+              ]),
+            }),
+          ]),
+        }),
+      );
     } finally {
       await act(async () => view.root.unmount());
     }
@@ -99,11 +107,13 @@ describe("generated workflow task keys", () => {
         view.controller.form.setValue("name", "Another review");
         view.controller.form.setValue("displayOrder", 2);
         expect(await view.controller.validateStep("details")).toBe(false);
-        expect(await view.controller.save(view.controller.form.getValues()))
-          .toBe(false);
+        expect(
+          await view.controller.save(view.controller.form.getValues()),
+        ).toBe(false);
       });
-      expect(view.controller.form.getFieldState("displayOrder").error?.message)
-        .toContain("not used by another task");
+      expect(
+        view.controller.form.getFieldState("displayOrder").error?.message,
+      ).toContain("not used by another task");
       expect(mutateAsync).not.toHaveBeenCalled();
     } finally {
       await act(async () => view.root.unmount());
@@ -119,14 +129,20 @@ describe("generated workflow task keys", () => {
           name: "Updated review name",
         });
       });
-      expect(mutateAsync).toHaveBeenCalledWith(expect.objectContaining({
-        stages: expect.arrayContaining([expect.objectContaining({
-          tasks: expect.arrayContaining([expect.objectContaining({
-            name: "Updated review name",
-            stableKey: "FINANCE_REVIEW",
-          })]),
-        })]),
-      }));
+      expect(mutateAsync).toHaveBeenCalledWith(
+        expect.objectContaining({
+          stages: expect.arrayContaining([
+            expect.objectContaining({
+              tasks: expect.arrayContaining([
+                expect.objectContaining({
+                  name: "Updated review name",
+                  stableKey: "FINANCE_REVIEW",
+                }),
+              ]),
+            }),
+          ]),
+        }),
+      );
     } finally {
       await act(async () => view.root.unmount());
     }

@@ -1,3 +1,4 @@
+import { formDocumentRequirement } from "@/modules/workflows/domain/definitions/FormDocumentRequirement";
 import type { RJSFSchema, UiSchema } from "@rjsf/utils";
 
 import type {
@@ -113,7 +114,11 @@ function fieldSchema(
       type: "array",
     };
   }
-  if (["NUMBER", "CURRENCY", "PERCENTAGE"].includes(field.type)) {
+  if (
+    ["NUMBER", "CURRENCY", "PERCENTAGE", "SCORE", "SCORING_AGGREGATE"].includes(
+      field.type,
+    )
+  ) {
     const percentage = field.type === "PERCENTAGE";
     const minimum = percentage ? (field.minimum ?? 0) : field.minimum;
     const maximum = percentage ? (field.maximum ?? 100) : field.maximum;
@@ -172,7 +177,11 @@ function fieldSchema(
     };
   }
   if (field.type === "DOCUMENT") {
-    return { ...common, format: "data-url", type: "string" };
+    return {
+      ...common,
+      format: field.workflowDocument || field.uploadedBy ? undefined : "data-url",
+      type: "string",
+    };
   }
   if ((field.options ?? []).length > 0) {
     invalid(`Field ${field.key} does not support options.`);
@@ -205,6 +214,15 @@ export function buildFormValueSchema(
 }
 
 function scalarFieldUiSchema(field: ValueField): UiSchema {
+  if (field.type === "SCORING_AGGREGATE")
+    return {
+      "ui:readonly": true,
+      "ui:widget": "scoreAggregate",
+      "ui:options": {
+        percentage: field.scoringAggregate?.normalization === "PERCENTAGE",
+        precision: field.scoringAggregate?.precision ?? 2,
+      },
+    };
   if (field.type === "CHECKBOX") return { "ui:widget": "checkbox" };
   if (field.type === "TEXTAREA") return { "ui:widget": "textarea" };
   if (field.type === "RICH_TEXT") return { "ui:widget": "richText" };
@@ -223,7 +241,19 @@ function scalarFieldUiSchema(field: ValueField): UiSchema {
   }
   if (field.type === "CURRENCY") return { "ui:widget": "currency" };
   if (field.type === "PERCENTAGE") return { "ui:widget": "percentage" };
-  if (field.type === "DOCUMENT") return { "ui:widget": "file" };
+  if (field.type === "DOCUMENT")
+    return field.workflowDocument
+      ? {
+          "ui:widget": "workflowDocument",
+          "ui:options": {
+            requirementKey: field.workflowDocument.stableKey,
+            requirement: {
+              ...formDocumentRequirement(field as FormField),
+              requestStatus: "MISSING",
+            },
+          },
+        }
+      : { "ui:widget": "file" };
   return {};
 }
 
@@ -287,6 +317,7 @@ function parseSections(
 export function parseFormDefinition(
   definition: FormRuntimeSchema,
   values: Readonly<Record<string, unknown>> = {},
+  workflowDocuments = false,
 ): ParsedFormDefinition {
   if (!definition.versionId || definition.versionNumber < 1) {
     invalid("The saved form version is invalid.");
@@ -311,7 +342,11 @@ export function parseFormDefinition(
   if (savedOrphan) invalid(`Field ${savedOrphan.key} has no section.`);
 
   const activeDefinition = activeFormDefinition(definition, values);
-  const fields = [...activeDefinition.fields];
+  const fields = activeDefinition.fields.map((field) =>
+    workflowDocuments && field.type === "DOCUMENT"
+      ? { ...field, workflowDocument: formDocumentRequirement(field) }
+      : field,
+  );
   const sections = parseSections(activeDefinition, fields, false);
   assertUnique(
     sections.map((section) => section.id),

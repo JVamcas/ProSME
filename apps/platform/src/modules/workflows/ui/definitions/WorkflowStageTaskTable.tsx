@@ -1,5 +1,8 @@
 "use client";
+import { WorkflowSearchTarget } from "./search/WorkflowSearchTarget";
 
+import { useTaskFormOptions } from "@/modules/forms/ui/useTaskFormConfiguration";
+import { WorkflowTaskAttachedForm } from "./WorkflowTaskAttachedForm";
 import { CheckCircle2, Plus } from "lucide-react";
 
 import { GeneralButton } from "@/components/ui/button";
@@ -40,6 +43,7 @@ function assignmentLabel(
 }
 
 function taskColumns(
+  forms: ReturnType<typeof useTaskFormOptions>,
   assignmentOptions: WorkflowAssignmentOptions | undefined,
   canEdit: boolean,
   onDelete: (task: WorkflowTaskInput) => void,
@@ -50,11 +54,33 @@ function taskColumns(
     {
       accessorKey: "name",
       header: "Task",
+      cell: ({ row }) => (
+        <WorkflowSearchTarget
+          tab="tasks"
+          itemKey={row.original.stableKey}
+          taskKey={row.original.stableKey}
+        >
+          {row.original.name}
+        </WorkflowSearchTarget>
+      ),
     },
     {
       accessorKey: "taskType",
       header: "Type",
       cell: ({ row }) => workflowTaskTypeLabels[row.original.taskType],
+    },
+    {
+      id: "attachedForm",
+      header: "Attached form",
+      enableSorting: false,
+      cell: ({ row }) => (
+        <WorkflowTaskAttachedForm
+          task={row.original}
+          forms={forms.data}
+          pending={forms.isPending}
+          error={forms.isError}
+        />
+      ),
     },
     {
       id: "assignee",
@@ -122,6 +148,7 @@ export function WorkflowStageTaskTable({
   onPreview,
   stage,
 }: Props) {
+  const forms = useTaskFormOptions();
   return (
     <section className="mt-5">
       <WorkflowStageTabHeader
@@ -142,6 +169,7 @@ export function WorkflowStageTaskTable({
       />
       <DataTable
         columns={taskColumns(
+          forms,
           assignmentOptions,
           canEdit,
           onDelete,

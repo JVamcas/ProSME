@@ -1,8 +1,12 @@
 "use client";
+import {
+  WorkflowSearchContext,
+  WorkflowSearchTarget,
+} from "./search/WorkflowSearchTarget";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus } from "lucide-react";
-import { useEffect } from "react";
+import { useContext, useEffect } from "react";
 import { FormProvider, useForm, useWatch } from "react-hook-form";
 
 import { DeleteButton, EditButton } from "@/components/ui/action-buttons";
@@ -41,9 +45,13 @@ function scoringColumns(
       accessorKey: "criterion",
       header: "Criterion",
       cell: ({ row }) => (
-        <span className="font-semibold text-brand-navy">
+        <WorkflowSearchTarget
+          tab="scoring"
+          itemKey={row.original.stableKey}
+          taskKey={row.original.taskStableKey}
+        >
           {row.original.criterion}
-        </span>
+        </WorkflowSearchTarget>
       ),
     },
     {
@@ -96,6 +104,7 @@ export function WorkflowStageScoringTable({
   onEdit,
   stage,
 }: Props) {
+  const { selected } = useContext(WorkflowSearchContext);
   const mutation = useSaveWorkflowGraph(editor);
   const form = useForm<WorkflowStageAggregationFormValues>({
     defaultValues: {
@@ -109,6 +118,15 @@ export function WorkflowStageScoringTable({
     control: form.control,
     name: "taskStableKey",
   });
+  useEffect(() => {
+    if (
+      selected?.stageKey === stage.stableKey &&
+      selected.tab === "scoring" &&
+      selected.taskKey
+    ) {
+      form.setValue("taskStableKey", selected.taskKey);
+    }
+  }, [selected, stage.stableKey, form]);
   const selectedScoring = stage.scoring?.find(
     (scoring) => scoring.taskStableKey === taskStableKey,
   );

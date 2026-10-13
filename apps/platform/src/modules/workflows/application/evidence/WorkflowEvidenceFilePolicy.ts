@@ -1,25 +1,27 @@
 import path from "node:path";
-
 import { RequestValidationError } from "@/lib/resource-errors";
-
-const allowedFiles = {
-  ".docx": {
-    contentType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    configuredType: "DOCX",
-  },
-  ".jpeg": { contentType: "image/jpeg", configuredType: "JPG" },
-  ".jpg": { contentType: "image/jpeg", configuredType: "JPG" },
-  ".pdf": { contentType: "application/pdf", configuredType: "PDF" },
-  ".png": { contentType: "image/png", configuredType: "PNG" },
-} as const;
+import {
+  documentMimeTypeMatches,
+  formDocumentFileTypes,
+  type FormDocumentExtension,
+} from "@/modules/forms/domain/FormDocumentTypes";
+import {
+  workflowDocumentExtensions,
+  type WorkflowDocumentFileType,
+} from "../../domain/definitions/WorkflowStageDocumentRequirement";
 
 export type WorkflowEvidenceRequirement = {
-  acceptedFileTypes: ("PDF" | "JPG" | "PNG" | "DOCX")[];
+  acceptedFileTypes: WorkflowDocumentFileType[];
   maximumSizeMb: number;
+  maxPages?: number | null;
+  acceptedExtensions?: FormDocumentExtension[] | null;
 };
 
 export function safeWorkflowEvidenceFileName(name: string) {
-  return path.basename(name).replace(/[^a-zA-Z0-9._ -]/g, "_").slice(0, 255);
+  return path
+    .basename(name)
+    .replace(/[^a-zA-Z0-9._ -]/g, "_")
+    .slice(0, 255);
 }
 
 export function validateWorkflowEvidenceFile(
@@ -31,18 +33,26 @@ export function validateWorkflowEvidenceFile(
       `Choose a non-empty file no larger than ${requirement.maximumSizeMb} MB.`,
     );
   }
-  const extension = path.extname(file.name).toLowerCase() as
-    keyof typeof allowedFiles;
-  const allowed = allowedFiles[extension];
-  if (
-    !allowed
-    || !requirement.acceptedFileTypes.includes(allowed.configuredType)
-  ) {
+  const extension = path
+    .extname(file.name)
+    .toLowerCase() as FormDocumentExtension;
+  const allowed = formDocumentFileTypes[extension];
+  const extensions: readonly string[] =
+    requirement.acceptedExtensions ??
+    requirement.acceptedFileTypes.flatMap((type) => [
+      ...workflowDocumentExtensions[type],
+    ]);
+  if (!allowed || !extensions.includes(extension)) {
     throw new RequestValidationError(
       `Choose one of these file types: ${requirement.acceptedFileTypes.join(", ")}.`,
     );
   }
-  if (file.type && file.type !== allowed.contentType) {
+  if (requirement.maxPages && extension !== ".pdf") {
+    throw new RequestValidationError(
+      "Choose a PDF so its page count can be checked.",
+    );
+  }
+  if (!documentMimeTypeMatches(extension, file.type)) {
     throw new RequestValidationError(
       "The file type does not match its extension.",
     );

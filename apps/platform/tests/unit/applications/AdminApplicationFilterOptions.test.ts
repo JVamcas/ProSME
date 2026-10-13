@@ -1,8 +1,8 @@
 import { beforeEach, expect, it, vi } from "vitest";
 import { PgDialect } from "drizzle-orm/pg-core";
 vi.mock("server-only", () => ({}));
-vi.mock("@/db/client", () => ({ getDatabase: vi.fn() }));
-import { getDatabase } from "@/db/client";
+vi.mock("@/platform/database/client", () => ({ getDatabase: vi.fn() }));
+import { getDatabase } from "@/platform/database/client";
 import { readAdminApplicationFilterOptions } from "@/modules/applications/infrastructure/AdminApplicationFilterOptionsRepository";
 import { getAdminApplicationFilterOptions } from "@/modules/applications/ServerAdminApplicationService";
 import { permissionCodes } from "@/auth/authorization/permissions";
@@ -46,6 +46,12 @@ it("selects distinct options in SQL within the actor's assignment scope", async 
   expect(query.sql).not.toContain("current_stage_instance_id");
   expect(query.sql).toContain("ORDER BY label DESC, id DESC");
   expect(query.sql).toContain("visible_task.assigned_user_id");
+  expect(query.sql).toMatch(
+    /LEFT JOIN app_workflow_instances workflow\s+ON workflow.application_id = application.id/,
+  );
+  expect(query.sql).toContain(
+    "visible_stage.workflow_instance_id = workflow.id",
+  );
   expect(query.params).toContain(actorId);
   expect(execute).toHaveBeenCalledTimes(1);
 });
@@ -60,4 +66,8 @@ it.each([
   await getAdminApplicationFilterOptions(actor([code]));
   const query = new PgDialect().sqlToQuery(execute.mock.calls[0][0]);
   expect(query.sql.includes("visible_task.assigned_user_id")).toBe(assigned);
+  if (!assigned) {
+    expect(query.sql).toContain("AND TRUE");
+    expect(query.params).not.toContain(actorId);
+  }
 });

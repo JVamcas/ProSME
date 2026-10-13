@@ -1,13 +1,11 @@
 "use client";
+import { WorkflowSearchTarget } from "./search/WorkflowSearchTarget";
 
 import { Plus } from "lucide-react";
 
 import { DeleteButton, EditButton } from "@/components/ui/action-buttons";
 import { GeneralButton } from "@/components/ui/button";
-import {
-  DataTable,
-  type DataTableColumn,
-} from "@/shared/ui/DataTable";
+import { DataTable, type DataTableColumn } from "@/shared/ui/DataTable";
 import type { WorkflowStageChecklistDefinition } from "@/modules/workflows/domain/definitions/WorkflowStageChecklistDefinition";
 import { WorkflowStageTabHeader } from "./WorkflowStageTabHeader";
 import type { WorkflowStageInput } from "@/modules/workflows/domain/definitions/WorkflowTypes";
@@ -46,32 +44,35 @@ function checklistColumns(
       accessorKey: "text",
       header: "Text",
       cell: ({ row }) => (
-        <span className="block  whitespace-normal">
+        <WorkflowSearchTarget
+          tab="checklists"
+          itemKey={row.original.key}
+          taskKey={row.original.taskStableKey}
+        >
           {row.original.text}
-        </span>
+        </WorkflowSearchTarget>
       ),
     },
     {
       accessorKey: "taskStableKey",
       header: "Task",
-      cell: ({ row }) => taskNames.get(row.original.taskStableKey)
-        ?? row.original.taskStableKey,
+      cell: ({ row }) =>
+        taskNames.get(row.original.taskStableKey) ?? row.original.taskStableKey,
     },
     {
       accessorKey: "responseType",
       header: "Response",
-      cell: ({ row }) => optionLabel(
-        checklistResponseTypeItems,
-        row.original.responseType,
-      ),
+      cell: ({ row }) =>
+        optionLabel(checklistResponseTypeItems, row.original.responseType),
     },
     {
       accessorKey: "evidenceRequirement",
       header: "Evidence",
-      cell: ({ row }) => optionLabel(
-        checklistEvidenceRequirementItems,
-        row.original.evidenceRequirement,
-      ),
+      cell: ({ row }) =>
+        optionLabel(
+          checklistEvidenceRequirementItems,
+          row.original.evidenceRequirement,
+        ),
     },
     {
       accessorKey: "mandatory",

@@ -42,7 +42,7 @@ export function WorkflowTaskFormLayoutStep({
         </div>
       ) : (
         <FormSelect
-          infoTooltip="Choose a published application review form."
+          infoTooltip="Choose an application review form. Publish it before publishing the workflow."
           items={formItems}
           label="Form version"
           name="formVersionId"

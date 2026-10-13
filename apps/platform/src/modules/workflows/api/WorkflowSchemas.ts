@@ -1,3 +1,4 @@
+import { formDocumentExtensions } from "@/modules/forms/domain/FormDocumentTypes";
 import { z } from "zod";
 
 import { workflowTaskSchema } from "./WorkflowTaskSchemas";
@@ -74,6 +75,8 @@ export const workflowStageDocumentRequirementSchema = z
         "Accepted file types must be unique.",
       ),
     maximumSizeMb: z.number().int().min(1).max(100),
+    maxPages: z.number().int().positive().nullish(),
+    acceptedExtensions: z.array(z.enum(formDocumentExtensions)).min(1).nullish(),
     expiryDays: z.number().int().min(1).max(3650).nullable(),
     requestOnStageActivation: z.boolean(),
     uploader: z.enum(workflowDocumentActors),

@@ -18,7 +18,11 @@ const workflowConditionRuntimeFields = workflowRuntimeContextFields.filter(
 function formConditionType(
   field: Pick<FormField, "type">,
 ): ConditionFieldDefinition["type"] | null {
-  if (["NUMBER", "CURRENCY", "PERCENTAGE"].includes(field.type)) {
+  if (
+    ["NUMBER", "CURRENCY", "PERCENTAGE", "SCORE", "SCORING_AGGREGATE"].includes(
+      field.type,
+    )
+  ) {
     return "NUMBER";
   }
   if (field.type === "YES_NO" || field.type === "CHECKBOX") return "BOOLEAN";

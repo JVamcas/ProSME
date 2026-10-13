@@ -18,6 +18,7 @@ describe("workflow task runtime context query", () => {
         {
           contextFields: [],
           formVersionId: assignedVersionId,
+          formSectionOrder: ["documents", "checklist"],
           taskInstanceId: taskId,
         },
       ],
@@ -27,8 +28,10 @@ describe("workflow task runtime context query", () => {
     const source = await readWorkflowTaskRuntimeContext(actorId, taskId);
 
     expect(source?.binding.formVersionId).toBe(assignedVersionId);
+    expect(source?.task.formSectionOrder).toEqual(["documents", "checklist"]);
     const query = new PgDialect().sqlToQuery(execute.mock.calls[0]![0]);
     expect(query.sql).toContain('task.form_version_id AS "formVersionId"');
+    expect(query.sql).toContain('task_definition.config -> \'formSectionOrder\' AS "formSectionOrder"');
     expect(query.sql).toContain(
       "binding.task_definition_id = task.workflow_task_definition_id",
     );

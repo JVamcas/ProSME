@@ -1,12 +1,11 @@
 "use client";
 
 import Form, { type IChangeEvent } from "@rjsf/core";
-import type {
-  ObjectFieldTemplateProps,
-  RJSFSchema,
-  UiSchema,
-} from "@rjsf/utils";
+import type { RJSFSchema, UiSchema } from "@rjsf/utils";
 import validator from "@rjsf/validator-ajv8";
+import { calculateFormScores } from "../../engine/FormScoring";
+import { FormScoringAggregateWidget } from "./FormScoringAggregateWidget";
+import { WorkflowFormDocumentWidget } from "@/modules/workflows/ui/forms/WorkflowFormDocumentWidget";
 import { FormCheckboxWidget } from "./FormCheckboxWidget";
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
@@ -16,13 +15,9 @@ import {
   formRendererSubmitHandler,
   valuesForFields,
 } from "./FormRendererValidation";
-import { cn } from "@/lib/utils";
 import type { FormRuntimeSchema } from "@/modules/forms/FormTypes";
 import type { FormRuntimeContext } from "@/modules/forms/engine/FormRuntimeContext";
-import {
-  parseFormDefinition,
-  type RenderSection,
-} from "@/modules/forms/engine/FormDefinitionParser";
+import { parseFormDefinition } from "@/modules/forms/engine/FormDefinitionParser";
 import { calculateFormCompleteness } from "@/modules/forms/engine/FormCompleteness";
 import { activeFormDefinition } from "@/modules/forms/engine/FormVisibility";
 import { validateFormValues } from "@/modules/forms/FormValidation";
@@ -30,7 +25,6 @@ import {
   FormCompletenessSummary,
   type SupplementalCompletion,
 } from "./FormCompletenessSummary";
-import { formColumnCount, formGridClass } from "./FormLayout";
 import {
   FormBaseInputTemplate,
   FormCurrencyWidget,
@@ -49,111 +43,15 @@ import {
 } from "./RepeatableGroupTemplates";
 import { useFormStepProgress } from "./useFormStepProgress";
 
+import { FormObjectTemplate, type RendererContext } from "./FormObjectTemplate";
+
 export type DynamicFormValues = Record<string, unknown>;
 
-type RendererContext = {
-  activeSectionId?: string;
-  runtimeContext: FormRuntimeContext;
-  sections: RenderSection[];
-};
-
-function sectionSpan(columnSpan: RenderSection["columnSpan"]) {
-  if (columnSpan === 1) return "col-span-1";
-  if (columnSpan === 2) return "col-span-1 md:col-span-2";
-  return "col-span-1 md:col-span-2 xl:col-span-3";
-}
-
-function sectionColumns(columnSpan: RenderSection["columnSpan"]) {
-  if (columnSpan === 1) return "grid-cols-1";
-  if (columnSpan === 2) return "grid-cols-1 md:grid-cols-2";
-  return "grid-cols-1 md:grid-cols-2 xl:grid-cols-3";
-}
-
-function fieldSpan(columnSpan: 1 | 2 | 3) {
-  if (columnSpan === 1) return "col-span-1";
-  if (columnSpan === 2) return "col-span-1 md:col-span-2";
-  return "col-span-1 md:col-span-2 xl:col-span-3";
-}
-
-function FormObjectTemplate(
-  props: ObjectFieldTemplateProps<
-    DynamicFormValues,
-    RJSFSchema,
-    RendererContext
-  >,
-) {
-  if (props.fieldPathId.path.length > 0) {
-    return (
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {props.properties.map((property) => (
-          <div key={property.name}>{property.content}</div>
-        ))}
-      </div>
-    );
-  }
-  const properties = new Map(
-    props.properties.map((property) => [property.name, property.content]),
-  );
-  return (
-    <div
-      className={cn(
-        "grid gap-5",
-        formGridClass(formColumnCount(props.registry.formContext.sections)),
-      )}
-    >
-      {props.registry.formContext.sections
-        .filter(
-          (section) =>
-            !props.registry.formContext.activeSectionId ||
-            section.id === props.registry.formContext.activeSectionId,
-        )
-        .map((section) => {
-          return (
-            <section
-              aria-labelledby={`form-section-${section.id}`}
-              className={cn(
-                sectionSpan(section.columnSpan),
-                section.showContainer
-                  ? "rounded-2xl border border-brand-navy/10 bg-brand-white p-5"
-                  : "",
-              )}
-              key={section.id}
-            >
-              <h2
-                className={cn(
-                  "font-bold text-brand-navy",
-                  !section.showContainer && "sr-only",
-                )}
-                id={`form-section-${section.id}`}
-              >
-                {section.title}
-              </h2>
-              {section.showContainer && section.description ? (
-                <p className="mt-1 text-sm text-brand-navy/65">
-                  {section.description}
-                </p>
-              ) : null}
-              <div
-                className={cn(
-                  "grid gap-5",
-                  section.showContainer && "mt-4",
-                  sectionColumns(section.columnSpan),
-                )}
-              >
-                {section.fields.map((field) => (
-                  <div className={fieldSpan(field.columnSpan)} key={field.key}>
-                    {properties.get(field.key)}
-                  </div>
-                ))}
-              </div>
-            </section>
-          );
-        })}
-    </div>
-  );
-}
-
 type FormRendererProps = {
+  onStepOrderChange?: (ids: string[]) => void;
+  orderingPending?: boolean;
+  workflowTaskId?: string;
+  workflowDocuments?: boolean;
   children?: ReactNode;
   onFinalStepChange?: (final: boolean) => void;
   definition: FormRuntimeSchema;
@@ -184,10 +82,75 @@ function readOnlyFieldUiSchema(
   };
 }
 
+const formTemplates = {
+  ArrayFieldItemTemplate: RepeatableArrayFieldItemTemplate,
+  ArrayFieldTemplate: RepeatableArrayFieldTemplate,
+  BaseInputTemplate: FormBaseInputTemplate,
+  FieldTemplate: FormFieldTemplate,
+  ObjectFieldTemplate: FormObjectTemplate,
+};
+const formWidgets = {
+  workflowDocument: WorkflowFormDocumentWidget,
+  scoreAggregate: FormScoringAggregateWidget,
+  CheckboxWidget: FormCheckboxWidget,
+  currency: FormCurrencyWidget,
+  DateWidget: FormDateWidget,
+  percentage: FormPercentageWidget,
+  richText: FormRichTextWidget,
+  RadioWidget: FormRadioWidget,
+  SelectWidget: FormSelectWidget,
+  TextareaWidget: FormTextareaWidget,
+};
+
+function useRendererDefinition(
+  definition: FormRuntimeSchema,
+  suppliedFormData: DynamicFormValues,
+  workflowDocuments: boolean,
+) {
+  const formData = useMemo(
+    () =>
+      calculateFormScores(
+        activeFormDefinition(definition, suppliedFormData).fields,
+        suppliedFormData,
+      ),
+    [definition, suppliedFormData],
+  );
+  const activeDefinition = useMemo(
+    () => activeFormDefinition(definition, formData),
+    [definition, formData],
+  );
+  const parsed = useMemo(
+    () => parseFormDefinition(definition, formData, workflowDocuments),
+    [definition, formData, workflowDocuments],
+  );
+  const completeness = useMemo(
+    () => calculateFormCompleteness(activeDefinition, formData),
+    [activeDefinition, formData],
+  );
+  return { formData, activeDefinition, parsed, completeness };
+}
+
+function rendererSteps(
+  sections: ReturnType<typeof parseFormDefinition>["sections"],
+  stepMode: boolean,
+  penultimateStep: FormRendererProps["penultimateStep"],
+) {
+  if (!stepMode || !penultimateStep) return sections;
+  return [
+    ...sections.slice(0, -1),
+    { id: penultimateStep.id, title: penultimateStep.title },
+    ...sections.slice(-1),
+  ];
+}
+
 export function FormRenderer({
   children,
+  onStepOrderChange,
+  orderingPending,
+  workflowTaskId,
+  workflowDocuments = false,
   definition,
-  formData,
+  formData: suppliedFormData,
   onChange,
   onSubmit,
   onFinalStepChange,
@@ -199,24 +162,14 @@ export function FormRenderer({
   stepPersistenceKey,
   supplementalCompletion,
 }: FormRendererProps) {
+  const { formData, activeDefinition, parsed, completeness } = useRendererDefinition(
+    definition,
+    suppliedFormData,
+    workflowDocuments || Boolean(workflowTaskId),
+  );
   const [validationAttempted, setValidationAttempted] = useState(false);
-  const activeDefinition = useMemo(
-    () => activeFormDefinition(definition, formData),
-    [definition, formData],
-  );
-  const parsed = useMemo(
-    () => parseFormDefinition(definition, formData),
-    [definition, formData],
-  );
   const stepMode = definition.displayMode === "STEPS";
-  const steps =
-    stepMode && penultimateStep
-      ? [
-          ...parsed.sections.slice(0, -1),
-          { id: penultimateStep.id, title: penultimateStep.title },
-          ...parsed.sections.slice(-1),
-        ]
-      : parsed.sections;
+  const steps = rendererSteps(parsed.sections, stepMode, penultimateStep);
   const { completedStepIds, currentStepId, markStepComplete, navigateToStep } =
     useFormStepProgress({
       persistenceKey: stepPersistenceKey,
@@ -255,18 +208,22 @@ export function FormRenderer({
     () => ({
       activeSectionId: stepMode ? currentSection?.id : undefined,
       runtimeContext,
+      workflowTaskId,
       sections: parsed.sections,
     }),
-    [currentSection?.id, parsed.sections, runtimeContext, stepMode],
+    [
+      currentSection?.id,
+      parsed.sections,
+      runtimeContext,
+      stepMode,
+      workflowTaskId,
+    ],
   );
   const uiSchema = useMemo(
     () => readOnlyFieldUiSchema(parsed.uiSchema, readOnlyFieldKeys),
     [parsed.uiSchema, readOnlyFieldKeys],
   );
-  const completeness = useMemo(
-    () => calculateFormCompleteness(activeDefinition, formData),
-    [activeDefinition, formData],
-  );
+
 
   return (
     <div className="space-y-5">
@@ -284,6 +241,8 @@ export function FormRenderer({
           completedStepIds={completedStepIds}
           currentIndex={currentIndex}
           onStepChange={navigateToStep}
+          onOrderChange={onStepOrderChange}
+          orderingPending={orderingPending}
           steps={steps}
         />
       ) : null}
@@ -311,7 +270,12 @@ export function FormRenderer({
           omitExtraData
           onChange={(event: IChangeEvent<DynamicFormValues>) => {
             setValidationAttempted(false);
-            onChange(event.formData ?? {});
+            onChange(
+              calculateFormScores(
+                activeDefinition.fields,
+                event.formData ?? {},
+              ),
+            );
           }}
           onSubmit={formRendererSubmitHandler(
             activeDefinition.fields,
@@ -320,25 +284,10 @@ export function FormRenderer({
           )}
           schema={parsed.schema}
           showErrorList={false}
-          templates={{
-            ArrayFieldItemTemplate: RepeatableArrayFieldItemTemplate,
-            ArrayFieldTemplate: RepeatableArrayFieldTemplate,
-            BaseInputTemplate: FormBaseInputTemplate,
-            FieldTemplate: FormFieldTemplate,
-            ObjectFieldTemplate: FormObjectTemplate,
-          }}
+          templates={formTemplates}
           uiSchema={uiSchema}
           validator={validator}
-          widgets={{
-            CheckboxWidget: FormCheckboxWidget,
-            currency: FormCurrencyWidget,
-            DateWidget: FormDateWidget,
-            percentage: FormPercentageWidget,
-            richText: FormRichTextWidget,
-            RadioWidget: FormRadioWidget,
-            SelectWidget: FormSelectWidget,
-            TextareaWidget: FormTextareaWidget,
-          }}
+          widgets={formWidgets}
         >
           {stepMode ? (
             <FormStepActions

@@ -13,6 +13,7 @@ const state = vi.hoisted(() => ({
   rowVersion: 0,
   preview: {} as {
     task: { config: unknown };
+    onFormSectionOrderChange?: (order: string[]) => void;
     onSectionOrderChange?: (order: WorkflowTaskSectionId[]) => void;
   },
 }));
@@ -91,6 +92,12 @@ describe("task order persistence from preview", () => {
       expect(state.rowVersion).toBe(2);
       await act(async () => state.preview.onSectionOrderChange!(["checklist", "documents", "form"]));
       expect(state.rowVersion).toBe(3);
+      await act(async () => state.preview.onFormSectionOrderChange!(["documents-id", "checklist-id"]));
+      expect(state.preview.task.config).toMatchObject({
+        formSectionOrder: ["documents-id", "checklist-id"],
+        sectionOrder: ["checklist", "documents", "form"],
+        custom: "preserved",
+      });
       expect(editor.graph.stages[0].tasks[0].config).not.toHaveProperty("sectionOrder");
       await cleanup();
       const reopened = await mount({ ...editor, graph });
@@ -121,6 +128,7 @@ describe("task order persistence from preview", () => {
     const cleanup = await mount(editor, published);
     try {
       expect(state.preview.onSectionOrderChange).toBeUndefined();
+      expect(state.preview.onFormSectionOrderChange).toBeUndefined();
       expect(state.mutate).not.toHaveBeenCalled();
     } finally {
       await cleanup();

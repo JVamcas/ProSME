@@ -1,3 +1,4 @@
+import { withFormDocumentRequirements } from "./WorkflowFormDocumentRepository";
 import "server-only";
 
 import { getDatabase } from "@/db/client";
@@ -25,8 +26,9 @@ type Transaction = Parameters<
 export async function insertWorkflowGraph(
   transaction: Transaction,
   versionId: string,
-  graph: WorkflowGraphInput,
+  inputGraph: WorkflowGraphInput,
 ) {
+  const graph = await withFormDocumentRequirements(transaction, inputGraph);
   const stages = graph.stages.map((stage) => ({
     applicantDescription: stage.publicStatusMapping.description,
     applicantLabel: stage.publicStatusMapping.label,

@@ -1,9 +1,14 @@
+import { drizzle } from "drizzle-orm/pg-proxy";
+import { getDatabase } from "@/db/client";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 vi.mock("@/db/client", () => ({ getDatabase: vi.fn() }));
 
-import { attachWorkflowStageRequirements } from "@/modules/workflows/infrastructure/WorkflowStageRequirementsReadRepository";
+import {
+  loadWorkflowStageRequirements,
+  attachWorkflowStageRequirements,
+} from "@/modules/workflows/infrastructure/WorkflowStageRequirementsReadRepository";
 import { referenceWorkflow } from "../../support/ReferenceWorkflowFixture";
 
 describe("workflow stage requirement projection", () => {
@@ -98,4 +103,39 @@ describe("workflow stage requirement projection", () => {
       }),
     ]);
   });
+});
+
+it("reads saved page and extension limits in the workflow document projection", async () => {
+  const execute = vi.fn(async (query: string) => ({
+    rows: query.includes('from "app_workflow_stage_document_requirements"')
+      ? [
+          [
+            "requirement",
+            "stage",
+            "DOCUMENT",
+            "TASK",
+            "Evidence",
+            true,
+            ["PDF"],
+            4,
+            3,
+            [".pdf"],
+            null,
+            false,
+            "ANY",
+            "ASSIGNED_REVIEWER",
+            "",
+          ],
+        ]
+      : [],
+  }));
+  vi.mocked(getDatabase).mockReturnValue(drizzle(execute) as never);
+  const result = await loadWorkflowStageRequirements("workflow-version");
+  expect(result.documents[0]).toMatchObject({
+    maxPages: 3,
+    acceptedExtensions: [".pdf"],
+    maximumSizeMb: 4,
+    uploader: "ANY",
+  });
+  expect(execute).toHaveBeenCalledTimes(5);
 });

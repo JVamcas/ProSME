@@ -11,6 +11,7 @@ import {
 } from "@/modules/forms/FormHooks";
 import type { TaskFormData } from "@/modules/forms/FormTypes";
 import { activeFormDefinition } from "@/modules/forms/engine/FormVisibility";
+import { calculateFormScores } from "../../engine/FormScoring";
 import { validateFormValues } from "@/modules/forms/FormValidation";
 import type { DynamicFormValues } from "./FormRenderer";
 
@@ -25,7 +26,10 @@ export function useDynamicFormController(
   const save = useSaveTaskForm(taskId);
   const complete = useCompleteTaskForm(taskId);
   const [values, setValues] = useState<DynamicFormValues>(
-    data.response?.values ?? {},
+    calculateFormScores(
+      activeFormDefinition(data.schema, data.response?.values ?? {}).fields,
+      data.response?.values ?? {},
+    ),
   );
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const revision = useRef(0);
@@ -44,11 +48,12 @@ export function useDynamicFormController(
 
   const saveDraftValues = useCallback(() => {
     if (
-      !draftIsValid
-      || save.isPending
-      || complete.isPending
-      || externalPending
-    ) return;
+      !draftIsValid ||
+      save.isPending ||
+      complete.isPending ||
+      externalPending
+    )
+      return;
 
     const savingRevision = revision.current;
     save.mutate(
@@ -69,11 +74,11 @@ export function useDynamicFormController(
 
   useEffect(() => {
     if (
-      !hasUnsavedChanges
-      || save.isPending
-      || complete.isPending
-      || externalPending
-      || lastAutosaveRevision.current === revision.current
+      !hasUnsavedChanges ||
+      save.isPending ||
+      complete.isPending ||
+      externalPending ||
+      lastAutosaveRevision.current === revision.current
     ) {
       return;
     }
@@ -85,7 +90,13 @@ export function useDynamicFormController(
     }, formDraftAutosaveDelayMs);
 
     return () => window.clearTimeout(timer);
-  }, [complete.isPending, externalPending, hasUnsavedChanges, save.isPending, saveDraftValues]);
+  }, [
+    complete.isPending,
+    externalPending,
+    hasUnsavedChanges,
+    save.isPending,
+    saveDraftValues,
+  ]);
 
   const navigation = usePendingNavigationGuard(
     hasUnsavedChanges || save.isPending,

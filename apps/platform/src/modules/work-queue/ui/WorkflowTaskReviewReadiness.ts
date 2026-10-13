@@ -1,4 +1,7 @@
-import { orderTaskSections, type WorkflowTaskSectionId } from "@/modules/workflows/domain/definitions/WorkflowTaskSectionOrder";
+import {
+  orderTaskSections,
+  type WorkflowTaskSectionId,
+} from "@/modules/workflows/domain/definitions/WorkflowTaskSectionOrder";
 import type { TaskDetail } from "../TaskTypes";
 import type { ReviewDraftState } from "./ChecklistTaskForm";
 import { isWorkflowStageDecisionAction } from "@/modules/workflows/domain/actions/WorkflowActionDefinition";
@@ -38,7 +41,7 @@ export function workflowTaskReviewReadiness(
     separateEligibilitySection,
     Boolean(task.formVersionId),
     task.hasChecklist,
-    task.documentRequirements.length > 0,
+    !task.formOwnsWork && task.documentRequirements.length > 0,
     Boolean(task.scoring?.criteria.length),
     task.commentFields.length > 0,
   ].filter(Boolean).length;
@@ -46,7 +49,9 @@ export function workflowTaskReviewReadiness(
     separateEligibilitySection && Boolean(task.eligibilityEvaluation),
     Boolean(task.formVersionId) && formSectionComplete,
     task.hasChecklist && task.checklistCompleted,
-    task.documentRequirements.length > 0 && task.documentsCompleted,
+    !task.formOwnsWork &&
+      task.documentRequirements.length > 0 &&
+      task.documentsCompleted,
     Boolean(task.scoring?.criteria.length) && task.scoringCompleted,
     task.commentFields.length > 0 && task.commentCompleted,
   ].filter(Boolean).length;
@@ -74,7 +79,9 @@ export function workflowTaskReviewReadiness(
       task.formCompleted ||
       (submitsFormWithTaskAction && formState.ready && !formState.pending)) &&
     (!task.hasChecklist || task.checklistCompleted) &&
-    (!task.documentRequirements.length || task.documentsCompleted) &&
+    (task.formOwnsWork ||
+      !task.documentRequirements.length ||
+      task.documentsCompleted) &&
     (!task.scoring?.criteria.length || task.scoringCompleted) &&
     (!task.commentFields.length || task.commentCompleted);
 
@@ -127,13 +134,18 @@ export function workflowTaskReviewReadiness(
   }
 
   const orderedSections = orderTaskSections(
-    ([
-      ["form", Boolean(task.formVersionId)],
-      ["checklist", task.hasChecklist],
-      ["documents", task.documentRequirements.length > 0],
-      ["scoring", Boolean(task.scoring?.criteria.length)],
-      ["comments", task.commentFields.length > 0],
-    ] as [WorkflowTaskSectionId, boolean][])
+    (
+      [
+        ["form", Boolean(task.formVersionId)],
+        ["checklist", task.hasChecklist],
+        [
+          "documents",
+          !task.formOwnsWork && task.documentRequirements.length > 0,
+        ],
+        ["scoring", Boolean(task.scoring?.criteria.length)],
+        ["comments", task.commentFields.length > 0],
+      ] as [WorkflowTaskSectionId, boolean][]
+    )
       .filter(([, present]) => present)
       .map(([id]) => ({ id })),
     task.sectionOrder,

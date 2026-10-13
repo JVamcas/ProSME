@@ -1,13 +1,11 @@
 "use client";
+import { WorkflowSearchTarget } from "./search/WorkflowSearchTarget";
 
 import { Plus } from "lucide-react";
 
 import { DeleteButton, EditButton } from "@/components/ui/action-buttons";
 import { GeneralButton } from "@/components/ui/button";
-import {
-  DataTable,
-  type DataTableColumn,
-} from "@/shared/ui/DataTable";
+import { DataTable, type DataTableColumn } from "@/shared/ui/DataTable";
 import type { WorkflowStageDocumentRequirement } from "@/modules/workflows/domain/definitions/WorkflowStageDocumentRequirement";
 import { WorkflowStageTabHeader } from "./WorkflowStageTabHeader";
 import type { WorkflowStageInput } from "@/modules/workflows/domain/definitions/WorkflowTypes";
@@ -22,7 +20,9 @@ type Props = {
 };
 
 function actorLabel(value: string) {
-  return documentActorItems.find((item) => item.value === value)?.label ?? value;
+  return (
+    documentActorItems.find((item) => item.value === value)?.label ?? value
+  );
 }
 
 function documentRequirementColumns(
@@ -36,16 +36,20 @@ function documentRequirementColumns(
       accessorKey: "name",
       header: "Document",
       cell: ({ row }) => (
-        <span className="font-semibold text-brand-navy">
+        <WorkflowSearchTarget
+          tab="documents"
+          itemKey={row.original.stableKey}
+          taskKey={row.original.taskStableKey}
+        >
           {row.original.name}
-        </span>
+        </WorkflowSearchTarget>
       ),
     },
     {
       accessorKey: "taskStableKey",
       header: "Task",
-      cell: ({ row }) => taskNames.get(row.original.taskStableKey)
-        ?? row.original.taskStableKey,
+      cell: ({ row }) =>
+        taskNames.get(row.original.taskStableKey) ?? row.original.taskStableKey,
     },
     {
       accessorKey: "mandatory",
@@ -55,8 +59,7 @@ function documentRequirementColumns(
     {
       accessorKey: "requestOnStageActivation",
       header: "Auto request",
-      cell: ({ row }) =>
-        row.original.requestOnStageActivation ? "Yes" : "No",
+      cell: ({ row }) => (row.original.requestOnStageActivation ? "Yes" : "No"),
     },
     {
       accessorKey: "acceptedFileTypes",
@@ -71,16 +74,18 @@ function documentRequirementColumns(
     {
       accessorKey: "expiryDays",
       header: "Expiry",
-      cell: ({ row }) => row.original.expiryDays
-        ? `${row.original.expiryDays} days`
-        : "No expiry",
+      cell: ({ row }) =>
+        row.original.expiryDays
+          ? `${row.original.expiryDays} days`
+          : "No expiry",
     },
     {
       id: "actors",
       header: "Uploader / verifier",
       cell: ({ row }) => (
         <span className="whitespace-normal">
-          {actorLabel(row.original.uploader)} / {actorLabel(row.original.verifier)}
+          {actorLabel(row.original.uploader)} /{" "}
+          {actorLabel(row.original.verifier)}
         </span>
       ),
     },

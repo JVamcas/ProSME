@@ -35,7 +35,7 @@ export function WorkflowTaskInformationRequestFields({
   const documents = task.documentRequirements.filter(
     (requirement) =>
       requirement.id &&
-      requirement.uploader === "APPLICANT" &&
+      ["APPLICANT", "ANY"].includes(requirement.uploader) &&
       requirement.requestStatus === "MISSING",
   );
   return (

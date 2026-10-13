@@ -10,17 +10,19 @@ export type ChecklistConfigurationItem = {
 };
 
 export type DocumentRequirementItem = {
-  acceptedFileTypes: ("PDF" | "JPG" | "PNG" | "DOCX")[];
+  acceptedFileTypes: import("@/modules/workflows/domain/definitions/WorkflowStageDocumentRequirement").WorkflowDocumentFileType[];
   expiryDays: number | null;
   evidenceUploaded?: boolean;
   id?: string;
   mandatory: boolean;
   maximumSizeMb: number;
+  maxPages?: number | null;
+  acceptedExtensions?: import("@/modules/forms/domain/FormDocumentTypes").FormDocumentExtension[] | null;
   name: string;
   stableKey: string;
   requestStatus: "MISSING" | "REQUESTED" | "SUPPLIED" | "EXPIRED";
   templateReference: string;
-  uploader: "APPLICANT" | "ASSIGNED_REVIEWER" | "STAFF";
+  uploader: "APPLICANT" | "ANY" | "ASSIGNED_REVIEWER" | "STAFF";
   verifier: "ASSIGNED_REVIEWER" | "STAFF";
   document?: WorkflowTaskDocumentView | null;
 };
@@ -111,6 +113,7 @@ export type TaskDetail = {
   formName: string | null;
   checklistCompleted: boolean;
   commentFields: CommentConfigurationItem[];
+  formOwnsWork?: boolean;
   sectionOrder?: WorkflowTaskSectionId[];
   displayMode: WorkflowTaskDisplayMode;
   commentCompleted: boolean;

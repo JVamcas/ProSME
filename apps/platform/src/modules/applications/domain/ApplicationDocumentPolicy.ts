@@ -49,7 +49,7 @@ export function applicationDocumentRequirements(
         maxPages: field.maxPages,
         maximumFiles: 1,
         required: field.required,
-        editable: formFieldIsEditable(field, ruleValues),
+        editable: field.uploadedBy !== "ASSIGNED_REVIEWER" && formFieldIsEditable(field, ruleValues),
         sectionKey: section.key,
         sectionTitle: section.title,
       };
