@@ -39,6 +39,8 @@ describe("attached version repository reads", () => {
           ...Object.keys(getTableColumns(fundingCallDraftVersions)).map(
             () => null,
           ),
+          null,
+          null,
           definitionId,
           "eligibility-definition",
           "workflow-definition",

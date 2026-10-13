@@ -2,7 +2,7 @@
 
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical } from "lucide-react";
+import { GripVertical, ListChecks } from "lucide-react";
 
 import { GeneralButton } from "@/shared/ui/Button";
 import { DeleteButton, EditButton } from "@/components/ui/action-buttons";
@@ -30,11 +30,13 @@ export function SortableFormField({
   field,
   onDelete,
   onEdit,
+  onConfigureRules,
 }: {
   canEdit: boolean;
   field: FormField;
   onDelete: (field: FormField) => void;
   onEdit: (field: FormField) => void;
+  onConfigureRules: (field: FormField) => void;
 }) {
   const {
     attributes,
@@ -87,6 +89,16 @@ export function SortableFormField({
             ) : null}
           </p>
           <div className="flex shrink-0 gap-1">
+            <GeneralButton
+              aria-label={`Configure validation rules for ${field.label}`}
+              disabled={!canEdit}
+              onClick={() => onConfigureRules(field)}
+              size="icon-compact"
+              type="button"
+              variant="ghost"
+            >
+              <ListChecks className="size-4" />
+            </GeneralButton>
             <EditButton disabled={!canEdit} onClick={() => onEdit(field)} />
             <DeleteButton disabled={!canEdit} onClick={() => onDelete(field)} />
           </div>

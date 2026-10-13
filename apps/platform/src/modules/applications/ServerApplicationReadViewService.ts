@@ -10,7 +10,7 @@ import {
   businessSnapshotFields,
   selectedSnapshotDetails,
 } from "./domain/ApplicationSnapshotDetails";
-import { getOwnApplicationDraft } from "./ServerApplicationFormService";
+import { getOwnApplicationDraft } from "./application/ServerApplicationFormService";
 import { getOwnApplicationStatus } from "./ServerApplicationService";
 import { getApplicationSubmissionSnapshot } from "./ServerApplicationSubmissionSnapshotService";
 
@@ -33,9 +33,8 @@ export async function getOwnApplicationReadView(
         name: document.fileName,
         requirementKey: document.requirementKey,
         sizeBytes: document.sizeBytes,
-        versionId: document.storageStatus === "finalized"
-          ? document.versionId
-          : null,
+        versionId:
+          document.storageStatus === "finalized" ? document.versionId : null,
       })),
       form: draft.form,
       summary,
@@ -56,22 +55,31 @@ export async function getOwnApplicationReadView(
 
   const documents = lodged.snapshot.documents.flatMap((document) => {
     if (
-      typeof document.id !== "string"
-      || typeof document.originalName !== "string"
-      || typeof document.requirementKey !== "string"
-      || typeof document.sizeBytes !== "number"
-    ) return [];
-    return [{
-      name: document.originalName,
-      requirementKey: document.requirementKey,
-      sizeBytes: document.sizeBytes,
-      versionId: document.id,
-    }];
+      typeof document.id !== "string" ||
+      typeof document.originalName !== "string" ||
+      typeof document.requirementKey !== "string" ||
+      typeof document.sizeBytes !== "number"
+    )
+      return [];
+    return [
+      {
+        name: document.originalName,
+        requirementKey: document.requirementKey,
+        sizeBytes: document.sizeBytes,
+        versionId: document.id,
+      },
+    ];
   });
 
   return {
-    applicantDetails: selectedSnapshotDetails(lodged.snapshot.applicant, applicantSnapshotFields),
-    businessDetails: selectedSnapshotDetails(lodged.snapshot.business, businessSnapshotFields),
+    applicantDetails: selectedSnapshotDetails(
+      lodged.snapshot.applicant,
+      applicantSnapshotFields,
+    ),
+    businessDetails: selectedSnapshotDetails(
+      lodged.snapshot.business,
+      businessSnapshotFields,
+    ),
     documents,
     form: draft.form,
     summary,

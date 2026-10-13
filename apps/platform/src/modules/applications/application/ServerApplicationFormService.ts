@@ -12,42 +12,36 @@ import {
   captureFormResponseValues,
   InvalidFormRuntimeBindingError,
 } from "@/modules/forms/engine/FormRuntimeContext";
-import {
-  activeFormDefinition,
-  sanitizeFormResponseValues,
-} from "@/modules/forms/engine/FormVisibility";
-import { validateFormValues } from "@/modules/forms/FormValidation";
-import { preserveAttachedBusinessValues } from "./domain/AttachedApplicationForm";
-import { getAttachedApplicationForm } from "./infrastructure/AttachedApplicationFormRepository";
+import { validatedFormResponseValues } from "@/modules/forms/application/FormResponseValidation";
+import { preserveAttachedBusinessValues } from "../domain/AttachedApplicationForm";
+import { getAttachedApplicationForm } from "../infrastructure/AttachedApplicationFormRepository";
 import {
   applicationResponseForm,
   applicationResponseValues,
-} from "./domain/ApplicationDocumentPolicy";
+} from "../domain/ApplicationDocumentPolicy";
 import {
   canonicalJson,
   hashCanonicalJson,
-} from "./domain/ApplicationSubmissionSnapshot";
+} from "../domain/ApplicationSubmissionSnapshot";
 import type {
   CreateApplicationDraftInput,
   SaveApplicationDraftInput,
-} from "./ApplicationSchemas";
-import { toApplicationView } from "./ApplicationRepresentation";
-import type { ApplicationDraftView } from "./ApplicationTypes";
+} from "../ApplicationSchemas";
+import { toApplicationView } from "../ApplicationRepresentation";
+import type { ApplicationDraftView } from "../ApplicationTypes";
 import {
   readOwnedApplicationDraftResponse,
   saveApplicationDraftResponse,
-} from "./infrastructure/ApplicationResponseRepository";
-import {
-  createApplicationDraft as persistApplicationDraft,
-} from "./infrastructure/ApplicationCreationRepository";
-import { findOwnedApplication } from "./infrastructure/ApplicationRepository";
+} from "../infrastructure/ApplicationResponseRepository";
+import { createApplicationDraft as persistApplicationDraft } from "../infrastructure/ApplicationCreationRepository";
+import { findOwnedApplication } from "../infrastructure/ApplicationRepository";
 import {
   ApplicationBusinessConflictError,
   ApplicationBusinessUnavailableError,
   ApplicationConflictError,
   ApplicationNotFoundError,
   ApplicationOpportunityUnavailableError,
-} from "./ServerApplicationService";
+} from "../ServerApplicationService";
 
 function fingerprint(value: unknown) {
   return hashCanonicalJson(canonicalJson(value));
@@ -70,9 +64,9 @@ async function loadDraft(
     ),
   ]);
   if (
-    !response
-    || !form
-    || response.formVersionId !== application.formVersionId
+    !response ||
+    !form ||
+    response.formVersionId !== application.formVersionId
   ) {
     throw new ApplicationOpportunityUnavailableError();
   }
@@ -152,15 +146,11 @@ export async function getOwnApplicationDraft(
 function validateDraftValues(
   form: ApplicationDraftView["form"],
   supplied: Record<string, unknown>,
+  previousValues: Record<string, unknown>,
 ) {
   try {
     const captured = captureFormResponseValues(form.fields, supplied);
-    const values = sanitizeFormResponseValues(form, captured);
-    const active = activeFormDefinition(form, captured);
-    if (!validateFormValues(active.fields, values, false)) {
-      throw new RequestValidationError("The draft form values are invalid.");
-    }
-    return values;
+    return validatedFormResponseValues(form, captured, false, previousValues);
   } catch (error) {
     if (error instanceof InvalidFormRuntimeBindingError) {
       throw new RequestValidationError(error.message);
@@ -179,6 +169,14 @@ export async function saveOwnApplicationDraft(
     permissionCodes.fundingApplicationOwnUpdate,
   );
   const current = await loadDraft(actor.id, applicationId);
+  if (
+    current.form.fields.some((field) => field.rules?.editableCondition) &&
+    current.draftResponse.rowVersion !== input.expectedResponseRowVersion
+  ) {
+    throw new ResourceConflictError(
+      "The saved form changed. Refresh and retry.",
+    );
+  }
   const hasAttachedBusinessFields = current.form.fields.some(
     (field) => field.key === "BUSINESS_LEGAL_NAME",
   );
@@ -190,6 +188,7 @@ export async function saveOwnApplicationDraft(
           current.draftResponse.values,
         )
       : input.values,
+    current.draftResponse.values,
   );
   const result = await saveApplicationDraftResponse({
     ...input,

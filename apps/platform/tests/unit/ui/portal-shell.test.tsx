@@ -120,7 +120,7 @@ describe("P3.1 shared authenticated portal shell", () => {
     expect(markup).toContain("You do not have permission");
   });
 
-  it("offers permitted links in the three-workspace switcher", () => {
+  it("offers permitted portal links while hiding CMS without access", () => {
     const dualContext: PortalContext = {
       ...context,
       capabilityCodes: [
@@ -140,8 +140,8 @@ describe("P3.1 shared authenticated portal shell", () => {
 
     expect(markup).toContain('aria-label="Switch portal space"');
     expect(markup).toContain('href="/admin"');
-    expect(markup).toContain('aria-disabled="true"');
-    expect(markup).toContain("CMS is not available for your account");
+    expect(markup).not.toContain('aria-disabled="true"');
+    expect(markup).not.toContain("CMS");
     expect(markup).not.toContain('href="/cms"');
   });
 

@@ -3,7 +3,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const routing = vi.hoisted(() => ({
   rootPage: vi.fn().mockResolvedValue("CMS view"),
   pageSegments: vi.fn().mockResolvedValue(["collections", "pages", "42"]),
-  notFound: vi.fn(() => { throw new Error("Not found"); }),
+  loginDestination: vi.fn().mockResolvedValue("/cms"),
+  notFound: vi.fn(() => {
+    throw new Error("Not found");
+  }),
   redirect: vi.fn((path: string) => {
     throw new Error(`Redirect to ${path}`);
   }),
@@ -11,10 +14,16 @@ const routing = vi.hoisted(() => ({
 
 vi.mock("@payload-config", () => ({ default: {} }));
 vi.mock("@payloadcms/next/views", () => ({ RootPage: routing.rootPage }));
-vi.mock("next/navigation", () => ({ redirect: routing.redirect, notFound: routing.notFound }));
+vi.mock("next/navigation", () => ({
+  redirect: routing.redirect,
+  notFound: routing.notFound,
+}));
 vi.mock("@/app/(payload)/cms/importMap", () => ({ importMap: {} }));
 vi.mock("@/modules/content/ServerCmsPageEditorService", () => ({
   getPageEditorSegments: routing.pageSegments,
+}));
+vi.mock("@/platform/auth/ServerCmsAuthNavigation", () => ({
+  getCmsLoginDestination: routing.loginDestination,
 }));
 
 import PayloadAdminPage from "@/app/(payload)/cms/[[...segments]]/page";
@@ -41,8 +50,9 @@ function pageProps(segments: string[]) {
 
 describe("CMS admin routing", () => {
   it("redirects the combined overview to the support editor", async () => {
-    await expect(PayloadAdminPage(pageProps(["funding", "overview"])))
-      .rejects.toThrow("Redirect to /cms/funding/overview/support");
+    await expect(
+      PayloadAdminPage(pageProps(["funding", "overview"])),
+    ).rejects.toThrow("Redirect to /cms/funding/overview/support");
     expect(routing.rootPage).not.toHaveBeenCalled();
   });
 
@@ -57,10 +67,29 @@ describe("CMS admin routing", () => {
     expect(routing.redirect).not.toHaveBeenCalled();
   });
 
-  it("redirects Payload login to the application entry", async () => {
+  it("redirects an accepted CMS login to the application entry", async () => {
     await expect(PayloadAdminPage(pageProps(["login"]))).rejects.toThrow(
       "Redirect to /cms",
     );
+  });
+
+  it.each(["/sign-in?returnTo=%2Fcms", "/unauthorized"])(
+    "routes a rejected CMS login to %s without rendering Payload",
+    async (destination) => {
+      routing.loginDestination.mockResolvedValueOnce(destination);
+      await expect(PayloadAdminPage(pageProps(["login"]))).rejects.toThrow(
+        `Redirect to ${destination}`,
+      );
+      expect(routing.rootPage).not.toHaveBeenCalled();
+    },
+  );
+
+  it("routes Payload access denial to the platform access-denied page", async () => {
+    await expect(PayloadAdminPage(pageProps(["unauthorized"]))).rejects.toThrow(
+      "Redirect to /unauthorized",
+    );
+    expect(routing.rootPage).not.toHaveBeenCalled();
+    expect(routing.loginDestination).not.toHaveBeenCalled();
   });
 
   it.each([["home"], ["globals", "homepage"]])(
@@ -73,27 +102,32 @@ describe("CMS admin routing", () => {
     },
   );
 
-  it.each(["banner", "action-cards", "how-it-works", "who-we-support", "additional-content"])(
-    "renders the native homepage form at /cms/home/%s",
-    async (section) => {
-      const props = pageProps(["home", section]);
-      await expect(PayloadAdminPage(props)).resolves.toBe("CMS view");
-      const args = routing.rootPage.mock.calls[0][0];
-      await expect(args.params).resolves.toEqual({
-        segments: ["globals", "homepage"],
-      });
-      expect(args.searchParams).toBe(props.searchParams);
-      expect(routing.redirect).not.toHaveBeenCalled();
-    },
-  );
+  it.each([
+    "banner",
+    "action-cards",
+    "how-it-works",
+    "who-we-support",
+    "additional-content",
+  ])("renders the native homepage form at /cms/home/%s", async (section) => {
+    const props = pageProps(["home", section]);
+    await expect(PayloadAdminPage(props)).resolves.toBe("CMS view");
+    const args = routing.rootPage.mock.calls[0][0];
+    await expect(args.params).resolves.toEqual({
+      segments: ["globals", "homepage"],
+    });
+    expect(args.searchParams).toBe(props.searchParams);
+    expect(routing.redirect).not.toHaveBeenCalled();
+  });
 
-  it.each([["home", "unknown"], ["home", "banner", "extra"]])(
-    "rejects unknown section paths %j",
-    async (...segments) => {
-      await expect(PayloadAdminPage(pageProps(segments))).rejects.toThrow("Not found");
-      expect(routing.rootPage).not.toHaveBeenCalled();
-    },
-  );
+  it.each([
+    ["home", "unknown"],
+    ["home", "banner", "extra"],
+  ])("rejects unknown section paths %j", async (...segments) => {
+    await expect(PayloadAdminPage(pageProps(segments))).rejects.toThrow(
+      "Not found",
+    );
+    expect(routing.rootPage).not.toHaveBeenCalled();
+  });
 
   it("preserves native homepage version history", async () => {
     const props = pageProps(["globals", "homepage", "versions"]);
@@ -116,8 +150,9 @@ describe("CMS admin routing", () => {
   });
 
   it("redirects the contact global root to Contact Us", async () => {
-    await expect(PayloadAdminPage(pageProps(["globals", "contact-details"])))
-      .rejects.toThrow("Redirect to /cms/contact");
+    await expect(
+      PayloadAdminPage(pageProps(["globals", "contact-details"])),
+    ).rejects.toThrow("Redirect to /cms/contact");
     expect(routing.rootPage).not.toHaveBeenCalled();
   });
 
@@ -127,43 +162,57 @@ describe("CMS admin routing", () => {
     expect(routing.rootPage.mock.calls[0][0].params).toBe(props.params);
   });
 
-  it.each(["about", "how-to-apply", "funding-support", "funding-priority-applicants", "funding-focus-sectors", "faq"])(
-    "opens the existing document through Payload at /cms/%s",
-    async (slug) => {
-      const props = pageProps(editorPath(slug));
-      await expect(PayloadAdminPage(props)).resolves.toBe("CMS view");
-      const args = routing.rootPage.mock.calls[0][0];
-      await expect(args.params).resolves.toEqual({
-        segments: ["collections", "pages", "42"],
-      });
-      await expect(args.searchParams).resolves.toEqual({ cmsPage: slug });
-      expect(routing.pageSegments).toHaveBeenCalledWith(slug);
-      expect(routing.redirect).not.toHaveBeenCalled();
-    },
-  );
+  it.each([
+    "about",
+    "how-to-apply",
+    "funding-support",
+    "funding-priority-applicants",
+    "funding-focus-sectors",
+    "faq",
+  ])("opens the existing document through Payload at /cms/%s", async (slug) => {
+    const props = pageProps(editorPath(slug));
+    await expect(PayloadAdminPage(props)).resolves.toBe("CMS view");
+    const args = routing.rootPage.mock.calls[0][0];
+    await expect(args.params).resolves.toEqual({
+      segments: ["collections", "pages", "42"],
+    });
+    await expect(args.searchParams).resolves.toEqual({ cmsPage: slug });
+    expect(routing.pageSegments).toHaveBeenCalledWith(slug);
+    expect(routing.redirect).not.toHaveBeenCalled();
+  });
 
-  it.each(["about", "how-to-apply", "funding-support", "funding-priority-applicants", "funding-focus-sectors", "faq"])(
-    "preserves preview options when opening %s",
-    async (slug) => {
-      await PayloadAdminPage({
-        ...pageProps(editorPath(slug)),
-        searchParams: Promise.resolve({ locale: "en" }),
-      });
-      await expect(routing.rootPage.mock.calls[0][0].searchParams).resolves.toEqual({
-        locale: "en",
-        cmsPage: slug,
-      });
-    },
-  );
+  it.each([
+    "about",
+    "how-to-apply",
+    "funding-support",
+    "funding-priority-applicants",
+    "funding-focus-sectors",
+    "faq",
+  ])("preserves preview options when opening %s", async (slug) => {
+    await PayloadAdminPage({
+      ...pageProps(editorPath(slug)),
+      searchParams: Promise.resolve({ locale: "en" }),
+    });
+    await expect(
+      routing.rootPage.mock.calls[0][0].searchParams,
+    ).resolves.toEqual({
+      locale: "en",
+      cmsPage: slug,
+    });
+  });
 
-  it.each(["about", "how-to-apply", "funding-support", "funding-priority-applicants", "funding-focus-sectors", "faq"])(
-    "does not render %s after an authorization failure",
-    async (slug) => {
-      routing.pageSegments.mockRejectedValueOnce(new Error("Permission denied"));
-      await expect(PayloadAdminPage(pageProps(editorPath(slug)))).rejects.toThrow(
-        "Permission denied",
-      );
-      expect(routing.rootPage).not.toHaveBeenCalled();
-    },
-  );
+  it.each([
+    "about",
+    "how-to-apply",
+    "funding-support",
+    "funding-priority-applicants",
+    "funding-focus-sectors",
+    "faq",
+  ])("does not render %s after an authorization failure", async (slug) => {
+    routing.pageSegments.mockRejectedValueOnce(new Error("Permission denied"));
+    await expect(PayloadAdminPage(pageProps(editorPath(slug)))).rejects.toThrow(
+      "Permission denied",
+    );
+    expect(routing.rootPage).not.toHaveBeenCalled();
+  });
 });

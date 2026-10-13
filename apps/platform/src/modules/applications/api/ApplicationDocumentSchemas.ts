@@ -25,6 +25,7 @@ export type ApplicationDocumentRequirement = {
   maxPages?: number;
   maximumFiles: 1;
   required: boolean;
+  editable?: boolean;
   sectionKey: string;
   sectionTitle: string;
 };

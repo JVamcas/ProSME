@@ -194,6 +194,7 @@ export async function readFormFields(
         key: formFields.key,
         label: formFields.label,
         maximum: formFields.maximum,
+        acceptedExtensions: formFields.acceptedExtensions,
         maxPages: formFields.maxPages,
         maximumFileSizeMb: formFields.maximumFileSizeMb,
         maxLength: formFields.maxLength,
@@ -205,6 +206,7 @@ export async function readFormFields(
         sectionId: formFields.sectionId,
         type: formFields.type,
         visibilityCondition: formFields.visibilityCondition,
+        rules: formFields.rules,
       })
       .from(formFields)
       .innerJoin(formSections, eq(formSections.id, formFields.sectionId))
@@ -249,6 +251,7 @@ export async function readFormFields(
     key: field.key,
     label: field.label,
     maximum: field.maximum ?? undefined,
+    acceptedExtensions: field.acceptedExtensions ?? undefined,
     maxPages: field.maxPages ?? undefined,
     maximumFileSizeMb: field.maximumFileSizeMb ?? undefined,
     maxLength: field.maxLength ?? undefined,
@@ -261,6 +264,7 @@ export async function readFormFields(
     sectionId: field.sectionId,
     type: field.type,
     visibilityCondition: field.visibilityCondition,
+    rules: field.rules ?? undefined,
   }));
 }
 

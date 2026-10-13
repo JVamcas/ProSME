@@ -104,6 +104,7 @@ export async function insertMissingStandardForms(
         key: field.key,
         label: field.label,
         maximum: field.maximum ?? null,
+        acceptedExtensions: field.acceptedExtensions ?? null,
         maxPages: field.maxPages ?? null,
         maximumFileSizeMb: field.maximumFileSizeMb ?? null,
         maxLength: field.maxLength ?? null,
@@ -115,6 +116,7 @@ export async function insertMissingStandardForms(
         sectionId: field.sectionId,
         type: field.type,
         visibilityCondition: field.visibilityCondition ?? null,
+        rules: field.rules ?? null,
       })),
     );
 

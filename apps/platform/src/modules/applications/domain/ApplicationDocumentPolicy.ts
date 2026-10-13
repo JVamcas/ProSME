@@ -1,22 +1,20 @@
+import {
+  defaultFormDocumentExtensions,
+  formDocumentFileTypes,
+} from "@/modules/forms/domain/FormDocumentTypes";
+import { formFieldIsEditable } from "@/modules/forms/engine/FormFieldBehaviour";
 import type { FormRuntimeSchema } from "@/modules/forms/FormTypes";
-import { resolveFormVisibility } from "@/modules/forms/engine/FormVisibility";
+import {
+  activeFormDefinition,
+  sanitizeFormResponseValues,
+} from "@/modules/forms/engine/FormVisibility";
 import type {
   ApplicationDocumentRegister,
   ApplicationDocumentRequirement,
 } from "../api/ApplicationDocumentSchemas";
 
 export const applicationDocumentMaximumBytes = 10 * 1024 * 1024;
-export const applicationDocumentAllowedFiles = {
-  ".docx": {
-    contentType:
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    signature: "zip",
-  },
-  ".jpeg": { contentType: "image/jpeg", signature: "jpeg" },
-  ".jpg": { contentType: "image/jpeg", signature: "jpeg" },
-  ".pdf": { contentType: "application/pdf", signature: "pdf" },
-  ".png": { contentType: "image/png", signature: "png" },
-} as const;
+export const applicationDocumentAllowedFiles = formDocumentFileTypes;
 
 export type ApplicationDocumentExtension =
   keyof typeof applicationDocumentAllowedFiles;
@@ -25,7 +23,8 @@ export function applicationDocumentRequirements(
   form: FormRuntimeSchema,
   values: Readonly<Record<string, unknown>>,
 ): ApplicationDocumentRequirement[] {
-  const visible = resolveFormVisibility(form, values);
+  const visible = activeFormDefinition(form, values);
+  const ruleValues = sanitizeFormResponseValues(form, values);
   const sections = new Map(
     visible.sections.map((section) => [section.id, section]),
   );
@@ -37,17 +36,20 @@ export function applicationDocumentRequirements(
         throw new Error(`Document requirement ${field.key} has no section.`);
       }
       return {
-        acceptedExtensions: field.maxPages === undefined
-          ? Object.keys(applicationDocumentAllowedFiles)
-          : [".pdf"],
+        acceptedExtensions:
+          field.maxPages === undefined
+            ? [...(field.acceptedExtensions ?? defaultFormDocumentExtensions)]
+            : [".pdf"],
         key: field.key,
         label: field.label,
-        maximumBytes: field.maximumFileSizeMb === undefined
-          ? applicationDocumentMaximumBytes
-          : field.maximumFileSizeMb * 1024 * 1024,
+        maximumBytes:
+          field.maximumFileSizeMb === undefined
+            ? applicationDocumentMaximumBytes
+            : field.maximumFileSizeMb * 1024 * 1024,
         maxPages: field.maxPages,
         maximumFiles: 1,
         required: field.required,
+        editable: formFieldIsEditable(field, ruleValues),
         sectionKey: section.key,
         sectionTitle: section.title,
       };
@@ -63,9 +65,9 @@ export function applicationResponseForm(form: FormRuntimeSchema) {
   return {
     ...form,
     fields: form.fields.filter((field) => field.type !== "DOCUMENT"),
-    sections: form.sections.filter((section) => (
-      documentSectionIds.has(section.id ?? "")
-    )),
+    sections: form.sections.filter((section) =>
+      documentSectionIds.has(section.id ?? ""),
+    ),
   };
 }
 

@@ -1,7 +1,24 @@
+import { formFieldRuleErrors } from "../../engine/FormFieldBehaviour";
 import type { ErrorSchema } from "@rjsf/utils";
+import type { IChangeEvent } from "@rjsf/core";
 import type { FormRuntimeSchema } from "../../FormTypes";
 import { validateFormValues } from "../../FormValidation";
 import type { DynamicFormValues } from "./FormRenderer";
+
+export function formRendererSubmitHandler(
+  fields: FormRuntimeSchema["fields"],
+  onSubmit: (values: DynamicFormValues) => void,
+  onInvalid: () => void,
+) {
+  return (event: IChangeEvent<DynamicFormValues>) => {
+    const values = event.formData ?? {};
+    if (!validateFormValues(fields, values, true)) {
+      onInvalid();
+      return;
+    }
+    onSubmit(values);
+  };
+}
 
 export function valuesForFields(
   fields: readonly { key: string }[],
@@ -52,13 +69,19 @@ export function formRendererValidationErrors(
             [field],
             valuesForFields([field], formData),
             true,
+            formData,
           ),
       )
     : [];
   const invalidPopulatedFields = allFields.filter(
     (field) =>
       hasFormValue(formData[field.key]) &&
-      !validateFormValues([field], valuesForFields([field], formData), false),
+      !validateFormValues(
+        [field],
+        valuesForFields([field], formData),
+        false,
+        formData,
+      ),
   );
   const invalidFields = new Map(
     [...invalidStepFields, ...invalidPopulatedFields].map((field) => [
@@ -66,10 +89,19 @@ export function formRendererValidationErrors(
       field,
     ]),
   );
-  return Object.fromEntries(
+  const errors = Object.fromEntries(
     [...invalidFields.values()].map((field) => [
       field.key,
       { __errors: [invalidFieldMessage(field, formData[field.key])] },
     ]),
   ) as ErrorSchema<DynamicFormValues>;
+  const rules = formFieldRuleErrors(
+    validationAttempted ? currentFields : allFields,
+    formData,
+    validationAttempted ? "SUBMIT" : "DRAFT",
+  );
+  for (const [key, message] of Object.entries(rules)) {
+    errors[key] = { __errors: [message] };
+  }
+  return errors;
 }

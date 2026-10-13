@@ -1,3 +1,4 @@
+import { formFieldIsRequired } from "./FormFieldBehaviour";
 import type { ConditionFieldDefinition } from "@/modules/conditions/domain/ConditionConfiguration";
 import type { ConditionGroup } from "@/modules/conditions/domain/ConditionGroup";
 import type { JsonValue } from "@/modules/conditions/domain/Operand";
@@ -37,10 +38,10 @@ export function formVisibilityConditionFields(
 
 function jsonValue(value: unknown): JsonValue {
   if (
-    value === null
-    || typeof value === "string"
-    || typeof value === "boolean"
-    || typeof value === "number" && Number.isFinite(value)
+    value === null ||
+    typeof value === "string" ||
+    typeof value === "boolean" ||
+    (typeof value === "number" && Number.isFinite(value))
   ) {
     return value;
   }
@@ -57,10 +58,12 @@ function conditionValues(
   fields: readonly FormField[],
   values: Readonly<Record<string, unknown>>,
 ) {
-  return Object.fromEntries(fields.map((field) => [
-    field.key,
-    Object.hasOwn(values, field.key) ? jsonValue(values[field.key]) : null,
-  ]));
+  return Object.fromEntries(
+    fields.map((field) => [
+      field.key,
+      Object.hasOwn(values, field.key) ? jsonValue(values[field.key]) : null,
+    ]),
+  );
 }
 
 function emptyConditionValues(
@@ -89,8 +92,9 @@ export function resolveFormVisibility(
   const resolvedValues = emptyConditionValues(definition.fields);
   const sections: FormSection[] = [];
   const fields: FormField[] = [];
-  const orderedSections = [...definition.sections]
-    .sort((left, right) => left.order - right.order);
+  const orderedSections = [...definition.sections].sort(
+    (left, right) => left.order - right.order,
+  );
   for (const section of orderedSections) {
     if (!conditionPasses(section.visibilityCondition, resolvedValues)) {
       continue;
@@ -111,9 +115,9 @@ export function resolveFormVisibility(
   const visibleSections = new Set(sections);
   return {
     fields: definition.fields.filter((field) => visibleFields.has(field)),
-    sections: definition.sections.filter((section) => (
-      visibleSections.has(section)
-    )),
+    sections: definition.sections.filter((section) =>
+      visibleSections.has(section),
+    ),
   };
 }
 
@@ -122,9 +126,13 @@ export function activeFormDefinition(
   values: Readonly<Record<string, unknown>>,
 ): FormRuntimeSchema {
   const visible = resolveFormVisibility(definition, values);
+  const ruleValues = conditionValues(visible.fields, values);
   return {
     ...definition,
-    fields: visible.fields,
+    fields: visible.fields.map((field) => ({
+      ...field,
+      required: formFieldIsRequired(field, ruleValues),
+    })),
     sections: visible.sections,
   };
 }
@@ -134,9 +142,11 @@ export function sanitizeFormResponseValues(
   values: Readonly<Record<string, unknown>>,
 ) {
   const visible = resolveFormVisibility(definition, values);
-  return Object.fromEntries(visible.fields.flatMap((field) => (
-    Object.hasOwn(values, field.key) ? [[field.key, values[field.key]]] : []
-  )));
+  return Object.fromEntries(
+    visible.fields.flatMap((field) =>
+      Object.hasOwn(values, field.key) ? [[field.key, values[field.key]]] : [],
+    ),
+  );
 }
 
 function conditionErrors(
@@ -157,29 +167,38 @@ export function formVisibilityConfigurationErrors(
   sections: readonly FormSection[],
 ) {
   const sectionOrder = new Map(
-    sections.flatMap((section) => section.id
-      ? [[section.id, section.order] as const]
-      : []),
+    sections.flatMap((section) =>
+      section.id ? [[section.id, section.order] as const] : [],
+    ),
   );
-  const fieldsBeforeSection = (target: FormSection) => fields.filter(
-    (field) => (sectionOrder.get(field.sectionId) ?? Infinity) < target.order,
-  );
-  const fieldsBeforeField = (target: FormField) => fields.filter((field) => {
-    const sourceSectionOrder = sectionOrder.get(field.sectionId) ?? Infinity;
-    const targetSectionOrder = sectionOrder.get(target.sectionId) ?? Infinity;
-    return sourceSectionOrder < targetSectionOrder
-      || sourceSectionOrder === targetSectionOrder && field.order < target.order;
-  });
+  const fieldsBeforeSection = (target: FormSection) =>
+    fields.filter(
+      (field) => (sectionOrder.get(field.sectionId) ?? Infinity) < target.order,
+    );
+  const fieldsBeforeField = (target: FormField) =>
+    fields.filter((field) => {
+      const sourceSectionOrder = sectionOrder.get(field.sectionId) ?? Infinity;
+      const targetSectionOrder = sectionOrder.get(target.sectionId) ?? Infinity;
+      return (
+        sourceSectionOrder < targetSectionOrder ||
+        (sourceSectionOrder === targetSectionOrder &&
+          field.order < target.order)
+      );
+    });
   return [
-    ...sections.flatMap((section) => conditionErrors(
-      section.visibilityCondition,
-      formVisibilityConditionFields(fieldsBeforeSection(section)),
-      `Section ${section.key} visibility`,
-    )),
-    ...fields.flatMap((field) => conditionErrors(
-      field.visibilityCondition,
-      formVisibilityConditionFields(fieldsBeforeField(field)),
-      `Field ${field.key} visibility`,
-    )),
+    ...sections.flatMap((section) =>
+      conditionErrors(
+        section.visibilityCondition,
+        formVisibilityConditionFields(fieldsBeforeSection(section)),
+        `Section ${section.key} visibility`,
+      ),
+    ),
+    ...fields.flatMap((field) =>
+      conditionErrors(
+        field.visibilityCondition,
+        formVisibilityConditionFields(fieldsBeforeField(field)),
+        `Field ${field.key} visibility`,
+      ),
+    ),
   ];
 }

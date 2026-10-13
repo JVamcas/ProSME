@@ -40,6 +40,7 @@ function SectionFields({
   onAddField,
   onDeleteField,
   onEditField,
+  onConfigureRules,
   sectionId,
 }: {
   canEdit: boolean;
@@ -48,6 +49,7 @@ function SectionFields({
   onAddField: (sectionId: string) => void;
   onDeleteField: (field: FormField) => void;
   onEditField: (field: FormField) => void;
+  onConfigureRules: (field: FormField) => void;
   sectionId: string;
 }) {
   const { isOver, setNodeRef } = useDroppable({
@@ -69,10 +71,7 @@ function SectionFields({
       >
         {fields.length ? (
           <ul
-            className={cn(
-              "grid grid-cols-1 gap-2",
-              fieldGridClass(columnSpan),
-            )}
+            className={cn("grid grid-cols-1 gap-2", fieldGridClass(columnSpan))}
           >
             {fields.map((field) => (
               <SortableFormField
@@ -81,6 +80,7 @@ function SectionFields({
                 key={formFieldIdentity(field)}
                 onDelete={onDeleteField}
                 onEdit={onEditField}
+                onConfigureRules={onConfigureRules}
               />
             ))}
           </ul>
@@ -115,6 +115,7 @@ function SortableSection({
   onDeleteField,
   onEdit,
   onEditField,
+  onConfigureRules,
   section,
 }: {
   canEdit: boolean;
@@ -124,6 +125,7 @@ function SortableSection({
   onDeleteField: (field: FormField) => void;
   onEdit: (section: FormSection) => void;
   onEditField: (field: FormField) => void;
+  onConfigureRules: (field: FormField) => void;
   section: FormSection;
 }) {
   const {
@@ -152,16 +154,18 @@ function SortableSection({
       }}
     >
       <div className="flex items-start gap-3">
-        <button
+        <GeneralButton
           aria-label={`Reorder ${section.title}`}
           className="mt-1 cursor-grab touch-none text-brand-navy/45 disabled:cursor-default"
           disabled={!canEdit}
+          size="icon-compact"
+          variant="ghost"
           type="button"
           {...attributes}
           {...listeners}
         >
           <GripVertical className="size-5" />
-        </button>
+        </GeneralButton>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-baseline gap-2">
             <span className="text-xs font-bold text-brand-orange">
@@ -189,6 +193,7 @@ function SortableSection({
           onAddField={onAddField}
           onDeleteField={onDeleteField}
           onEditField={onEditField}
+          onConfigureRules={onConfigureRules}
           sectionId={section.id}
         />
       ) : null}
@@ -231,6 +236,7 @@ export function FormSectionBuilder({
   onDeleteField,
   onEdit,
   onEditField,
+  onConfigureRules,
   onReorder,
   onReorderFields,
   sections,
@@ -243,6 +249,7 @@ export function FormSectionBuilder({
   onDeleteField: (field: FormField) => void;
   onEdit: (section: FormSection) => void;
   onEditField: (field: FormField) => void;
+  onConfigureRules: (field: FormField) => void;
   onReorder: (sections: FormSection[]) => void;
   onReorderFields: (fields: FormField[]) => void;
   sections: FormSection[];
@@ -287,7 +294,12 @@ export function FormSectionBuilder({
             between sections.
           </p>
         </div>
-        <GeneralButton disabled={!canEdit} onClick={onAddSection} type="button" size={"compact"}>
+        <GeneralButton
+          disabled={!canEdit}
+          onClick={onAddSection}
+          type="button"
+          size={"compact"}
+        >
           <Plus className="size-4" />
           Add section
         </GeneralButton>
@@ -315,6 +327,7 @@ export function FormSectionBuilder({
                   onDeleteField={onDeleteField}
                   onEdit={onEdit}
                   onEditField={onEditField}
+                  onConfigureRules={onConfigureRules}
                   section={section}
                 />
               ))}

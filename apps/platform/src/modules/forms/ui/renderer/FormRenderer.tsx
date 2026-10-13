@@ -1,7 +1,11 @@
 "use client";
 
 import Form, { type IChangeEvent } from "@rjsf/core";
-import type { ObjectFieldTemplateProps, RJSFSchema } from "@rjsf/utils";
+import type {
+  ObjectFieldTemplateProps,
+  RJSFSchema,
+  UiSchema,
+} from "@rjsf/utils";
 import validator from "@rjsf/validator-ajv8";
 import { FormCheckboxWidget } from "./FormCheckboxWidget";
 
@@ -9,6 +13,7 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 
 import {
   formRendererValidationErrors,
+  formRendererSubmitHandler,
   valuesForFields,
 } from "./FormRendererValidation";
 import { cn } from "@/lib/utils";
@@ -164,6 +169,21 @@ type FormRendererProps = {
   supplementalCompletion?: SupplementalCompletion;
 };
 
+function readOnlyFieldUiSchema(
+  base: UiSchema,
+  keys: readonly string[],
+): UiSchema {
+  return {
+    ...base,
+    ...Object.fromEntries(
+      keys.map((key) => [
+        key,
+        { ...base[key], "ui:disabled": true, "ui:readonly": true },
+      ]),
+    ),
+  };
+}
+
 export function FormRenderer({
   children,
   definition,
@@ -227,7 +247,7 @@ export function FormRenderer({
     : [];
   const extraErrors = formRendererValidationErrors(
     activeDefinition.fields,
-    currentFields,
+    stepMode ? currentFields : activeDefinition.fields,
     formData,
     validationAttempted,
   );
@@ -240,19 +260,7 @@ export function FormRenderer({
     [currentSection?.id, parsed.sections, runtimeContext, stepMode],
   );
   const uiSchema = useMemo(
-    () => ({
-      ...parsed.uiSchema,
-      ...Object.fromEntries(
-        readOnlyFieldKeys.map((key) => [
-          key,
-          {
-            ...parsed.uiSchema[key],
-            "ui:disabled": true,
-            "ui:readonly": true,
-          },
-        ]),
-      ),
-    }),
+    () => readOnlyFieldUiSchema(parsed.uiSchema, readOnlyFieldKeys),
     [parsed.uiSchema, readOnlyFieldKeys],
   );
   const completeness = useMemo(
@@ -305,9 +313,11 @@ export function FormRenderer({
             setValidationAttempted(false);
             onChange(event.formData ?? {});
           }}
-          onSubmit={(event: IChangeEvent<DynamicFormValues>) => {
-            onSubmit(event.formData ?? {});
-          }}
+          onSubmit={formRendererSubmitHandler(
+            activeDefinition.fields,
+            onSubmit,
+            () => setValidationAttempted(true),
+          )}
           schema={parsed.schema}
           showErrorList={false}
           templates={{
@@ -344,6 +354,7 @@ export function FormRenderer({
                     currentFields,
                     valuesForFields(currentFields, formData),
                     true,
+                    formData,
                   )
                 ) {
                   setValidationAttempted(true);

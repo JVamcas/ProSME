@@ -15,11 +15,17 @@ function emptyConditionGroup(): ConditionGroup {
   };
 }
 
-export function FormVisibilityConditionEditor({
+export function FormConditionRuleEditor({
   fields,
   onChange,
   value,
+  title = "Visibility condition",
+  addLabel = "Add visibility condition",
+  removeLabel = "Always show",
 }: {
+  title?: string;
+  addLabel?: string;
+  removeLabel?: string;
   fields: readonly FormField[];
   onChange: (value: ConditionGroup | null) => void;
   value?: ConditionGroup | null;
@@ -28,7 +34,7 @@ export function FormVisibilityConditionEditor({
   return (
     <fieldset className="space-y-3 rounded-xl border border-brand-navy/15 p-4">
       <legend className="px-2 text-sm font-bold text-brand-navy">
-        Visibility condition
+        {title}
       </legend>
       {value ? (
         <>
@@ -42,7 +48,7 @@ export function FormVisibilityConditionEditor({
             type="button"
             variant="outline"
           >
-            Always show
+            {removeLabel}
           </GeneralButton>
         </>
       ) : (
@@ -52,12 +58,12 @@ export function FormVisibilityConditionEditor({
           type="button"
           variant="outline"
         >
-          Add visibility condition
+          {addLabel}
         </GeneralButton>
       )}
       {conditionFields.length === 0 ? (
         <p className="text-sm text-brand-navy/55">
-          Add a supported form field before configuring visibility.
+          Add a supported form field before configuring this condition.
         </p>
       ) : null}
     </fieldset>

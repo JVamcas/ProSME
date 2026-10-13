@@ -71,3 +71,70 @@ these settings can be used in the deployed platform.
 Local implementation checks passed as recorded above. Deployed behavior,
 migration execution and user/browser acceptance remain unverified. This record
 does not establish production acceptance.
+
+## 2026-10-13: allowed file types and WorkflowHub comparison
+
+The Document limits section now includes the existing shared multi-select control
+labelled **Allowed file types**. Choices are PDF, DOCX, XLS, XLSX, TXT, CSV, JPG,
+JPEG and PNG. The configuration is persisted with the field, copied with form
+versions and projected into upload requirements. Unconfigured existing fields
+retain their previous PDF/DOCX/JPEG/PNG selection; the added formats require an
+explicit selection. Empty, duplicate or unsupported selections are rejected.
+
+Setting a page limit selects PDF automatically and disables other format choices.
+API validation and the database constraint also require PDF-only configuration
+when a page limit exists. Upload validation checks the configured extension,
+MIME type and content signature before creating a version or storing a file.
+Spreadsheet archive checks distinguish Word and Excel directories; XLS checks
+the compound-file header and workbook stream name. TXT/CSV content must be
+UTF-8 text without binary control characters. CSV browser MIME variants and
+generic/absent MIME types are accepted subject to the selected extension and
+content checks. These checks identify file formats; they do not fully validate
+every internal archive or workbook structure.
+
+Migration `0203_form_document_file_types.sql` adds nullable `accepted_extensions`
+and a document-only supported-format constraint. No database migration or GCP
+server changes were performed.
+
+### WorkflowHub source review
+
+Reviewed local code under `/home/pkambala/Namport/WorkflowHub`:
+
+- `frontend/features/forms/components/FieldBehaviourDialog.tsx`: validation
+  condition, visibility, editability and conditional requirement controls;
+  numeric fields also expose calculations.
+- `frontend/features/forms/components/RuleSettingsEditor.tsx`: custom validation
+  message, draft-save/submission/both modes and behavior for missing rule inputs.
+- `frontend/features/forms/runtime/behaviour.ts` and
+  `backend/src/WorkflowHub.Application/Features/Forms/Services/FormBehaviour.cs`:
+  the runtime evaluates visibility, editability, required conditions and
+  validation rules in both frontend and backend.
+
+| Capability | Current SME platform | WorkflowHub |
+| --- | --- | --- |
+| Field/section visibility conditions | Implemented | Implemented |
+| Required flag | Implemented | Implemented |
+| Numeric and text-length bounds | Implemented | Implemented |
+| Document pages, size and allowed formats | Implemented locally | Not compared as a document upload capability |
+| Conditional editability | Implemented locally | Implemented |
+| Conditional requirement | Implemented locally | Implemented |
+| Arbitrary validation condition with custom message | Implemented locally | Implemented |
+| Validation on draft save, submission or both | Implemented locally | Implemented |
+| Configurable handling of missing validation inputs | Implemented locally | Implemented |
+
+The additional rule controls and their runtime enforcement are now implemented.
+See [the field rules implementation record](Form_Field_Rules_Implementation_Gate.md)
+for scope, server enforcement and final local verification.
+
+### Extension checks
+
+- 59 focused tests passed in nine files, including selector interaction,
+  PDF-only locking, schema validation, SQL projections/writes, format signatures,
+  and allowed/disallowed owner-scoped uploads.
+- Focused ESLint passed for all changed/new source and test files.
+- Full platform TypeScript checking passed.
+- Architecture, form-boundary and component-reuse checks passed.
+- Changed-file limits passed for 19 files against the required 600/400-line file
+  limits and 200-line function limit.
+- `git diff --check` passed.
+- Browser/deployed acceptance and migration execution remain unverified.

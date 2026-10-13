@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+import { FormFieldRulesDialog } from "./FormFieldRulesDialog";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import type {
   FormDisplayMode,
@@ -72,28 +74,33 @@ export function FormEditorBody({
   sections: FormSection[];
   sectionToRemove?: FormSection;
 }) {
+  const [ruleField, setRuleField] = useState<FormField>();
   const sectionFieldCount = fields.filter(
     (item) => item.sectionId === sectionToRemove?.id,
   ).length;
-  const nextFieldOrder = fields.filter(
-    (item) => item.sectionId === fieldSectionId,
-  ).length + 1;
+  const nextFieldOrder =
+    fields.filter((item) => item.sectionId === fieldSectionId).length + 1;
   const fieldSection = sections.find((item) => item.id === fieldSectionId);
   const sectionOrders = new Map(
-    sections.flatMap((item) => item.id ? [[item.id, item.order] as const] : []),
+    sections.flatMap((item) =>
+      item.id ? [[item.id, item.order] as const] : [],
+    ),
   );
   const targetSectionOrder = section?.order ?? sections.length + 1;
-  const sectionVisibilityFields = fields.filter((item) => (
-    (sectionOrders.get(item.sectionId) ?? Infinity) < targetSectionOrder
-  ));
+  const sectionVisibilityFields = fields.filter(
+    (item) =>
+      (sectionOrders.get(item.sectionId) ?? Infinity) < targetSectionOrder,
+  );
   const targetFieldOrder = field?.order ?? nextFieldOrder;
-  const targetFieldSectionOrder = sectionOrders.get(fieldSectionId ?? "")
-    ?? Infinity;
+  const targetFieldSectionOrder =
+    sectionOrders.get(fieldSectionId ?? "") ?? Infinity;
   const fieldVisibilityFields = fields.filter((item) => {
     const sourceSectionOrder = sectionOrders.get(item.sectionId) ?? Infinity;
-    return sourceSectionOrder < targetFieldSectionOrder
-      || sourceSectionOrder === targetFieldSectionOrder
-        && item.order < targetFieldOrder;
+    return (
+      sourceSectionOrder < targetFieldSectionOrder ||
+      (sourceSectionOrder === targetFieldSectionOrder &&
+        item.order < targetFieldOrder)
+    );
   });
   return (
     <>
@@ -111,10 +118,20 @@ export function FormEditorBody({
         onDeleteField={onDelete}
         onEdit={onEditSection}
         onEditField={onEdit}
+        onConfigureRules={setRuleField}
         onReorder={onReorderSections}
         onReorderFields={onReorderFields}
         sections={sections}
       />
+      {ruleField ? (
+        <FormFieldRulesDialog
+          field={ruleField}
+          fields={fields}
+          sections={sections}
+          onSave={onSave}
+          onClose={() => setRuleField(undefined)}
+        />
+      ) : null}
       <FormSectionDialog
         fields={sectionVisibilityFields}
         isOpen={sectionDialogOpen}

@@ -9,6 +9,11 @@ import {
   formStatuses,
   formPurposes,
 } from "@/modules/forms/FormTypes";
+import {
+  documentFieldSettingsShape,
+  validateDocumentFieldSettings,
+} from "./FormDocumentSchemas";
+import { formFieldRulesSchema } from "./FormFieldRuleSchemas";
 import { repeatableGroupConfigurationSchema } from "./RepeatableGroupSchemas";
 
 export const formEditorVersionQuerySchema = z.object({
@@ -52,18 +57,12 @@ const formFieldSchemaBase = z.object({
   maximum: optionalNumber,
   minLength: optionalLength,
   maxLength: optionalLength,
-  maxPages: z.preprocess(
-    (value) => value === "" || value === null ? undefined : value,
-    z.coerce.number().int().positive().optional(),
-  ),
-  maximumFileSizeMb: z.preprocess(
-    (value) => value === "" || value === null ? undefined : value,
-    z.coerce.number().int().min(1).max(10).optional(),
-  ),
+  ...documentFieldSettingsShape,
   order: z.coerce.number().int().positive(),
   options: z.array(formOptionSchema).max(100).optional(),
   repeatable: repeatableGroupConfigurationSchema.nullable().optional(),
   visibilityCondition: conditionGroupSchema.nullable().optional(),
+  rules: formFieldRulesSchema.nullish(),
 });
 
 export const formFieldSchema = formFieldSchemaBase.superRefine(
@@ -75,16 +74,7 @@ export const formFieldSchema = formFieldSchemaBase.superRefine(
         path: ["label"],
       });
     }
-    if (
-      field.type !== "DOCUMENT" &&
-      (field.maxPages !== undefined || field.maximumFileSizeMb !== undefined)
-    ) {
-      context.addIssue({
-        code: "custom",
-        message: "Only Document fields may have page or file-size limits.",
-        path: ["maxPages"],
-      });
-    }
+    validateDocumentFieldSettings(field, context);
     const supportsOptions = ["SINGLE_SELECT", "MULTI_SELECT"].includes(
       field.type,
     );

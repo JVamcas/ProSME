@@ -3,7 +3,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect } from "react";
 import {
-  Controller,
   FormProvider,
   useFieldArray,
   useForm,
@@ -15,8 +14,11 @@ import type { z } from "zod";
 import { GeneralButton } from "@/components/ui/button";
 import { DraggableDialog } from "@/shared/ui/DraggableDialog";
 import { CheckboxField } from "@/components/ui/form-field";
-import { FormInput, FormSelect, FormTextarea } from "@/components/ui/form-fields";
-import type { ConditionGroup } from "@/modules/conditions/domain/ConditionGroup";
+import {
+  FormInput,
+  FormSelect,
+  FormTextarea,
+} from "@/components/ui/form-fields";
 import { formFieldSchema } from "@/modules/forms/api/FormSchemas";
 import { uniqueStableKeyFromLabel } from "@/modules/workflows/domain/WorkflowStableKey";
 import {
@@ -25,7 +27,7 @@ import {
   type FormFieldType,
   type FormSection,
 } from "@/modules/forms/FormTypes";
-import { FormVisibilityConditionEditor } from "./FormVisibilityConditionEditor";
+import { FormFieldRulePanel } from "./FormFieldRulePanel";
 import { DocumentFieldLimits } from "./DocumentFieldLimits";
 import { RepeatableGroupConfigurationEditor } from "./RepeatableGroupConfigurationEditor";
 
@@ -82,10 +84,7 @@ function SelectOptions({
         Select options
       </legend>
       {fields.map((option, index) => (
-        <div
-          className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]"
-          key={option.id}
-        >
+        <div className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]" key={option.id}>
           <FormInput
             label="Option key"
             name={`options.${index}.key`}
@@ -145,18 +144,21 @@ function FormFieldDialogContent({
     z.output<typeof formFieldSchema>
   >({
     defaultValues: field ?? defaultField(sectionId, nextOrder),
-    resolver: (values, context, options) => resolveField(
-      {
-        ...values,
-        key: field?.key ?? uniqueStableKeyFromLabel(
-          values.label,
-          fields.map((item) => item.key),
-          "FIELD",
-        ),
-      },
-      context,
-      options,
-    ),
+    resolver: (values, context, options) =>
+      resolveField(
+        {
+          ...values,
+          key:
+            field?.key ??
+            uniqueStableKeyFromLabel(
+              values.label,
+              fields.map((item) => item.key),
+              "FIELD",
+            ),
+        },
+        context,
+        options,
+      ),
   });
   const type = useWatch({ control: form.control, name: "type" });
   const options = useFieldArray({ control: form.control, name: "options" });
@@ -174,6 +176,7 @@ function FormFieldDialogContent({
       form.setValue("maxLength", undefined);
     }
     if (type !== "DOCUMENT") {
+      form.setValue("acceptedExtensions", undefined);
       form.setValue("maxPages", undefined);
       form.setValue("maximumFileSizeMb", undefined);
     }
@@ -182,16 +185,18 @@ function FormFieldDialogContent({
     } else if (!form.getValues("repeatable")) {
       form.setValue("repeatable", {
         addLabel: "Add row",
-        fields: [{
-          columnSpan: 1,
-          helpText: "",
-          key: "FIELD_1",
-          label: "Field 1",
-          options: [],
-          order: 1,
-          required: true,
-          type: "TEXT",
-        }],
+        fields: [
+          {
+            columnSpan: 1,
+            helpText: "",
+            key: "FIELD_1",
+            label: "Field 1",
+            options: [],
+            order: 1,
+            required: true,
+            type: "TEXT",
+          },
+        ],
         itemLabel: "Row",
         maximumItems: 20,
         minimumItems: 1,
@@ -245,15 +250,11 @@ function FormFieldDialogContent({
           />
           <FormInput label="Help text" name="helpText" />
           <CheckboxField label="Required" name="required" />
-          <Controller
-            control={form.control}
-            name="visibilityCondition"
-            render={({ field: condition }) => (
-              <FormVisibilityConditionEditor
-                fields={visibilityFields.filter((item) => item.id !== field?.id)}
-                onChange={condition.onChange}
-                value={condition.value as ConditionGroup | null | undefined}
-              />
+          <FormFieldRulePanel
+            field={field}
+            fields={fields}
+            precedingFields={visibilityFields.filter(
+              (item) => item.id !== field?.id,
             )}
           />
           {["NUMBER", "CURRENCY", "PERCENTAGE"].includes(type) ? (
@@ -302,10 +303,7 @@ function FormFieldDialogContent({
             <RepeatableGroupConfigurationEditor />
           ) : null}
           <div className="flex justify-end">
-            <GeneralButton
-              disabled={form.formState.isSubmitting}
-              type="submit"
-            >
+            <GeneralButton disabled={form.formState.isSubmitting} type="submit">
               {form.formState.isSubmitting ? "Saving…" : "Save field"}
             </GeneralButton>
           </div>

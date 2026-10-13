@@ -16,7 +16,7 @@ import {
 import type { ConditionGroup } from "@/modules/conditions/domain/ConditionGroup";
 import { formSectionSchema } from "@/modules/forms/api/FormSchemas";
 import type { FormField, FormSection } from "@/modules/forms/FormTypes";
-import { FormVisibilityConditionEditor } from "./FormVisibilityConditionEditor";
+import { FormConditionRuleEditor } from "./FormConditionRuleEditor";
 
 export function FormSectionDialog({
   isOpen,
@@ -112,7 +112,7 @@ function FormSectionDialogContent({
             control={form.control}
             name="visibilityCondition"
             render={({ field }) => (
-              <FormVisibilityConditionEditor
+              <FormConditionRuleEditor
                 fields={fields}
                 onChange={field.onChange}
                 value={field.value as ConditionGroup | null | undefined}
@@ -120,10 +120,7 @@ function FormSectionDialogContent({
             )}
           />
           <div className="flex justify-end">
-            <GeneralButton
-              disabled={form.formState.isSubmitting}
-              type="submit"
-            >
+            <GeneralButton disabled={form.formState.isSubmitting} type="submit">
               {form.formState.isSubmitting ? "Saving…" : "Save section"}
             </GeneralButton>
           </div>

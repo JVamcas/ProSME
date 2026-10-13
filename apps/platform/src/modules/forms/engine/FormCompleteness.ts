@@ -5,6 +5,8 @@ import type {
   FormRuntimeSchema,
   FormSection,
 } from "@/modules/forms/FormTypes";
+import { activeFormDefinition } from "./FormVisibility";
+import { formFieldRuleErrors } from "./FormFieldBehaviour";
 import { buildFormValueSchema } from "./FormDefinitionParser";
 
 export type FormSectionCompleteness = {
@@ -26,10 +28,10 @@ export type FormCompleteness = {
 
 function hasResponseValue(value: unknown) {
   return (
-    value !== undefined
-    && value !== null
-    && value !== ""
-    && (!Array.isArray(value) || value.length > 0)
+    value !== undefined &&
+    value !== null &&
+    value !== "" &&
+    (!Array.isArray(value) || value.length > 0)
   );
 }
 
@@ -41,11 +43,13 @@ function requiredFieldIsComplete(
   if (!hasResponseValue(value)) return false;
 
   try {
-    const result = validator.rawValidation(
-      buildFormValueSchema([field]),
-      { [field.key]: value },
+    const result = validator.rawValidation(buildFormValueSchema([field]), {
+      [field.key]: value,
+    });
+    return (
+      !result.errors?.length &&
+      !formFieldRuleErrors([field], values, "SUBMIT")[field.key]
     );
-    return !result.errors?.length;
   } catch {
     return false;
   }
@@ -56,12 +60,12 @@ function calculateSectionCompleteness(
   fields: readonly FormField[],
   values: Readonly<Record<string, unknown>>,
 ): FormSectionCompleteness {
-  const requiredFields = fields.filter((field) => (
-    field.sectionId === section.id && field.required
-  ));
-  const completedRequiredFieldCount = requiredFields.filter((field) => (
-    requiredFieldIsComplete(field, values)
-  )).length;
+  const requiredFields = fields.filter(
+    (field) => field.sectionId === section.id && field.required,
+  );
+  const completedRequiredFieldCount = requiredFields.filter((field) =>
+    requiredFieldIsComplete(field, values),
+  ).length;
 
   return {
     sectionId: section.id,
@@ -77,7 +81,8 @@ export function calculateFormCompleteness(
   definition: FormRuntimeSchema,
   values: Readonly<Record<string, unknown>>,
 ): FormCompleteness {
-  const sections = [...definition.sections]
+  const active = activeFormDefinition(definition, values);
+  const sections = [...active.sections]
     .sort((left, right) => left.order - right.order)
     .map((section) => {
       if (!section.id) {
@@ -85,7 +90,7 @@ export function calculateFormCompleteness(
       }
       return calculateSectionCompleteness(
         { ...section, id: section.id },
-        definition.fields,
+        active.fields,
         values,
       );
     });
@@ -97,9 +102,10 @@ export function calculateFormCompleteness(
     (total, section) => total + section.completedRequiredFieldCount,
     0,
   );
-  const percentComplete = requiredFieldCount === 0
-    ? 100
-    : Math.round(completedRequiredFieldCount / requiredFieldCount * 100);
+  const percentComplete =
+    requiredFieldCount === 0
+      ? 100
+      : Math.round((completedRequiredFieldCount / requiredFieldCount) * 100);
 
   return {
     requiredFieldCount,
