@@ -2,35 +2,24 @@ import type { AuthStrategy } from "payload";
 
 import { permissionCodes } from "@/auth/authorization/permissions";
 import { can } from "@/auth/authorization/policy";
+import { resolveUserFromHeaders } from "@/auth/authorization/current-user";
+import { ensureCmsPrincipal } from "@/payload/system/ensure-cms-principal";
 
 export const firebaseSessionStrategy: AuthStrategy = {
   name: "firebase-session",
   authenticate: async ({ headers, payload }) => {
-    const [{ verifyFirebaseSessionFromHeaders }, { findUserByFirebaseSubject }] = await Promise.all([
-      import("@/platform/auth/firebase/ServerFirebaseSession"),
-      import("@/db/repositories/UserRepository"),
-    ]);
-    const identity = await verifyFirebaseSessionFromHeaders(headers);
-    if (!identity) return { user: null };
+    const applicationUser = await resolveUserFromHeaders(headers);
+    if (!applicationUser || !can(applicationUser, permissionCodes.cmsAccess)) {
+      return { user: null };
+    }
 
-    const applicationUser = await findUserByFirebaseSubject(identity.uid);
-    if (!can(applicationUser, permissionCodes.cmsAccess)) return { user: null };
-
-    const principals = await payload.find({
-      collection: "cms-principals",
-      depth: 0,
-      limit: 1,
-      overrideAccess: true,
-      where: { applicationUserId: { equals: applicationUser!.id } },
-    });
-    const principal = principals.docs[0];
-    if (!principal || principal.status !== "active") return { user: null };
+    const principal = await ensureCmsPrincipal(payload, applicationUser);
 
     return {
       user: {
         ...principal,
         collection: "cms-principals",
-        capabilities: [...applicationUser!.capabilities],
+        capabilities: [...applicationUser.capabilities],
       },
     };
   },

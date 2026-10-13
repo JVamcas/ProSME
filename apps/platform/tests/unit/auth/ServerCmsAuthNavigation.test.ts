@@ -44,12 +44,12 @@ describe("CMS authentication navigation", () => {
   ])("denies an application user without active CMS access: %j", async (user) => {
     mocks.currentUser.mockResolvedValue(user);
 
-    expect(await getCmsLoginDestination()).toBe("/unauthorized");
+    expect(await getCmsLoginDestination()).toBe("/cms/unauthorized");
     expect(mocks.getPayload).not.toHaveBeenCalled();
   });
 
-  it("denies a platform user when Payload rejects a missing or disabled CMS principal", async () => {
-    expect(await getCmsLoginDestination()).toBe("/unauthorized");
+  it("keeps a rejected CMS principal inside the CMS access-denied route", async () => {
+    expect(await getCmsLoginDestination()).toBe("/cms/unauthorized");
     expect(mocks.auth).toHaveBeenCalledWith({
       headers: await mocks.headers.mock.results[0].value,
     });
@@ -58,7 +58,7 @@ describe("CMS authentication navigation", () => {
   it("denies a Payload user without the CMS access grant", async () => {
     mocks.auth.mockResolvedValue({ user: { capabilities: [] } });
 
-    expect(await getCmsLoginDestination()).toBe("/unauthorized");
+    expect(await getCmsLoginDestination()).toBe("/cms/unauthorized");
   });
 
   it("returns to CMS only when platform and Payload access both succeed", async () => {

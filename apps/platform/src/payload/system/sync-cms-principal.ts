@@ -1,6 +1,7 @@
 import { getPayload } from "payload";
 
 import config from "@/payload.config";
+import { findCmsPrincipal } from "./ensure-cms-principal";
 
 type PrincipalInput = {
   applicationUserId: string;
@@ -10,18 +11,16 @@ type PrincipalInput = {
 
 export async function syncCmsPrincipal(input: PrincipalInput) {
   const payload = await getPayload({ config });
-  const existing = await payload.find({
-    collection: "cms-principals",
-    depth: 0,
-    limit: 1,
-    overrideAccess: true,
-    where: { applicationUserId: { equals: input.applicationUserId } },
-  });
-  const data = { displayName: input.displayName, email: input.email, status: "active" as const };
-  if (existing.docs[0]) {
+  const existing = await findCmsPrincipal(payload, input.applicationUserId);
+  const data = {
+    displayName: input.displayName,
+    email: input.email,
+    status: "active" as const,
+  };
+  if (existing) {
     await payload.update({
       collection: "cms-principals",
-      id: existing.docs[0].id,
+      id: existing.id,
       overrideAccess: true,
       data,
     });

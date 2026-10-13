@@ -25,8 +25,12 @@ vi.mock("@/modules/content/ServerCmsPageEditorService", () => ({
 vi.mock("@/platform/auth/ServerCmsAuthNavigation", () => ({
   getCmsLoginDestination: routing.loginDestination,
 }));
+vi.mock("@/modules/content/ui/admin/CmsAccessDenied", () => ({
+  CmsAccessDenied: () => "CMS access denied",
+}));
 
 import PayloadAdminPage from "@/app/(payload)/cms/[[...segments]]/page";
+import { CmsAccessDenied } from "@/modules/content/ui/admin/CmsAccessDenied";
 
 beforeEach(() => vi.clearAllMocks());
 
@@ -73,7 +77,7 @@ describe("CMS admin routing", () => {
     );
   });
 
-  it.each(["/sign-in?returnTo=%2Fcms", "/unauthorized"])(
+  it.each(["/sign-in?returnTo=%2Fcms", "/cms/unauthorized"])(
     "routes a rejected CMS login to %s without rendering Payload",
     async (destination) => {
       routing.loginDestination.mockResolvedValueOnce(destination);
@@ -84,10 +88,10 @@ describe("CMS admin routing", () => {
     },
   );
 
-  it("routes Payload access denial to the platform access-denied page", async () => {
-    await expect(PayloadAdminPage(pageProps(["unauthorized"]))).rejects.toThrow(
-      "Redirect to /unauthorized",
-    );
+  it("renders access denial inside CMS without redirecting to the public site", async () => {
+    const result = await PayloadAdminPage(pageProps(["unauthorized"]));
+    expect(result.type).toBe(CmsAccessDenied);
+    expect(routing.redirect).not.toHaveBeenCalled();
     expect(routing.rootPage).not.toHaveBeenCalled();
     expect(routing.loginDestination).not.toHaveBeenCalled();
   });

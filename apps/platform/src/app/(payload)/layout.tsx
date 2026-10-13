@@ -2,7 +2,6 @@ import config from "@payload-config";
 import { AntdRegistry } from "@ant-design/nextjs-registry";
 import "@payloadcms/next/css";
 import { RootLayout, handleServerFunctions } from "@payloadcms/next/layouts";
-import { redirect } from "next/navigation";
 import type { ServerFunctionClient } from "payload";
 import React from "react";
 
@@ -13,6 +12,7 @@ import { cmsAdminClassName } from "@/modules/content/ui/admin/CmsAdminTheme";
 import cmsWorkspaceStyles from "@/modules/content/ui/admin/CmsWorkspaceLayout.module.css";
 import { WorkspaceFrame } from "@/shared/ui/navigation/WorkspaceLayout";
 import { CmsSessionActivity } from "@/platform/auth/ui/SessionActivity";
+import { CmsAccessDenied } from "@/modules/content/ui/admin/CmsAccessDenied";
 import { importMap } from "./cms/importMap";
 import "./tailwind.css";
 
@@ -26,9 +26,9 @@ const serverFunction: ServerFunctionClient = async (args) => {
 export default async function PayloadLayout({ children }: Props) {
   const user = await getAuthenticatedPageUser();
 
-  if (!can(user, permissionCodes.cmsAccess)) {
-    redirect("/unauthorized");
-  }
+  const content = can(user, permissionCodes.cmsAccess)
+    ? children
+    : <CmsAccessDenied />;
 
   return (
     <RootLayout
@@ -40,7 +40,7 @@ export default async function PayloadLayout({ children }: Props) {
       <AntdRegistry>
         <WorkspaceFrame className={cmsWorkspaceStyles.frame}>
           <CmsSessionActivity />
-          {children}
+          {content}
         </WorkspaceFrame>
       </AntdRegistry>
     </RootLayout>
