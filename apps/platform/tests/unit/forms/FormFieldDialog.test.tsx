@@ -54,6 +54,34 @@ async function saveField(field?: FormField, type?: "CHECKBOX") {
     ]) {
       expect(document.body.textContent).not.toContain(title);
     }
+    if (field?.type === "DOCUMENT") {
+      const uploader = document.querySelector<HTMLSelectElement>(
+        '[name="uploadedBy"]',
+      )!;
+      expect(
+        Array.from(uploader.options)
+          .map((option) => option.textContent)
+          .filter((label) => label !== "Select an option"),
+      ).toEqual(
+        expect.arrayContaining(["Applicant", "Any", "Assigned reviewer"]),
+      );
+      expect(
+        Array.from(uploader.options).some(
+          (option) => option.textContent === "Staff",
+        ),
+      ).toBe(false);
+      expect(document.body.textContent).not.toContain(
+        "Workflow document evidence",
+      );
+      expect(document.body.textContent).not.toContain(
+        "Use workflow document evidence",
+      );
+      expect(document.body.textContent).not.toContain("Verified by");
+      expect(document.querySelector('[name="maxPages"]')).not.toBeNull();
+      expect(
+        document.querySelector('[name="maximumFileSizeMb"]'),
+      ).not.toBeNull();
+    }
     if (type) {
       await act(async () => {
         const select =
@@ -109,6 +137,7 @@ describe("automatic form field keys", () => {
     });
     expect(field.acceptedExtensions).toEqual([".pdf"]);
     expect(field.maxPages).toBe(12);
+    expect(field.uploadedBy).toBe("APPLICANT");
     expect(field.maximumFileSizeMb).toBe(4);
   });
   it("can configure a checkbox through the field type selector", async () => {
@@ -156,4 +185,25 @@ it("preserves rules and visibility when saving field details", async () => {
   const saved = await saveField(original);
   expect(saved.rules).toEqual(original.rules);
   expect(saved.visibilityCondition).toEqual(original.visibilityCondition);
+});
+
+it("edits legacy documents with the standard limits and keeps the document link", async () => {
+  const saved = await saveField({
+    ...existing,
+    type: "DOCUMENT",
+    workflowDocument: {
+      stableKey: "LINKED_EVIDENCE",
+      acceptedFileTypes: ["PDF"],
+      maximumSizeMb: 6,
+      expiryDays: null,
+      requestOnStageActivation: false,
+      uploader: "STAFF",
+      verifier: "STAFF",
+      templateReference: "",
+    },
+  });
+  expect(saved.uploadedBy).toBe("ANY");
+  expect(saved.acceptedExtensions).toEqual([".pdf"]);
+  expect(saved.maximumFileSizeMb).toBe(6);
+  expect(saved.workflowDocument?.stableKey).toBe("LINKED_EVIDENCE");
 });

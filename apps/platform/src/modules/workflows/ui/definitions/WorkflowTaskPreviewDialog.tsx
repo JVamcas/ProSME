@@ -1,12 +1,15 @@
 "use client";
 
-import { taskSectionOrder, type WorkflowTaskSectionId } from "../../domain/definitions/WorkflowTaskSectionOrder";
+import { useConfiguredFormPreview } from "@/modules/forms/ui/useTaskFormConfiguration";
+import { taskUsesFormSections } from "../../domain/definitions/WorkflowTaskFormWork";
+
+import {
+  taskSectionOrder,
+  type WorkflowTaskSectionId,
+} from "../../domain/definitions/WorkflowTaskSectionOrder";
 
 import { DraggableDialog } from "@/shared/ui/DraggableDialog";
-import {
-  usePublishedFormRuntime,
-  usePublishedForms,
-} from "@/modules/forms/FormHooks";
+import { usePublishedForms } from "@/modules/forms/FormHooks";
 import type { PublishedFormOption } from "@/modules/forms/FormTypes";
 import { WorkflowTaskFormPreview } from "./WorkflowTaskFormPreview";
 import type { WorkflowTaskAction } from "@/modules/work-queue/TaskTypes";
@@ -31,6 +34,7 @@ import {
 
 export function WorkflowTaskPreviewDialog({
   onSectionOrderChange,
+  onFormSectionOrderChange,
   orderingPending,
   definitionId,
   onClose,
@@ -38,6 +42,7 @@ export function WorkflowTaskPreviewDialog({
   task,
   versionId,
 }: {
+  onFormSectionOrderChange?: (ids: string[]) => void;
   onSectionOrderChange?: (ids: WorkflowTaskSectionId[]) => void;
   orderingPending?: boolean;
   definitionId: string;
@@ -50,7 +55,7 @@ export function WorkflowTaskPreviewDialog({
   const formVersionId = inheritsEligibilityForm
     ? null
     : (task.formBinding?.formVersionId ?? null);
-  const form = usePublishedFormRuntime(formVersionId);
+  const form = useConfiguredFormPreview(formVersionId);
   const publishedForms = usePublishedForms();
   const actions = workflowTaskPreviewActions(stage, task);
   const hasForm = inheritsEligibilityForm || Boolean(task.formBinding);
@@ -60,7 +65,9 @@ export function WorkflowTaskPreviewDialog({
   ).length;
   const hasChecklist = taskChecklistItems.length > 0;
   const taskDocuments = stage.documentRequirements.filter(
-    (requirement) => requirement.taskStableKey === task.stableKey,
+    (requirement) =>
+      requirement.taskStableKey === task.stableKey &&
+      !taskUsesFormSections(task.config),
   );
   const hasDocuments = taskDocuments.length > 0;
   const taskScoring =
@@ -146,13 +153,19 @@ export function WorkflowTaskPreviewDialog({
           form={
             hasForm
               ? {
+                  hideWrapper: !inheritsEligibilityForm,
                   content: inheritsEligibilityForm ? (
                     <WorkflowTaskEligibilityPreview
                       definitionId={definitionId}
                       versionId={versionId}
                     />
                   ) : (
-                    <WorkflowTaskFormPreview form={form} />
+                    <WorkflowTaskFormPreview
+                      form={form}
+                      config={task.config}
+                      onOrderChange={onFormSectionOrderChange}
+                      orderingPending={orderingPending}
+                    />
                   ),
                   title:
                     inheritsEligibilityForm && !formVersionId

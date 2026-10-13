@@ -8,8 +8,31 @@ import type { ActionMenuItem } from "@/shared/ui/ActionMenu";
 import { WorkflowStageTaskTable } from "@/modules/workflows/ui/definitions/WorkflowStageTaskTable";
 import { referenceWorkflow } from "../../support/ReferenceWorkflowFixture";
 
+vi.mock("@/modules/forms/ui/useTaskFormConfiguration", () => ({
+  useTaskFormOptions: () => ({
+    data: [
+      {
+        definitionId: "form-definition",
+        versionId: "exact-version",
+        versionNumber: 3,
+        formName: "Screening form",
+        purpose: "APPLICATION_REVIEW",
+        status: "PUBLISHED",
+      },
+    ],
+    isPending: false,
+    isError: false,
+  }),
+}));
+
 vi.mock("@/shared/ui/ActionMenu", () => ({
-  ActionMenu: ({ label, items }: { label: string; items: ActionMenuItem[] }) => (
+  ActionMenu: ({
+    label,
+    items,
+  }: {
+    label: string;
+    items: ActionMenuItem[];
+  }) => (
     <div aria-label={label}>
       {items.map((item) => (
         <button
@@ -26,9 +49,11 @@ vi.mock("@/shared/ui/ActionMenu", () => ({
   ),
 }));
 
-(globalThis as typeof globalThis & {
-  IS_REACT_ACT_ENVIRONMENT: boolean;
-}).IS_REACT_ACT_ENVIRONMENT = true;
+(
+  globalThis as typeof globalThis & {
+    IS_REACT_ACT_ENVIRONMENT: boolean;
+  }
+).IS_REACT_ACT_ENVIRONMENT = true;
 
 describe("workflow stage task menu", () => {
   it.each([true, false])(
@@ -36,6 +61,7 @@ describe("workflow stage task menu", () => {
     async (canEdit) => {
       const stage = structuredClone(referenceWorkflow.stages[0]);
       const task = stage.tasks[0];
+      task.formBinding = { formVersionId: "exact-version", contextFields: [] };
       const onPreview = vi.fn();
       const onEdit = vi.fn();
       const onDelete = vi.fn();
@@ -56,8 +82,20 @@ describe("workflow stage task menu", () => {
           );
         });
 
+        const headers = [...container.querySelectorAll("thead th")].map(
+          (cell) => cell.textContent,
+        );
+        expect(headers.indexOf("Attached form")).toBe(
+          headers.indexOf("Type") + 1,
+        );
+        const link = container.querySelector(
+          'a[href="/admin/settings/forms/form-definition?versionId=exact-version"]',
+        );
+        expect(link?.textContent).toBe("Screening form · Version 3");
         const menu = container.querySelector("tbody [aria-label]");
-        expect(menu?.getAttribute("aria-label")).toBe(`Actions for ${task.name}`);
+        expect(menu?.getAttribute("aria-label")).toBe(
+          `Actions for ${task.name}`,
+        );
         const buttons = Array.from(menu!.querySelectorAll("button"));
         expect(buttons.map((button) => button.textContent)).toEqual([
           "Preview",

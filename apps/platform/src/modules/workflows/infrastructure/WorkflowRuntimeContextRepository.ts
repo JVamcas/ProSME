@@ -49,6 +49,7 @@ type RuntimeContextRow = {
   taskAssignedUserId: string | null;
   taskCoiCleared: boolean;
   taskDefinitionId: string;
+  formSectionOrder: string[] | null;
   taskInstanceId: string;
   taskKey: string;
   taskName: string;
@@ -125,6 +126,7 @@ function toRuntimeContextSource(row: RuntimeContextRow) {
       status: row.stageStatus,
     },
     task: {
+      formSectionOrder: row.formSectionOrder ?? undefined,
       assignedUserId: row.taskAssignedUserId,
       coiCleared: row.taskCoiCleared,
       definitionId: row.taskDefinitionId,
@@ -194,6 +196,7 @@ export async function readWorkflowTaskRuntimeContext(
       task_definition.code AS "taskKey",
       task_definition.name AS "taskName",
       task_definition.permissions,
+      task_definition.config -> 'formSectionOrder' AS "formSectionOrder",
       task.form_version_id AS "formVersionId",
       CASE WHEN inherited_form.enabled THEN '[]'::jsonb
         ELSE binding.context_fields END AS "contextFields",

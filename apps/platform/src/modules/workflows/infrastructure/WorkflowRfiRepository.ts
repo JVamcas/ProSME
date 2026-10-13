@@ -148,7 +148,7 @@ async function assertRequestedDocuments(
           workflowStageDocumentRequirements.taskDefinitionId,
           taskDefinitionId,
         ),
-        eq(workflowStageDocumentRequirements.uploader, "APPLICANT"),
+        inArray(workflowStageDocumentRequirements.uploader, ["APPLICANT", "ANY"]),
         sql`NOT EXISTS (
         SELECT 1 FROM app_workflow_document_evidence_versions evidence
         WHERE evidence.application_id = ${request.applicationId}::uuid
@@ -331,7 +331,7 @@ export async function createStageActivationWorkflowRfi(
     ) action ON true
     WHERE requirement.stage_id = ${input.stageDefinitionId}::uuid
       AND requirement.request_on_stage_activation = true
-      AND requirement.uploader = 'APPLICANT'
+      AND requirement.uploader IN ('APPLICANT', 'ANY')
       AND NOT EXISTS (
         SELECT 1 FROM app_workflow_document_evidence_versions evidence
         WHERE evidence.application_id = workflow.application_id

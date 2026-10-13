@@ -7,13 +7,11 @@ import { FormProvider, useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 
+import { useWorkflowReviewDocumentUpload } from "./useWorkflowReviewDocumentUpload";
 import { WorkflowReviewSaveStatus } from "./WorkflowReviewSaveStatus";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { usePendingNavigationGuard } from "@/shared/ui/usePendingNavigationGuard";
-import {
-  useSaveTaskReviewDraft,
-  useUploadWorkflowTaskDocument,
-} from "@/modules/work-queue/ui/useWorkQueue";
+import { useSaveTaskReviewDraft } from "@/modules/work-queue/ui/useWorkQueue";
 import type {
   SaveTaskReviewDraftInput,
   TaskDetail,
@@ -108,9 +106,11 @@ function reviewIsReady(task: TaskDetail, values: ChecklistFormValues) {
       const answer = values.items.find((value) => value.code === item.code);
       return Boolean(answer && (!item.required || answer.accepted));
     }) &&
-    task.documentRequirements.every(
-      (requirement) => !requirement.mandatory || Boolean(requirement.document),
-    ) &&
+    (task.formOwnsWork ||
+      task.documentRequirements.every(
+        (requirement) =>
+          !requirement.mandatory || Boolean(requirement.document),
+      )) &&
     (task.scoring?.criteria ?? []).every((criterion) => {
       const answer = values.scores.find(
         (value) => value.criterion === criterion.stableKey,
@@ -199,11 +199,11 @@ export function ChecklistTaskForm({
   readOnly = false,
 }: ChecklistTaskFormProps) {
   const save = useSaveTaskReviewDraft(task.taskInstanceId);
-  const upload = useUploadWorkflowTaskDocument(task.taskInstanceId);
   const [{ initialPatch, initialValues }] = useState(() => {
     const values = defaultValues(task);
     return {
-      initialPatch: readOnly ? {} : initialAutosavePatch(task, values),
+      initialPatch:
+        readOnly || task.formOwnsWork ? {} : initialAutosavePatch(task, values),
       initialValues: values,
     };
   });
@@ -218,6 +218,18 @@ export function ChecklistTaskForm({
   const lastAttemptedRevision = useRef(0);
   const pendingPatch = useRef<SaveTaskReviewDraftInput>(initialPatch);
   const values = useWatch({ control: form.control }) as ChecklistFormValues;
+  const documentUpload = useWorkflowReviewDocumentUpload(
+    task.taskInstanceId,
+    readOnly || Boolean(task.formOwnsWork),
+    values.documents,
+    (patch) => {
+      pendingPatch.current = mergeReviewDraftPatches(
+        pendingPatch.current,
+        patch,
+      );
+      setRevision((current) => current + 1);
+    },
+  );
   const serializedValues = JSON.stringify(values);
   const previousValues = useRef(serializedValues);
   const pending = revision !== savedRevision || save.isPending;
@@ -310,45 +322,11 @@ export function ChecklistTaskForm({
           disabled={!readOnly && task.taskStatus === "COMPLETED"}
           readOnly={readOnly}
           taskId={task.taskInstanceId}
-          documentUpload={readOnly ? undefined : {
-            error: upload.isError ? upload.error.message : undefined,
-            onFile: (requirementId, file) => {
-              upload.mutate(
-                { file, requirementId },
-                {
-                  onSuccess: (updatedTask) => {
-                    const requirement = updatedTask.documentRequirements.find(
-                      (item) => item.id === requirementId,
-                    );
-                    if (!requirement) return;
-                    const existing = values.documents.find(
-                      (item) => item.category === requirement.stableKey,
-                    );
-                    const patch = {
-                      documents: [
-                        existing ?? {
-                          category: requirement.stableKey,
-                          comment: "",
-                          outcome: "" as const,
-                        },
-                      ],
-                    };
-                    pendingPatch.current = mergeReviewDraftPatches(
-                      pendingPatch.current,
-                      patch,
-                    );
-                    setRevision((current) => current + 1);
-                  },
-                },
-              );
-            },
-            pendingRequirementId: upload.isPending
-              ? upload.variables?.requirementId
-              : undefined,
-            taskId: task.taskInstanceId,
-          }}
+          documentUpload={documentUpload}
           displayMode={task.displayMode}
-          documentRequirements={task.documentRequirements}
+          documentRequirements={
+            task.formOwnsWork ? [] : task.documentRequirements
+          }
           finalActions={finalActions}
           onFinalStepChange={onFinalStepChange}
           form={

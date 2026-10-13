@@ -1,14 +1,19 @@
 "use client";
 
 import { GeneralButton } from "@/components/ui/button";
+import { SortableStepProgress } from "@/shared/ui/SortableStepProgress";
 import { StepProgress } from "@/shared/ui/StepProgress";
 
 export function FormStepProgress({
+  onOrderChange,
+  orderingPending,
   completedStepIds,
   currentIndex,
   onStepChange,
   steps,
 }: {
+  onOrderChange?: (ids: string[]) => void;
+  orderingPending?: boolean;
   completedStepIds: readonly string[];
   currentIndex: number;
   onStepChange: (stepId: string) => void;
@@ -22,20 +27,32 @@ export function FormStepProgress({
       <p className="text-sm font-semibold text-brand-navy">
         Step {currentIndex + 1} of {steps.length}: {currentStep.title}
       </p>
-      <StepProgress
-        ariaLabel="Application form steps"
-        completedStepIds={completedStepIds}
-        currentStepId={currentStep.id}
-        hideLabelsOnMobile
-        onStepChange={onStepChange}
-        steps={steps.map((step) => ({
-          disabled:
-            step.id !== currentStep.id
-            && !completedStepIds.includes(step.id),
-          id: step.id,
-          label: step.title,
-        }))}
-      />
+      {onOrderChange ? (
+        <SortableStepProgress
+          ariaLabel="Application form steps"
+          currentStepId={currentStep.id}
+          completedStepIds={completedStepIds}
+          disabled={orderingPending}
+          onStepChange={onStepChange}
+          onOrderChange={onOrderChange}
+          steps={steps.map((step) => ({ id: step.id, label: step.title }))}
+        />
+      ) : (
+        <StepProgress
+          ariaLabel="Application form steps"
+          completedStepIds={completedStepIds}
+          currentStepId={currentStep.id}
+          hideLabelsOnMobile
+          onStepChange={onStepChange}
+          steps={steps.map((step) => ({
+            disabled:
+              step.id !== currentStep.id
+              && !completedStepIds.includes(step.id),
+            id: step.id,
+            label: step.title,
+          }))}
+        />
+      )}
     </nav>
   );
 }

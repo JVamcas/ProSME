@@ -1,4 +1,5 @@
 import "server-only";
+import { calculateFormScores } from "../engine/FormScoring";
 
 import { RequestValidationError } from "@/lib/resource-errors";
 import type { FormRuntimeSchema } from "../FormTypes";
@@ -19,10 +20,11 @@ export function validatedFormResponseValues(
   complete: boolean,
   previousValues: Record<string, unknown> = {},
 ) {
-  const values = sanitizeFormResponseValues(schema, captured);
+  let values = sanitizeFormResponseValues(schema, captured);
   const active = activeFormDefinition(schema, values);
   for (const field of active.fields) {
     if (
+      field.type !== "SCORING_AGGREGATE" &&
       !formFieldIsEditable(field, values) &&
       !Object.hasOwn(values, field.key) &&
       Object.hasOwn(previousValues, field.key)
@@ -30,8 +32,9 @@ export function validatedFormResponseValues(
       values[field.key] = previousValues[field.key];
     }
   }
+  values = calculateFormScores(active.fields, values);
   const changed = nonEditableFormFieldChanges(
-    active.fields,
+    active.fields.filter((field) => field.type !== "SCORING_AGGREGATE"),
     values,
     previousValues,
   );

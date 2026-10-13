@@ -25,6 +25,7 @@ const field: FormField = {
   acceptedExtensions: [".pdf"],
   maxPages: 12,
   maximumFileSizeMb: 4,
+  uploadedBy: "ANY",
 };
 
 describe("document limit repository projections", () => {
@@ -42,6 +43,8 @@ describe("document limit repository projections", () => {
     expect(insert[0]).toContain('"max_pages", "maximum_file_size_mb"');
     expect(insert[1]).toContain(12);
     expect(insert[1]).toContain(4);
+    expect(insert[0]).toContain('"uploaded_by"');
+    expect(insert[1]).toContain("ANY");
   });
 
   it.each(["runtime", "publication"])(
@@ -60,6 +63,7 @@ describe("document limit repository projections", () => {
                 [".pdf"],
                 12,
                 4,
+                "ANY",
                 null,
                 null,
                 null,
@@ -86,6 +90,7 @@ describe("document limit repository projections", () => {
           acceptedExtensions: [".pdf"],
           maxPages: 12,
           maximumFileSizeMb: 4,
+          uploadedBy: "ANY",
         },
       ]);
       const query = execute.mock.calls[0][0];

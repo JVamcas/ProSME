@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 
 import { CheckboxField } from "@/components/ui/form-field";
 import { FormInput, FormTextarea } from "@/components/ui/form-fields";
@@ -58,7 +58,7 @@ export type WorkflowTaskWorkSectionsProps = {
   documentRequirements: DocumentRequirementItem[];
   finalActions?: ReactNode;
   onFinalStepChange?: (final: boolean) => void;
-  form?: { content: ReactNode; title: string };
+  form?: { content: ReactNode; title: string; hideWrapper?: boolean };
   scoring: ScoringConfiguration | null;
   status: WorkflowTaskWorkStatus;
 };
@@ -314,7 +314,22 @@ export function WorkflowTaskWorkSections({
   ];
 
   const orderedSections = orderTaskSections(sections, sectionOrder);
+  const formOnly =
+    Boolean(form?.hideWrapper) &&
+    orderedSections.length === 1 &&
+    orderedSections[0].id === "form";
+  useEffect(() => {
+    if (formOnly) onFinalStepChange?.(true);
+  }, [formOnly, onFinalStepChange]);
   if (!orderedSections.length) return null;
+  if (formOnly) {
+    return (
+      <>
+        {orderedSections[0].content}
+        {finalActions}
+      </>
+    );
+  }
   return displayMode === "SECTIONS" ? (
     <SectionsLayout disabled={disabled} sections={orderedSections} />
   ) : (

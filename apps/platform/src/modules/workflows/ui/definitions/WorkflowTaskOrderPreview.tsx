@@ -33,7 +33,10 @@ export function WorkflowTaskOrderPreview({
   const task = stage?.tasks.find((item) => item.stableKey === taskKey);
   const editable = canEdit && currentEditor.version.status === "DRAFT";
 
-  async function saveOrder(sectionOrder: WorkflowTaskSectionId[]) {
+  async function saveOrder(order: {
+    sectionOrder?: WorkflowTaskSectionId[];
+    formSectionOrder?: string[];
+  }) {
     if (!editable || saving.current) return;
     saving.current = true;
     try {
@@ -49,7 +52,7 @@ export function WorkflowTaskOrderPreview({
                 task.config && typeof task.config === "object"
                   ? task.config as Record<string, unknown>
                   : {};
-              return { ...task, config: { ...config, sectionOrder } };
+              return { ...task, config: { ...config, ...order } };
             }),
           };
         }),
@@ -72,7 +75,12 @@ export function WorkflowTaskOrderPreview({
     <WorkflowTaskPreviewDialog
       definitionId={editor.definition.id}
       onClose={mutation.isPending ? () => undefined : onClose}
-      onSectionOrderChange={editable ? (ids) => void saveOrder(ids) : undefined}
+      onSectionOrderChange={
+        editable ? (ids) => void saveOrder({ sectionOrder: ids }) : undefined
+      }
+      onFormSectionOrderChange={
+        editable ? (ids) => void saveOrder({ formSectionOrder: ids }) : undefined
+      }
       orderingPending={mutation.isPending}
       stage={stage}
       task={task}

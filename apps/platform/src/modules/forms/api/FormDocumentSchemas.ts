@@ -1,10 +1,12 @@
 import { z } from "zod";
+import { documentUploaders } from "../domain/FormDocumentConfiguration";
 import { formDocumentExtensions } from "../domain/FormDocumentTypes";
 
 const optionalValue = (value: unknown) =>
   value === "" || value === null ? undefined : value;
 
 export const documentFieldSettingsShape = {
+  uploadedBy: z.enum(documentUploaders).optional(),
   maxPages: z.preprocess(
     optionalValue,
     z.coerce.number().int().positive().max(2_147_483_647).optional(),
@@ -31,7 +33,8 @@ export function validateDocumentFieldSettings(
 ) {
   if (
     field.type !== "DOCUMENT" &&
-    (field.maxPages !== undefined ||
+    (field.uploadedBy !== undefined ||
+      field.maxPages !== undefined ||
       field.maximumFileSizeMb !== undefined ||
       field.acceptedExtensions !== undefined)
   ) {

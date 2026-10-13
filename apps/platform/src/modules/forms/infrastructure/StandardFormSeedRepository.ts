@@ -107,6 +107,7 @@ export async function insertMissingStandardForms(
         acceptedExtensions: field.acceptedExtensions ?? null,
         maxPages: field.maxPages ?? null,
         maximumFileSizeMb: field.maximumFileSizeMb ?? null,
+        uploadedBy: field.uploadedBy ?? null,
         maxLength: field.maxLength ?? null,
         minimum: field.minimum ?? null,
         minLength: field.minLength ?? null,
@@ -117,6 +118,8 @@ export async function insertMissingStandardForms(
         type: field.type,
         visibilityCondition: field.visibilityCondition ?? null,
         rules: field.rules ?? null,
+        scoringAggregate: field.scoringAggregate ?? null,
+        workflowDocument: field.workflowDocument ?? null,
       })),
     );
 

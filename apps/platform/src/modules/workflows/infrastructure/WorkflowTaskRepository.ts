@@ -93,6 +93,8 @@ export async function readWorkflowTask(
           'expiryDays', document.expiry_days,
           'mandatory', document.mandatory,
           'maximumSizeMb', document.maximum_size_mb,
+          'maxPages', document.max_pages,
+          'acceptedExtensions', document.accepted_extensions,
           'name', document.name,
           'stableKey', document.stable_key,
           'requestStatus', CASE

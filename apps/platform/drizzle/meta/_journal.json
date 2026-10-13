@@ -1443,6 +1443,20 @@
       "when": 1801785600051,
       "tag": "0205_business_members_position",
       "breakpoints": true
+    },
+    {
+      "idx": 206,
+      "version": "7",
+      "when": 1801785600052,
+      "tag": "0206_form_scoring",
+      "breakpoints": true
+    },
+    {
+      "idx": 207,
+      "version": "7",
+      "when": 1801785600053,
+      "tag": "0207_document_upload_settings",
+      "breakpoints": true
     }
   ]
 }

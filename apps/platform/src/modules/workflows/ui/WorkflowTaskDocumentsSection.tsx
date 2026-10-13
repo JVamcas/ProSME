@@ -1,5 +1,7 @@
 "use client";
 
+import { workflowDocumentExtensions } from "@/modules/workflows/domain/definitions/WorkflowStageDocumentRequirement";
+
 import { CheckCircle2, Download, FileText } from "lucide-react";
 
 import { GeneralButtonAnchor } from "@/components/ui/button";
@@ -7,15 +9,9 @@ import { formatLocalDateTime24 } from "@/lib/dateUtils";
 import type { DocumentRequirementItem } from "@/modules/work-queue/TaskTypes";
 import { FileUploadButton } from "@/shared/ui/FileUploadButton";
 
-const acceptedExtensions = {
-  DOCX: [".docx"],
-  JPG: [".jpg", ".jpeg"],
-  PDF: [".pdf"],
-  PNG: [".png"],
-} as const;
-
 type Props = {
   disabled: boolean;
+  preview?: boolean;
   taskId?: string;
   requirements: DocumentRequirementItem[];
   upload?: {
@@ -28,6 +24,7 @@ type Props = {
 
 export function WorkflowTaskDocumentsSection({
   disabled,
+  preview = false,
   taskId,
   requirements,
   upload,
@@ -39,11 +36,14 @@ export function WorkflowTaskDocumentsSection({
         const downloadTaskId = taskId ?? upload?.taskId;
         const canUpload =
           requirement.uploader !== "APPLICANT" &&
-          Boolean(requirement.id && upload);
+          (preview || Boolean(requirement.id && upload));
         const StateIcon = document ? CheckCircle2 : FileText;
-        const accept = requirement.acceptedFileTypes
-          .flatMap((type) => acceptedExtensions[type])
-          .join(",");
+        const accept = (
+          requirement.acceptedExtensions ??
+          requirement.acceptedFileTypes.flatMap(
+            (type) => workflowDocumentExtensions[type],
+          )
+        ).join(",");
         return (
           <section
             className="flex flex-col gap-3 rounded-xl border border-brand-navy/10 p-4 sm:flex-row sm:items-center sm:justify-between"
@@ -67,6 +67,9 @@ export function WorkflowTaskDocumentsSection({
                 <p className="mt-1 text-xs text-brand-navy/55">
                   {requirement.acceptedFileTypes.join(", ")} · Maximum{" "}
                   {requirement.maximumSizeMb} MB
+                  {requirement.maxPages
+                    ? ` · Maximum ${requirement.maxPages} pages`
+                    : ""}
                 </p>
                 {requirement.uploader === "APPLICANT" && !document ? (
                   <p className="mt-1 text-xs font-medium text-brand-navy/70">
@@ -85,9 +88,7 @@ export function WorkflowTaskDocumentsSection({
               {document && downloadTaskId ? (
                 <GeneralButtonAnchor
                   download
-                  href={
-                    `/api/admin/tasks/${downloadTaskId}/documents/${document.versionId}/download`
-                  }
+                  href={`/api/admin/tasks/${downloadTaskId}/documents/${document.versionId}/download`}
                   size="sm"
                   variant="ghost"
                 >
@@ -95,13 +96,22 @@ export function WorkflowTaskDocumentsSection({
                   Download
                 </GeneralButtonAnchor>
               ) : null}
-              {canUpload && requirement.id ? (
+              {canUpload ? (
                 <FileUploadButton
                   accept={accept}
-                  disabled={disabled || Boolean(upload?.pendingRequirementId)}
+                  disabled={
+                    preview || disabled || Boolean(upload?.pendingRequirementId)
+                  }
                   label={document ? "Upload new version" : "Upload file"}
-                  onFile={(file) => upload?.onFile(requirement.id!, file)}
-                  uploading={upload?.pendingRequirementId === requirement.id}
+                  onFile={(file) => {
+                    if (!preview && requirement.id) {
+                      upload?.onFile(requirement.id, file);
+                    }
+                  }}
+                  uploading={Boolean(
+                    requirement.id &&
+                    upload?.pendingRequirementId === requirement.id,
+                  )}
                   variant="compact"
                 />
               ) : null}

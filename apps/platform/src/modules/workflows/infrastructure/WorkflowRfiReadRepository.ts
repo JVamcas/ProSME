@@ -198,6 +198,8 @@ function detailQuery(condition: SQL) {
         'name', requirement.name,
         'acceptedFileTypes', requirement.accepted_file_types,
         'maximumSizeMb', requirement.maximum_size_mb,
+          'maxPages', requirement.max_pages,
+          'acceptedExtensions', requirement.accepted_extensions,
         'evidence', CASE WHEN evidence.id IS NULL THEN NULL ELSE jsonb_build_object(
           'versionId', evidence.id,
           'versionNumber', evidence.version_number,

@@ -1,3 +1,5 @@
+import { getDatabase } from "@/db/client";
+import { withFormDocumentRequirements } from "./WorkflowFormDocumentRepository";
 import "server-only";
 
 import type { WorkflowGraphInput } from "../domain/definitions/WorkflowTypes";
@@ -106,7 +108,10 @@ export async function findWorkflowGraph(versionId: string) {
   attachWorkflowStageRequirements(graph.stages, requirements);
   return {
     definition: { ...rows.header.definition, ...rows.header.version.metadata },
-    graph,
+    graph:
+      rows.header.version.status === "DRAFT"
+        ? await withFormDocumentRequirements(getDatabase(), graph)
+        : graph,
     version: rows.header.version,
   };
 }

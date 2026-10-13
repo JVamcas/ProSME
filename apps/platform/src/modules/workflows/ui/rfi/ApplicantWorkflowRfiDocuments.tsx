@@ -1,5 +1,7 @@
 "use client";
 
+import { workflowDocumentExtensions } from "@/modules/workflows/domain/definitions/WorkflowStageDocumentRequirement";
+
 import { CheckCircle2, Download, FileText } from "lucide-react";
 import { useEffect } from "react";
 
@@ -8,13 +10,6 @@ import { FileUploadButton } from "@/shared/ui/FileUploadButton";
 import { toast } from "@/shared/ui/Toast";
 import type { WorkflowRfiDetail } from "../../domain/runtime/WorkflowRfiView";
 import { useUploadWorkflowRfiDocument } from "./useWorkflowRfi";
-
-const acceptedExtensions = {
-  DOCX: [".docx"],
-  JPG: [".jpg", ".jpeg"],
-  PDF: [".pdf"],
-  PNG: [".png"],
-} as const;
 
 export function ApplicantWorkflowRfiDocuments({
   applicationId,
@@ -35,9 +30,12 @@ export function ApplicantWorkflowRfiDocuments({
       <div className="mt-4 space-y-3">
         {detail.requestedDocuments.map((document) => {
           const StateIcon = document.evidence ? CheckCircle2 : FileText;
-          const accept = document.acceptedFileTypes
-            .flatMap((type) => acceptedExtensions[type])
-            .join(",");
+          const accept = (
+            document.acceptedExtensions ??
+            document.acceptedFileTypes.flatMap(
+              (type) => workflowDocumentExtensions[type],
+            )
+          ).join(",");
           const uploading =
             upload.isPending &&
             upload.variables?.requirementId === document.requirementId;
@@ -63,6 +61,9 @@ export function ApplicantWorkflowRfiDocuments({
                   <p className="mt-1 text-xs text-brand-navy/60">
                     {document.acceptedFileTypes.join(", ")} · maximum{" "}
                     {document.maximumSizeMb} MB
+                    {document.maxPages
+                      ? ` · maximum ${document.maxPages} pages`
+                      : ""}
                   </p>
                   <p
                     className={

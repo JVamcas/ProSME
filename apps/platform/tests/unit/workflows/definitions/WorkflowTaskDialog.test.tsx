@@ -4,8 +4,8 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@/modules/forms/FormHooks", () => ({
-  usePublishedForms: () => ({ data: [], isPending: false }),
+vi.mock("@/modules/forms/ui/useTaskFormConfiguration", () => ({
+  useTaskFormOptions: () => ({ data: [], isPending: false }),
 }));
 const { mutateAsync } = vi.hoisted(() => ({ mutateAsync: vi.fn() }));
 vi.mock("@/modules/workflows/WorkflowHooks", () => ({
@@ -48,7 +48,10 @@ async function mount() {
     },
     graph,
     validation: { valid: true, errors: [], warnings: [] },
-    assignmentOptions: { roles: [{ id: roleId, label: "Reviewer" }], users: [] },
+    assignmentOptions: {
+      roles: [{ id: roleId, label: "Reviewer" }],
+      users: [],
+    },
   };
   const close = vi.fn();
   const container = document.createElement("div");
@@ -75,9 +78,9 @@ async function mount() {
 }
 
 function button(label: string) {
-  const found = Array.from(document.querySelectorAll<HTMLButtonElement>(
-    '[role="dialog"] button',
-  )).find((item) => item.textContent === label);
+  const found = Array.from(
+    document.querySelectorAll<HTMLButtonElement>('[role="dialog"] button'),
+  ).find((item) => item.textContent === label);
   expect(found).toBeDefined();
   return found!;
 }
@@ -98,7 +101,9 @@ describe("workflow task save confirmation", () => {
       expect(saveButton).not.toBe(continueButton);
       expect(continueButton.isConnected).toBe(false);
       expect(saveButton.type).toBe("submit");
-      expect(document.querySelector('select[name="assignmentTarget"]')).not.toBeNull();
+      expect(
+        document.querySelector('select[name="assignmentTarget"]'),
+      ).not.toBeNull();
       expect(mutateAsync).not.toHaveBeenCalled();
       expect(view.close).not.toHaveBeenCalled();
       await click("Save task");
@@ -118,12 +123,16 @@ describe("workflow task save confirmation", () => {
       )!;
       await act(async () => marker.click());
       expect(button("Save task")).toBeDefined();
-      const form = document.querySelector<HTMLFormElement>('[role="dialog"] form')!;
+      const form = document.querySelector<HTMLFormElement>(
+        '[role="dialog"] form',
+      )!;
       await act(async () => {
-        form.dispatchEvent(new SubmitEvent("submit", {
-          bubbles: true,
-          cancelable: true,
-        }));
+        form.dispatchEvent(
+          new SubmitEvent("submit", {
+            bubbles: true,
+            cancelable: true,
+          }),
+        );
       });
       expect(mutateAsync).not.toHaveBeenCalled();
       expect(view.close).not.toHaveBeenCalled();

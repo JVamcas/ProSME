@@ -1,3 +1,10 @@
+import {
+  parseChecklistResult,
+  parseEligibilityResult,
+  parseDocumentResult,
+  parseScoreResult,
+} from "../domain/WorkflowTaskResultParsing";
+import { taskUsesFormSections } from "@/modules/workflows/domain/definitions/WorkflowTaskFormWork";
 import "server-only";
 
 import { taskSectionOrder } from "@/modules/workflows/domain/definitions/WorkflowTaskSectionOrder";
@@ -22,13 +29,9 @@ import {
 } from "@/lib/resource-errors";
 import {
   commentResultSchema,
-  documentResultSchema,
-  scoreResultSchema,
   taskCommentFields,
   taskDisplayMode,
   taskRunsAuthoritativeEligibility,
-  validateChecklistResult,
-  validateEligibilityResult,
 } from "@/modules/workflows/WorkflowTaskRegistry";
 import { executeSequentialTransitionInTransaction } from "@/modules/workflows/application/runtime/ServerSequentialTransitionService";
 import { getWorkflowActionAvailability } from "@/modules/workflows/application/runtime/ServerWorkflowActionAvailabilityService";
@@ -42,30 +45,6 @@ import type {
   ScoreResultItem,
   ScoringConfiguration,
 } from "../TaskTypes";
-
-function parseChecklistResult(result: unknown) {
-  if (result === null) return [];
-  const parsed = validateChecklistResult(result);
-  return parsed.success
-    ? (parsed.data as { items: ChecklistResultItem[] }).items
-    : [];
-}
-
-function parseEligibilityResult(result: unknown) {
-  if (result === null) return null;
-  const parsed = validateEligibilityResult(result);
-  return parsed.success ? parsed.data : null;
-}
-
-function parseDocumentResult(result: unknown): DocumentResultItem[] {
-  const parsed = documentResultSchema.safeParse(result);
-  return parsed.success ? parsed.data.documents : [];
-}
-
-function parseScoreResult(result: unknown): ScoreResultItem[] {
-  const parsed = scoreResultSchema.safeParse(result);
-  return parsed.success ? parsed.data.scores : [];
-}
 
 function validateCommentItems(
   configured: ReturnType<typeof taskCommentFields>,
@@ -252,6 +231,7 @@ export async function getWorkflowTask(
     checklistItems: task.checklistItems,
     commentFields,
     sectionOrder: taskSectionOrder(config),
+    formOwnsWork: taskUsesFormSections(config),
     displayMode: taskDisplayMode(config),
     commentCompleted:
       commentFields.length > 0 &&

@@ -1,4 +1,5 @@
 import "server-only";
+import { orderTaskFormSections } from "@/modules/workflows/domain/definitions/WorkflowTaskFormSectionOrder";
 
 import { permissionCodes } from "@/auth/authorization/permissions";
 import { can, requireAnyPermission, requirePermission } from "@/auth/authorization/policy";
@@ -46,7 +47,7 @@ export async function getTaskForm(
   if (!schema) throw new ResourceNotFoundError("published form");
   return {
     context,
-    schema,
+    schema: orderTaskFormSections(schema, task.task),
     response: response
       ? {
           ...response,

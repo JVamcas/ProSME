@@ -1,4 +1,5 @@
 "use client";
+import { WorkflowSearchTarget } from "./search/WorkflowSearchTarget";
 
 import { Plus } from "lucide-react";
 
@@ -47,9 +48,9 @@ function actionColumns(
       accessorKey: "label",
       header: "Action Button Label",
       cell: ({ row }) => (
-        <span className="font-semibold text-brand-navy">
+        <WorkflowSearchTarget tab="actions" itemKey={row.original.stableKey}>
           {row.original.label}
-        </span>
+        </WorkflowSearchTarget>
       ),
     },
     {
@@ -71,10 +72,8 @@ function actionColumns(
       accessorKey: "enabled",
       header: "Status",
       cell: ({ row }) => {
-        const status = row.original.enabled ? "Active" : "Disabled"
-        return (
-          <StatusBadge status={status} label={status} />
-        )
+        const status = row.original.enabled ? "Active" : "Disabled";
+        return <StatusBadge status={status} label={status} />;
       },
     },
     {

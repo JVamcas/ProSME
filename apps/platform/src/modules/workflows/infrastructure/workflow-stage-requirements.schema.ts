@@ -113,6 +113,8 @@ export const workflowStageDocumentRequirements = pgTable(
       .$type<WorkflowDocumentFileType[]>()
       .notNull(),
     maximumSizeMb: integer("maximum_size_mb").notNull(),
+    maxPages: integer("max_pages"),
+    acceptedExtensions: jsonb("accepted_extensions").$type<import("@/modules/forms/domain/FormDocumentTypes").FormDocumentExtension[]>(),
     expiryDays: integer("expiry_days"),
     requestOnStageActivation: boolean("request_on_stage_activation")
       .notNull()
@@ -122,6 +124,10 @@ export const workflowStageDocumentRequirements = pgTable(
     templateReference: text("template_reference").notNull().default(""),
   },
   (table) => [
+    check(
+      "app_stage_documents_max_pages_check",
+      sql`${table.maxPages} IS NULL OR ${table.maxPages} > 0`,
+    ),
     check(
       "app_stage_documents_stable_key_check",
       sql`${table.stableKey} ~ '^[A-Z][A-Z0-9_]{1,79}$'`,

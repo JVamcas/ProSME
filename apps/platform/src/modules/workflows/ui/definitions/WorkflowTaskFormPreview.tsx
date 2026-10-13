@@ -1,11 +1,18 @@
 "use client";
 
+import { orderTaskFormSections } from "../../domain/definitions/WorkflowTaskFormSectionOrder";
 import type { usePublishedFormRuntime } from "@/modules/forms/FormHooks";
 import { FormRenderer } from "@/modules/forms/ui/renderer/FormRenderer";
 
 export function WorkflowTaskFormPreview({
   form,
+  config,
+  onOrderChange,
+  orderingPending,
 }: {
+  config?: unknown;
+  onOrderChange?: (ids: string[]) => void;
+  orderingPending?: boolean;
   form: ReturnType<typeof usePublishedFormRuntime>;
 }) {
   if (form.isPending) return <p className="text-sm">Loading form preview…</p>;
@@ -18,7 +25,10 @@ export function WorkflowTaskFormPreview({
   }
   return (
     <FormRenderer
-      definition={form.data}
+      workflowDocuments
+      definition={orderTaskFormSections(form.data, config)}
+      onStepOrderChange={onOrderChange}
+      orderingPending={orderingPending}
       formData={{}}
       onChange={() => undefined}
       onSubmit={() => undefined}

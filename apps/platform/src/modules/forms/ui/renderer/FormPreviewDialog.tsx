@@ -49,6 +49,7 @@ function FormPreviewContent({
         Preview only. Values entered here will not be saved.
       </p>
       <FormRenderer
+        workflowDocuments={editor.definition.purpose === "APPLICATION_REVIEW"}
         definition={runtimeDefinition(editor)}
         formData={values}
         onChange={setValues}

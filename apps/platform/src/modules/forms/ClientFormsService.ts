@@ -21,6 +21,25 @@ type CompleteTaskFormInput = TaskFormSubmissionInput & {
   actionKey: string | null;
 };
 
+import type { FormSearchContent } from "./domain/FormSearchContent";
+
+export async function getTaskFormSearchContent(versionIds: string[]) {
+  const batches: string[][] = [];
+  for (let offset = 0; offset < versionIds.length; offset += 500) {
+    batches.push(versionIds.slice(offset, offset + 500));
+  }
+  const results = await Promise.all(
+    batches.map((ids) =>
+      requestData<FormSearchContent[]>("/api/admin/forms/search-content", {
+        method: "POST",
+        headers: jsonHeaders,
+        body: JSON.stringify({ versionIds: ids }),
+      }),
+    ),
+  );
+  return results.flat();
+}
+
 const jsonHeaders = { "Content-Type": "application/json" };
 
 type FormListEnvelope = {
@@ -36,7 +55,7 @@ async function list(input: FormListInput): Promise<FormDefinitionPage> {
   const envelope = await requestJson<FormListEnvelope>(
     `/api/admin/forms?${query.toString()}`,
     {
-    cache: "no-store",
+      cache: "no-store",
     },
   );
   return { items: envelope.data, ...envelope.page };
@@ -132,6 +151,14 @@ function completeTaskForm(taskId: string, input: CompleteTaskFormInput) {
 }
 
 export const clientFormsService = {
+  listTaskFormOptions: () =>
+    requestData<PublishedFormOption[]>("/api/admin/forms/bindable", {
+      cache: "no-store",
+    }),
+  getConfiguredPreview: (versionId: string) =>
+    requestData<FormRuntimeSchema>(`/api/admin/forms/preview/${versionId}`, {
+      cache: "no-store",
+    }),
   clone,
   create,
   completeTaskForm,

@@ -1,3 +1,6 @@
+import { WorkflowSearchTarget } from "./search/WorkflowSearchTarget";
+import { useWorkflowSearchTab } from "./search/useWorkflowSearchTab";
+import { taskUsesFormSections } from "../../domain/definitions/WorkflowTaskFormWork";
 import type { ReactNode } from "react";
 
 import { DeleteButton, EditButton } from "@/components/ui/action-buttons";
@@ -86,6 +89,7 @@ export function WorkflowStageDetails({
   stage,
   stageIndex,
 }: Props) {
+  const [tab, setTab] = useWorkflowSearchTab(stage?.stableKey);
   if (!stage) {
     return (
       <div className="grid min-h-[420px] place-items-center rounded-2xl border border-brand-navy/15 text-sm text-brand-navy/55">
@@ -94,6 +98,7 @@ export function WorkflowStageDetails({
     );
   }
 
+  const hasLegacyWork = stageHasLegacyWork(stage);
   const workTabs = [
     {
       id: "tasks",
@@ -196,24 +201,45 @@ export function WorkflowStageDetails({
 
   return (
     <article className="rounded-2xl border border-brand-navy/15 bg-brand-white p-5">
-      <StageDetailHeader
-        canEdit={canEdit}
-        canDelete={canDelete}
-        isDeleting={isDeleting}
-        onDelete={onDelete}
-        onEdit={onEdit}
-        stage={stage}
-        stageIndex={stageIndex}
-      />
-      <StageConfiguration stage={stage} />
+      <WorkflowSearchTarget tab="tasks" itemKey="$stage">
+        <StageDetailHeader
+          canEdit={canEdit}
+          canDelete={canDelete}
+          isDeleting={isDeleting}
+          onDelete={onDelete}
+          onEdit={onEdit}
+          stage={stage}
+          stageIndex={stageIndex}
+        />
+        <StageConfiguration stage={stage} />
+      </WorkflowSearchTarget>
       <div className="mt-5">
         <Tabs
           ariaLabel={`${stage.name} stage configuration`}
           defaultSelectedId="tasks"
-          items={workTabs}
+          selectedId={tab}
+          onSelectionChange={setTab}
+          items={workTabs.filter(
+            (tab) => hasLegacyWork || ["tasks", "actions"].includes(tab.id),
+          )}
         />
       </div>
     </article>
+  );
+}
+
+function stageHasLegacyWork(stage: WorkflowStageInput) {
+  return (
+    stage.checklistItems.length > 0 ||
+    (stage.commentFields?.length ?? 0) > 0 ||
+    (stage.scoring?.length ?? 0) > 0 ||
+    stage.documentRequirements.some((document) =>
+      stage.tasks.some(
+        (task) =>
+          task.stableKey === document.taskStableKey &&
+          !taskUsesFormSections(task.config),
+      ),
+    )
   );
 }
 

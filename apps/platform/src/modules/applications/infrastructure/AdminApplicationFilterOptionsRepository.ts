@@ -1,6 +1,6 @@
 import "server-only";
 import { sql } from "drizzle-orm";
-import { getDatabase } from "@/db/client";
+import { getDatabase } from "@/platform/database/client";
 import type { AdminApplicationFilterOptions } from "../ApplicationTypes";
 import { adminApplicationVisibilityFilter } from "./AdminApplicationVisibility";
 
@@ -13,6 +13,8 @@ export async function readAdminApplicationFilterOptions(input: {
       SELECT application.funding_opportunity_id AS call_id,
         application.funding_opportunity_title AS call_title
       FROM app_applications application
+      LEFT JOIN app_workflow_instances workflow
+        ON workflow.application_id = application.id
       WHERE application.status = 'submitted'
         AND ${adminApplicationVisibilityFilter(input.actorId, input.visibility)}
     )

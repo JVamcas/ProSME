@@ -1,11 +1,13 @@
 "use client";
 
+import { taskHasLegacyWork } from "../../domain/definitions/WorkflowTaskFormWork";
+
 import { useEffect, useRef } from "react";
 import { eligibilityHardFailureStatus } from "../../domain/definitions/WorkflowEligibilityFailureStatus";
 import { useForm, useWatch, type UseFormSetError } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
-import { usePublishedForms } from "@/modules/forms/FormHooks";
+import { useTaskFormOptions } from "@/modules/forms/ui/useTaskFormConfiguration";
 import type {
   FormPurpose,
   PublishedFormOption,
@@ -38,7 +40,7 @@ export function workflowTaskFormItems(
   const items = forms
     .filter((item) => !purpose || item.purpose === purpose)
     .map((item) => ({
-      label: `${item.formName} · v${item.versionNumber}`,
+      label: `${item.formName} · v${item.versionNumber}${item.status === "DRAFT" ? " · Draft" : ""}`,
       value: item.versionId,
     }));
   if (
@@ -79,12 +81,16 @@ async function saveWorkflowTask({
     });
     return false;
   }
-  if (stage.tasks.some((item) =>
-    item.stableKey !== task?.stableKey
-    && item.displayOrder === values.displayOrder,
-  )) {
+  if (
+    stage.tasks.some(
+      (item) =>
+        item.stableKey !== task?.stableKey &&
+        item.displayOrder === values.displayOrder,
+    )
+  ) {
     formSetError("displayOrder", {
-      message: "Choose a display order that is not used by another task in this stage.",
+      message:
+        "Choose a display order that is not used by another task in this stage.",
     });
     return false;
   }
@@ -107,11 +113,13 @@ async function saveWorkflowTask({
     roleId: values.assignmentMode === "ROLE" ? values.assignmentTarget : null,
     namedUserOverrideId:
       values.assignmentMode === "NAMED_USER" ? values.assignmentTarget : null,
-    stableKey: task?.stableKey ?? uniqueStableKeyFromLabel(
-      values.name,
-      stage.tasks.map((item) => item.stableKey),
-      "TASK",
-    ),
+    stableKey:
+      task?.stableKey ??
+      uniqueStableKeyFromLabel(
+        values.name,
+        stage.tasks.map((item) => item.stableKey),
+        "TASK",
+      ),
     description: values.description,
     displayOrder: values.displayOrder,
     reviewerCount: values.reviewerCount,
@@ -130,6 +138,10 @@ async function saveWorkflowTask({
     quorumRule: null,
     config: {
       ...existingConfig,
+      ...((!task || !taskHasLegacyWork(stage, task)) &&
+      values.formPurpose === "APPLICATION_REVIEW"
+        ? { workFormVersion: 1 }
+        : {}),
       displayMode: values.displayMode,
       formPurpose: values.formPurpose,
       ...(values.formPurpose === "ELIGIBILITY_VERIFICATION"
@@ -175,7 +187,7 @@ export function useWorkflowTaskDialogController(
   task?: WorkflowTaskInput,
 ) {
   const mutation = useSaveWorkflowGraph(editor);
-  const forms = usePublishedForms();
+  const forms = useTaskFormOptions();
   const form = useForm<WorkflowTaskFormValues>({
     defaultValues: {
       ...taskAssignmentDefaults(task),
@@ -188,17 +200,18 @@ export function useWorkflowTaskDialogController(
         task.config.displayMode === "SECTIONS"
           ? "SECTIONS"
           : "STEP_PROGRESS",
-      displayOrder: task?.displayOrder ?? Math.max(
-        0,
-        ...stage.tasks.map((item) => item.displayOrder),
-      ) + 1,
+      displayOrder:
+        task?.displayOrder ??
+        Math.max(0, ...stage.tasks.map((item) => item.displayOrder)) + 1,
       formVersionId: task?.formBinding?.formVersionId ?? "",
       formPurpose:
         task?.config &&
         typeof task.config === "object" &&
         ("formPurpose" in task.config || "command" in task.config) &&
-        (("formPurpose" in task.config && task.config.formPurpose === "ELIGIBILITY_VERIFICATION")
-          || ("command" in task.config && task.config.command === "AUTHORITATIVE_ELIGIBILITY"))
+        (("formPurpose" in task.config &&
+          task.config.formPurpose === "ELIGIBILITY_VERIFICATION") ||
+          ("command" in task.config &&
+            task.config.command === "AUTHORITATIVE_ELIGIBILITY"))
           ? "ELIGIBILITY_VERIFICATION"
           : "APPLICATION_REVIEW",
       name: task?.name ?? "",
@@ -272,7 +285,7 @@ export function useWorkflowTaskDialogController(
       )
     ) {
       form.setError("formVersionId", {
-        message: "Select a published form with the chosen purpose.",
+        message: "Select a form with the chosen purpose.",
       });
       return Promise.resolve(false);
     }
@@ -295,26 +308,30 @@ export function useWorkflowTaskDialogController(
     const values = form.getValues();
     const otherDecisionTask = stage.tasks.some(
       (item) =>
-        item.taskType === "STAGE_DECISION"
-        && item.stableKey !== task?.stableKey,
+        item.taskType === "STAGE_DECISION" &&
+        item.stableKey !== task?.stableKey,
     );
     if (values.taskType === "STAGE_DECISION" && otherDecisionTask) {
       form.setError("taskType", {
         message: "A stage can contain only one stage-decision task.",
       });
     }
-    const duplicateOrder = stage.tasks.some((item) =>
-      item.stableKey !== task?.stableKey
-      && item.displayOrder === values.displayOrder,
+    const duplicateOrder = stage.tasks.some(
+      (item) =>
+        item.stableKey !== task?.stableKey &&
+        item.displayOrder === values.displayOrder,
     );
     if (duplicateOrder) {
       form.setError("displayOrder", {
-        message: "Choose a display order that is not used by another task in this stage.",
+        message:
+          "Choose a display order that is not used by another task in this stage.",
       });
     }
-    return valid
-      && !duplicateOrder
-      && !(values.taskType === "STAGE_DECISION" && otherDecisionTask);
+    return (
+      valid &&
+      !duplicateOrder &&
+      !(values.taskType === "STAGE_DECISION" && otherDecisionTask)
+    );
   };
 
   return {

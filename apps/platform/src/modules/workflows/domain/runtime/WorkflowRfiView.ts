@@ -32,7 +32,7 @@ export type WorkflowRfiEditableField = {
 };
 
 export type WorkflowRfiDocument = {
-  acceptedFileTypes: ("PDF" | "JPG" | "PNG" | "DOCX")[];
+  acceptedFileTypes: import("@/modules/workflows/domain/definitions/WorkflowStageDocumentRequirement").WorkflowDocumentFileType[];
   evidence: {
     fileName: string;
     sizeBytes: number;
@@ -41,6 +41,8 @@ export type WorkflowRfiDocument = {
     versionNumber: number;
   } | null;
   maximumSizeMb: number;
+  maxPages?: number | null;
+  acceptedExtensions?: import("@/modules/forms/domain/FormDocumentTypes").FormDocumentExtension[] | null;
   name: string;
   requirementId: string;
 };

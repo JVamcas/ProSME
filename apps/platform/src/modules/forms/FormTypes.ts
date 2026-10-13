@@ -39,6 +39,8 @@ export const formFieldTypes = [
   "TEXTAREA",
   "RICH_TEXT",
   "NUMBER",
+  "SCORE",
+  "SCORING_AGGREGATE",
   "CURRENCY",
   "PERCENTAGE",
   "DATE",
@@ -96,6 +98,10 @@ export type RepeatableGroupConfiguration = {
 };
 
 export type FormField = {
+  uploadedBy?: import("./domain/FormDocumentConfiguration").DocumentUploader;
+  workflowDocument?:
+    import("./domain/FormWorkflowDocument").FormWorkflowDocument | null;
+  scoringAggregate?: import("./domain/FormScoring").ScoringAggregate | null;
   id?: string;
   sectionId: string;
   columnSpan: 1 | 2 | 3;

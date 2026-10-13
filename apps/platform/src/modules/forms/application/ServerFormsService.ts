@@ -1,3 +1,4 @@
+import { resolveFormEvidenceValues } from "../infrastructure/FormWorkflowEvidenceRepository";
 import "server-only";
 
 import { permissionCodes } from "@/auth/authorization/permissions";
@@ -274,7 +275,11 @@ export async function saveTaskForm(
   requirePermission(actor, task.permissions.edit);
   const schema = await getFormRuntime(task.formVersionId);
   if (!schema) throw new ResourceNotFoundError("published form");
-  const captured = capturedResponseValues(schema.fields, input.values);
+  const captured = await resolveFormEvidenceValues(
+    input.taskInstanceId,
+    schema.fields,
+    capturedResponseValues(schema.fields, input.values),
+  );
   const previous = schema.fields.some((field) => field.rules?.editableCondition)
     ? await readFormResponse(actor.id, input.taskInstanceId, task.formVersionId)
     : null;
@@ -338,7 +343,11 @@ export async function completeTaskForm(
   }
   const schema = await getFormRuntime(task.formVersionId);
   if (!schema) throw new ResourceNotFoundError("published form");
-  const captured = capturedResponseValues(schema.fields, input.values);
+  const captured = await resolveFormEvidenceValues(
+    input.taskInstanceId,
+    schema.fields,
+    capturedResponseValues(schema.fields, input.values),
+  );
   const previous = schema.fields.some((field) => field.rules?.editableCondition)
     ? await readFormResponse(actor.id, input.taskInstanceId, task.formVersionId)
     : null;

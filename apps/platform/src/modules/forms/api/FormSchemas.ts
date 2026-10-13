@@ -1,4 +1,7 @@
+import { formWorkflowDocumentSchema } from "./FormWorkflowDocumentSchema";
 import { z } from "zod";
+import { scoringAggregateSchema } from "./FormScoringSchemas";
+import { formScoringErrors } from "../engine/FormScoring";
 import { conditionGroupSchema } from "@/modules/conditions/domain/ConditionSerialization";
 
 import { workflowActionKeySchema } from "@/modules/work-queue/WorkQueueSchemas";
@@ -52,6 +55,8 @@ const formFieldSchemaBase = z.object({
   label: z.string().trim().min(1).max(1000),
   type: z.enum(formFieldTypes),
   required: z.boolean(),
+  scoringAggregate: scoringAggregateSchema.nullish(),
+  workflowDocument: formWorkflowDocumentSchema.nullish(),
   helpText: z.string().trim().max(500).nullable().optional(),
   minimum: optionalNumber,
   maximum: optionalNumber,
@@ -72,6 +77,40 @@ export const formFieldSchema = formFieldSchemaBase.superRefine(
         code: "custom",
         message: "Field labels must contain at most 160 characters.",
         path: ["label"],
+      });
+    }
+    if (field.type === "SCORING_AGGREGATE" && !field.scoringAggregate) {
+      context.addIssue({
+        code: "custom",
+        path: ["scoringAggregate"],
+        message: "Configure the score aggregation.",
+      });
+    }
+    if (field.type !== "SCORING_AGGREGATE" && field.scoringAggregate) {
+      context.addIssue({
+        code: "custom",
+        path: ["scoringAggregate"],
+        message: "Only aggregate fields support scoring configuration.",
+      });
+    }
+    if (
+      field.type === "SCORE" &&
+      (field.minimum == null ||
+        field.maximum == null ||
+        field.minimum < 0 ||
+        field.maximum <= field.minimum)
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["maximum"],
+        message: "Scores require a nonnegative minimum and a larger maximum.",
+      });
+    }
+    if (field.workflowDocument && field.type !== "DOCUMENT") {
+      context.addIssue({
+        code: "custom",
+        path: ["workflowDocument"],
+        message: "Only document fields support workflow evidence settings.",
       });
     }
     validateDocumentFieldSettings(field, context);
@@ -123,9 +162,12 @@ export const formFieldSchema = formFieldSchemaBase.superRefine(
         path: ["options"],
       });
     }
-    const supportsNumberLimits = ["NUMBER", "CURRENCY", "PERCENTAGE"].includes(
-      field.type,
-    );
+    const supportsNumberLimits = [
+      "NUMBER",
+      "CURRENCY",
+      "PERCENTAGE",
+      "SCORE",
+    ].includes(field.type);
     if (
       !supportsNumberLimits &&
       (field.minimum !== undefined || field.maximum !== undefined)
@@ -229,6 +271,9 @@ export const formEditorSchema = formDefinitionSchema
     sections: z.array(formSectionSchema).max(50),
   })
   .superRefine((value, context) => {
+    for (const message of formScoringErrors(value.fields)) {
+      context.addIssue({ code: "custom", path: ["fields"], message });
+    }
     const keys = value.sections.map((section) => section.key);
     if (new Set(keys).size !== keys.length) {
       context.addIssue({

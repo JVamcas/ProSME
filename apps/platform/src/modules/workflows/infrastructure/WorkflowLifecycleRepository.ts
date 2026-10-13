@@ -1,3 +1,4 @@
+import { refreshFormDocumentRequirements } from "./WorkflowFormDocumentRepository";
 import "server-only";
 
 import { and, eq, inArray } from "drizzle-orm";
@@ -74,6 +75,9 @@ export async function changeWorkflowTemplateLifecycle(
         )
         .returning();
       detachedAssignmentCount = detached.length;
+    }
+    if (command === "PUBLISH") {
+      await refreshFormDocumentRequirements(transaction, input.versionId);
     }
     const now = new Date();
     const [version] = await transaction

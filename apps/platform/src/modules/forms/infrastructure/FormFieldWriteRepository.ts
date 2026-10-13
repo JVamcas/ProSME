@@ -85,6 +85,7 @@ async function copyFields(
       acceptedExtensions: field.acceptedExtensions,
       maxPages: field.maxPages,
       maximumFileSizeMb: field.maximumFileSizeMb,
+      uploadedBy: field.uploadedBy,
       maxLength: field.maxLength,
       minimum: field.minimum,
       minLength: field.minLength,
@@ -98,6 +99,8 @@ async function copyFields(
       type: field.type,
       visibilityCondition: field.visibilityCondition,
       rules: field.rules,
+      scoringAggregate: field.scoringAggregate,
+      workflowDocument: field.workflowDocument,
     })),
   );
   if (options.length) {
@@ -179,6 +182,7 @@ async function insertDraftFields(
       acceptedExtensions: field.acceptedExtensions ?? null,
       maxPages: field.maxPages ?? null,
       maximumFileSizeMb: field.maximumFileSizeMb ?? null,
+      uploadedBy: field.uploadedBy ?? null,
       maxLength: field.maxLength ?? null,
       minimum: field.minimum ?? null,
       minLength: field.minLength ?? null,
@@ -192,6 +196,8 @@ async function insertDraftFields(
       type: field.type,
       visibilityCondition: field.visibilityCondition ?? null,
       rules: field.rules ?? null,
+      scoringAggregate: field.scoringAggregate ?? null,
+      workflowDocument: field.workflowDocument ?? null,
     })),
   );
   const options = fields.flatMap((field, index) =>
@@ -232,6 +238,7 @@ export async function readPublicationFields(
         acceptedExtensions: formFields.acceptedExtensions,
         maxPages: formFields.maxPages,
         maximumFileSizeMb: formFields.maximumFileSizeMb,
+        uploadedBy: formFields.uploadedBy,
         maxLength: formFields.maxLength,
         minimum: formFields.minimum,
         minLength: formFields.minLength,
@@ -242,6 +249,8 @@ export async function readPublicationFields(
         type: formFields.type,
         visibilityCondition: formFields.visibilityCondition,
         rules: formFields.rules,
+        scoringAggregate: formFields.scoringAggregate,
+        workflowDocument: formFields.workflowDocument,
       })
       .from(formFields)
       .where(eq(formFields.formVersionId, versionId)),
@@ -268,6 +277,7 @@ export async function readPublicationFields(
     acceptedExtensions: field.acceptedExtensions ?? undefined,
     maxPages: field.maxPages ?? undefined,
     maximumFileSizeMb: field.maximumFileSizeMb ?? undefined,
+    uploadedBy: field.uploadedBy ?? undefined,
     maxLength: field.maxLength ?? undefined,
     minimum: field.minimum ?? undefined,
     minLength: field.minLength ?? undefined,

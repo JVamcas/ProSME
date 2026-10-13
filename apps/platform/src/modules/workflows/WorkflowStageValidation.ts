@@ -294,7 +294,7 @@ function validateAutomaticDocumentRequests(
   automatic.forEach((requirement) => {
     const requirementIndex = stage.documentRequirements.indexOf(requirement);
     const path = `${base}.documentRequirements.${requirementIndex}`;
-    if (requirement.uploader !== "APPLICANT") {
+    if (!["APPLICANT", "ANY"].includes(requirement.uploader)) {
       errors.push(
         issue(
           "AUTO_RFI_APPLICANT_OWNER_REQUIRED",

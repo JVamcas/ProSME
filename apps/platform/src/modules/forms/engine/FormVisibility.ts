@@ -1,3 +1,4 @@
+import { calculateFormScores } from "./FormScoring";
 import { formFieldIsRequired } from "./FormFieldBehaviour";
 import type { ConditionFieldDefinition } from "@/modules/conditions/domain/ConditionConfiguration";
 import type { ConditionGroup } from "@/modules/conditions/domain/ConditionGroup";
@@ -14,7 +15,7 @@ import type {
 function conditionFieldType(
   field: FormField,
 ): ConditionFieldDefinition["type"] | null {
-  if (["NUMBER", "CURRENCY", "PERCENTAGE"].includes(field.type)) {
+  if (["NUMBER", "CURRENCY", "PERCENTAGE", "SCORE"].includes(field.type)) {
     return "NUMBER";
   }
   if (field.type === "YES_NO" || field.type === "CHECKBOX") return "BOOLEAN";
@@ -142,9 +143,14 @@ export function sanitizeFormResponseValues(
   values: Readonly<Record<string, unknown>>,
 ) {
   const visible = resolveFormVisibility(definition, values);
-  return Object.fromEntries(
-    visible.fields.flatMap((field) =>
-      Object.hasOwn(values, field.key) ? [[field.key, values[field.key]]] : [],
+  return calculateFormScores(
+    visible.fields,
+    Object.fromEntries(
+      visible.fields.flatMap((field) =>
+        Object.hasOwn(values, field.key)
+          ? [[field.key, values[field.key]]]
+          : [],
+      ),
     ),
   );
 }

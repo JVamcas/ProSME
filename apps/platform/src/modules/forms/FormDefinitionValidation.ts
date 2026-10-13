@@ -1,3 +1,5 @@
+import { formWorkflowDocumentErrors } from "./engine/FormWorkflowDocumentValidation";
+import { formScoringErrors } from "./engine/FormScoring";
 import { formRuleConfigurationErrors } from "./engine/FormRuleConfiguration";
 import { formVisibilityConfigurationErrors } from "./engine/FormVisibility";
 import { repeatableGroupConfigurationSchema } from "./api/RepeatableGroupSchemas";
@@ -42,7 +44,7 @@ export function validateFieldConstraints(field: FormField) {
   const hasLengthLimits = field.minLength != null || field.maxLength != null;
   if (
     hasNumberLimits &&
-    !["NUMBER", "CURRENCY", "PERCENTAGE"].includes(field.type)
+    !["NUMBER", "CURRENCY", "PERCENTAGE", "SCORE"].includes(field.type)
   )
     return false;
   if (
@@ -100,6 +102,8 @@ export function formPublicationErrors(
       "Fields contain invalid keys, options, ordering, or validation rules.",
     );
   }
+  errors.push(...formScoringErrors(fields));
+  errors.push(...formWorkflowDocumentErrors(fields));
   errors.push(...formVisibilityConfigurationErrors(fields, sections));
   errors.push(...formRuleConfigurationErrors(fields, sections));
   return errors;
