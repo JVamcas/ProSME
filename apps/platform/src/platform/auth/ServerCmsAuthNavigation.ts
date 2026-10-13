@@ -21,7 +21,7 @@ export async function getCmsLoginDestination(): Promise<string> {
   }
 
   if (!can(applicationUser, permissionCodes.cmsAccess)) {
-    return "/unauthorized";
+    return "/cms/unauthorized";
   }
 
   const payload = await getPayload({ config });
@@ -30,5 +30,5 @@ export async function getCmsLoginDestination(): Promise<string> {
   // Returning to CMS is safe only when its own authentication accepts the user.
   return hasCmsCapability(user as CmsRequestUser, permissionCodes.cmsAccess)
     ? "/cms"
-    : "/unauthorized";
+    : "/cms/unauthorized";
 }
