@@ -1,6 +1,6 @@
 import "server-only";
 
-import { provisionApplicant } from "@/db/repositories/UserRepository";
+import { provisionApplicant } from "@/modules/users/infrastructure/UserRepository";
 import {
   createFirebaseSession,
   verifyFirebaseSessionCookie,
@@ -90,7 +90,11 @@ async function sessionActivity(
   }
 
   const session = renew
-    ? await renewApplicationSession(sessionCookie, identity.uid, idleForMilliseconds)
+    ? await renewApplicationSession(
+        sessionCookie,
+        identity.uid,
+        idleForMilliseconds,
+      )
     : await findActiveApplicationSession(sessionCookie, identity.uid);
   if (!session) {
     return null;

@@ -14,7 +14,7 @@ import {
 import {
   findUserByFirebaseSubject,
   provisionApplicant,
-} from "@/db/repositories/UserRepository";
+} from "@/modules/users/infrastructure/UserRepository";
 
 const { Pool } = pg;
 const enabled = process.env.RUN_P3_PROFILE_DATABASE_TESTS === "true";
@@ -27,7 +27,7 @@ const firebaseSubject = "p31-integration-firebase-subject";
 const applicantInput = {
   firstName: "Anna",
   surname: "Ndeitunga",
-  position: "Managing director",
+  gender: "Female" as const,
   phoneNumber: "+264810000000",
   dateOfBirth: "1990-01-01",
   nationality: "Namibian",
@@ -39,6 +39,14 @@ const businessInput = {
   legalName: "Rollback Trading CC",
   tradingName: "Rollback Trading",
   registrationNumber: "CC/2026/ROLLBACK",
+  applicantPosition: "Director",
+  members: [
+    {
+      fullName: "Synthetic Member",
+      idNumber: "TEST-123",
+      role: "Principal" as const,
+    },
+  ],
   businessType: "Close corporation",
   sector: "Retail",
   region: "Khomas",
@@ -167,7 +175,7 @@ describeDatabase("P3.1 PostgreSQL persistence", () => {
       data: {
         firstName: renamedApplicant.firstName,
         surname: renamedApplicant.surname,
-        position: renamedApplicant.position,
+        gender: renamedApplicant.gender,
         dateOfBirth: renamedApplicant.dateOfBirth,
         nationality: renamedApplicant.nationality,
         region: renamedApplicant.region,

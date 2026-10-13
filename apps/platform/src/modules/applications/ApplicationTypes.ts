@@ -55,11 +55,7 @@ export type AdminApplicationOverview = {
 import type { FormRuntimeSchema } from "@/modules/forms/FormTypes";
 
 export type ApplicationSection =
-  | "business"
-  | "project"
-  | "financial"
-  | "documents"
-  | "declarations";
+  "business" | "project" | "financial" | "documents" | "declarations";
 
 export type ApplicationSectionCompletion = Record<ApplicationSection, boolean>;
 
@@ -171,7 +167,13 @@ export type AdminApplicationListRow = {
   submittedAt: string;
 };
 
+export type AdminApplicationFilterOptions = {
+  fundingCalls: { id: string; label: string }[];
+  stages: { id: string; label: string }[];
+};
+
 export type AdminApplicationListInput = {
+  fundingCallId?: string;
   gender?: string;
   ageMin?: number;
   ageMax?: number;

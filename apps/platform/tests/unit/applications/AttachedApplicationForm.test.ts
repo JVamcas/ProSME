@@ -5,6 +5,7 @@ import {
   attachedBusinessFieldValues,
   fillMissingAttachedBusinessValues,
   preserveAttachedBusinessValues,
+  needsAttachedBusinessValues,
 } from "@/modules/applications/domain/AttachedApplicationForm";
 import type { FormRuntimeSchema } from "@/modules/forms/FormTypes";
 import { validateFormValues } from "@/modules/forms/FormValidation";
@@ -55,6 +56,8 @@ describe("funding-call application form attachment", () => {
       "PROJECT_TITLE",
     );
     for (const key of [
+      "BUSINESS_APPLICANT_POSITION",
+      "BUSINESS_MEMBERS",
       "BUSINESS_REGISTRATION_NUMBER",
       "BUSINESS_TRADING_NAME",
       "BUSINESS_EMPLOYEE_COUNT",
@@ -69,6 +72,14 @@ describe("funding-call application form attachment", () => {
 
   it("copies selected business values and rejects edits to copied fields", () => {
     const copied = attachedBusinessFieldValues({
+      applicantPosition: "Director",
+      members: [
+        {
+          fullName: "Synthetic Member",
+          idNumber: "TEST-123",
+          role: "Principal",
+        },
+      ],
       businessType: "Company",
       employeeCount: 12,
       establishedYear: 2020,
@@ -80,6 +91,10 @@ describe("funding-call application form attachment", () => {
       secondarySector: "Circular economy",
       tradingName: "Example",
     });
+    expect(copied.BUSINESS_APPLICANT_POSITION).toBe("Director");
+    expect(copied.BUSINESS_MEMBERS).toEqual([
+      { fullName: "Synthetic Member", idNumber: "TEST-123", role: "Principal" },
+    ]);
     expect(copied.BUSINESS_EMPLOYEE_COUNT).toBe(12);
     expect(copied.BUSINESS_SECONDARY_SECTOR).toBe("Circular economy");
     expect(
@@ -88,6 +103,14 @@ describe("funding-call application form attachment", () => {
           PROJECT_TITLE: "Existing project",
         },
         {
+          applicantPosition: "Director",
+          members: [
+            {
+              fullName: "Synthetic Member",
+              idNumber: "TEST-123",
+              role: "Principal",
+            },
+          ],
           businessType: "Company",
           employeeCount: 12,
           establishedYear: 2020,
@@ -106,6 +129,8 @@ describe("funding-call application form attachment", () => {
     expect(
       preserveAttachedBusinessValues(
         {
+          BUSINESS_APPLICANT_POSITION: "Tampered position",
+          BUSINESS_MEMBERS: [],
           BUSINESS_LEGAL_NAME: "Tampered",
           BUSINESS_SECONDARY_SECTOR: "Tampered secondary",
           PROJECT_TITLE: "Project A",
@@ -113,6 +138,8 @@ describe("funding-call application form attachment", () => {
         copied,
       ),
     ).toMatchObject({
+      BUSINESS_APPLICANT_POSITION: "Director",
+      BUSINESS_MEMBERS: copied.BUSINESS_MEMBERS,
       BUSINESS_LEGAL_NAME: "Example Limited",
       BUSINESS_SECONDARY_SECTOR: "Circular economy",
       PROJECT_TITLE: "Project A",
@@ -123,6 +150,14 @@ describe("funding-call application form attachment", () => {
     const attached = attachBusinessFieldsToForm(form, fundingCallId);
     const values: Record<string, unknown> = {
       ...attachedBusinessFieldValues({
+        applicantPosition: "Director",
+        members: [
+          {
+            fullName: "Synthetic Member",
+            idNumber: "TEST-123",
+            role: "Principal",
+          },
+        ],
         businessType: "Company",
         employeeCount: 0,
         establishedYear: 2020,
@@ -148,6 +183,8 @@ describe("funding-call application form attachment", () => {
       ),
     ).toBe(true);
     for (const key of [
+      "BUSINESS_APPLICANT_POSITION",
+      "BUSINESS_MEMBERS",
       "BUSINESS_REGISTRATION_NUMBER",
       "BUSINESS_TRADING_NAME",
       "BUSINESS_EMPLOYEE_COUNT",
@@ -158,4 +195,44 @@ describe("funding-call application form attachment", () => {
       expect(validateFormValues(attached.fields, incomplete, true)).toBe(false);
     }
   });
+});
+
+it("fills newly required fields in legacy drafts without replacing existing entity answers", () => {
+  const stored = {
+    BUSINESS_LEGAL_NAME: "Original name",
+    BUSINESS_APPLICANT_POSITION: "",
+    BUSINESS_MEMBERS: [],
+  };
+  expect(needsAttachedBusinessValues(stored)).toBe(true);
+  const business = {
+    applicantPosition: "Director",
+    members: [
+      {
+        fullName: "Synthetic Member",
+        idNumber: "TEST-123",
+        role: "Both" as const,
+      },
+    ],
+    businessType: "Company",
+    employeeCount: 1,
+    establishedYear: 2020,
+    legalName: "Changed name",
+    physicalAddress: "Test address",
+    region: "Khomas",
+    registrationNumber: "TEST-REG",
+    sector: "Blue economy",
+    tradingName: "Test",
+  };
+  const filled = fillMissingAttachedBusinessValues(stored, business);
+  expect(filled.BUSINESS_LEGAL_NAME).toBe("Original name");
+  expect(filled.BUSINESS_APPLICANT_POSITION).toBe("Director");
+  expect(filled.BUSINESS_MEMBERS).toEqual(business.members);
+  expect(needsAttachedBusinessValues(filled)).toBe(false);
+  expect(
+    fillMissingAttachedBusinessValues(filled, {
+      ...business,
+      applicantPosition: "Changed",
+      members: [],
+    }),
+  ).toEqual(filled);
 });

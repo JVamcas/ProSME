@@ -76,7 +76,8 @@ export async function findUserByFirebaseSubject(
         where ${applicantProfiles.userId} = ${users.id}
           and length(trim(${applicantProfiles.firstName})) > 0
           and length(trim(${applicantProfiles.surname})) > 0
-          and length(trim(${applicantProfiles.position})) > 0
+          and ${applicantProfiles.dateOfBirth} is not null
+          and length(trim(${applicantProfiles.gender})) > 0
           and length(trim(${applicantProfiles.phoneNumber})) > 0
           and length(trim(${applicantProfiles.nationality})) > 0
           and length(trim(${applicantProfiles.region})) > 0
@@ -84,6 +85,8 @@ export async function findUserByFirebaseSubject(
       businessProfileComplete: sql<boolean>`exists(
         select 1 from ${businessProfiles}
         where ${businessProfiles.userId} = ${users.id}
+          and length(trim(${businessProfiles.applicantPosition})) > 0
+          and jsonb_array_length(${businessProfiles.members}) > 0
       )`,
       capabilityCodes: sql<string[]>`
         coalesce(
@@ -126,15 +129,15 @@ async function requireResolvedUser(subject: string) {
   const user = await findUserByFirebaseSubject(subject);
 
   if (!user) {
-    throw new Error("Applicant provisioning did not resolve an application user");
+    throw new Error(
+      "Applicant provisioning did not resolve an application user",
+    );
   }
 
   return user;
 }
 
-async function touchIdentity(
-  identity: VerifiedIdentity,
-): Promise<boolean> {
+async function touchIdentity(identity: VerifiedIdentity): Promise<boolean> {
   return getDatabase().transaction(async (transaction) => {
     const now = new Date();
     const [existingIdentity] = await transaction

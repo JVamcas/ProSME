@@ -33,7 +33,7 @@ function csvCell(value: ReportRow[number], type: string) {
   return '"' + text.replaceAll('"', '""') + '"';
 }
 export async function createReportExport(
-  definition: ReportTemplateDefinition,
+  definition: Pick<ReportTemplateDefinition, "columns">,
   format: ReportFormat,
   signal: AbortSignal,
 ) {

@@ -26,3 +26,8 @@ export function applicantDetailProgressLabel(
   }
 }
 
+export function staffApplicationStatusDescription(description: string): string {
+  return description.replace(/\byour application\b/gi, (match) =>
+    match.startsWith("Y") ? "This application" : "this application",
+  );
+}

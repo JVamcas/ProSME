@@ -10,6 +10,8 @@ import { resolvedBusinessSector } from "../domain/BusinessSectors";
 
 const columns = {
   id: businessProfiles.id,
+  applicantPosition: businessProfiles.applicantPosition,
+  members: businessProfiles.members,
   legalName: businessProfiles.legalName,
   tradingName: businessProfiles.tradingName,
   registrationNumber: businessProfiles.registrationNumber,

@@ -1,4 +1,8 @@
-import { FormInput, FormSelect, FormTextarea } from "@/components/ui/form-fields";
+import {
+  FormInput,
+  FormSelect,
+  FormTextarea,
+} from "@/components/ui/form-fields";
 import { FormDateInput } from "@/shared/ui/FormDateInput";
 import {
   applicantGenders,
@@ -24,24 +28,27 @@ export function ApplicantProfileFields({
           disabled={disabled}
           label="First name"
           name="firstName"
+          required
           autoComplete="given-name"
         />
         <FormInput
           disabled={disabled}
           label="Surname"
           name="surname"
+          required
           autoComplete="family-name"
         />
-        <FormInput disabled={disabled} label="Position" name="position" />
         <FormDateInput
           disabled={disabled}
           label="Date of birth"
           name="dateOfBirth"
+          required
         />
         <FormSelect
           disabled={disabled}
-          label="Gender (optional)"
+          label="Gender"
           name="gender"
+          required
           items={selectItems(applicantGenders)}
           placeholder="Select gender"
         />
@@ -49,12 +56,14 @@ export function ApplicantProfileFields({
           disabled={disabled}
           label="Nationality"
           name="nationality"
+          required
           autoComplete="country-name"
         />
         <FormSelect
           disabled={disabled}
           label="Region"
           name="region"
+          required
           items={selectItems(namibianRegions)}
           placeholder="Select a region"
         />

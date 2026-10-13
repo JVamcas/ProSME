@@ -151,7 +151,6 @@ async function readSubmissionConfigurationContext(
         firstName: applicantProfiles.firstName,
         nationality: applicantProfiles.nationality,
         phoneNumber: applicantProfiles.phoneNumber,
-        position: applicantProfiles.position,
         postalAddress: applicantProfiles.postalAddress,
         profileUpdatedAt: applicantProfiles.updatedAt,
         region: applicantProfiles.region,

@@ -1,8 +1,6 @@
 import { z } from "zod";
 
-import {
-  workflowChecklistResponseTypes,
-} from "@/modules/workflows/domain/definitions/WorkflowStageChecklistDefinition";
+import { workflowChecklistResponseTypes } from "@/modules/workflows/domain/definitions/WorkflowStageChecklistDefinition";
 
 export const checklistResponseTypeItems = [
   { label: "Yes / no", value: "YES_NO" },
@@ -19,15 +17,6 @@ export const checklistEvidenceRequirementItems = [
 
 export const workflowStageChecklistFormSchema = z.object({
   taskStableKey: z.string().min(1, "Select a workflow task."),
-  key: z
-    .string()
-    .trim()
-    .min(2)
-    .max(80)
-    .regex(
-      /^[A-Z][A-Z0-9_]*$/,
-      "Use uppercase letters, numbers and underscores.",
-    ),
   text: z.string().trim().min(2).max(500),
   mandatory: z.boolean(),
   responseType: z.enum(workflowChecklistResponseTypes),

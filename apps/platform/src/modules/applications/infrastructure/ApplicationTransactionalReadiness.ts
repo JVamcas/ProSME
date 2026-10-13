@@ -13,6 +13,7 @@ import { applicationResponseValues } from "../domain/ApplicationDocumentPolicy";
 import {
   attachBusinessFieldsToForm,
   fillMissingAttachedBusinessValues,
+  needsAttachedBusinessValues,
 } from "../domain/AttachedApplicationForm";
 import { readApplicationBusinessInTransaction } from "./ApplicationBusinessContextRepository";
 import { applicationDocumentVersions } from "./application-document.schema";
@@ -96,7 +97,7 @@ export async function readTransactionalApplicationReadiness(
   if (
     configurationAvailable &&
     application.businessId &&
-    !Object.hasOwn(response.values, "BUSINESS_LEGAL_NAME")
+    needsAttachedBusinessValues(response.values)
   ) {
     const business = await readApplicationBusinessInTransaction(
       transaction,

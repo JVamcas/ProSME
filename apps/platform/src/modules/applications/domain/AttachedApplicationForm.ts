@@ -1,6 +1,12 @@
+import {
+  businessMemberRoles,
+  type BusinessMember,
+} from "@/modules/businesses/BusinessSchemas";
 import type { FormField, FormRuntimeSchema } from "@/modules/forms/FormTypes";
 
 export type ApplicationBusinessSource = {
+  applicantPosition?: string;
+  members?: BusinessMember[];
   businessType: string;
   employeeCount: number | null;
   establishedYear: number | null;
@@ -14,6 +20,11 @@ export type ApplicationBusinessSource = {
 };
 
 const businessFields = [
+  {
+    key: "BUSINESS_APPLICANT_POSITION",
+    label: "Position of applicant",
+    type: "TEXT",
+  },
   { key: "BUSINESS_LEGAL_NAME", label: "Legal business name", type: "TEXT" },
   { key: "BUSINESS_TRADING_NAME", label: "Trading name", type: "TEXT" },
   {
@@ -45,14 +56,15 @@ const businessFields = [
 export const attachedBusinessSourceDefinitionId =
   "a18bd078-d26c-4f65-89fb-60958b293eb6";
 
-export const attachedBusinessFieldKeys = new Set<string>(
-  businessFields.map((field) => field.key),
-);
+export const attachedBusinessFieldKeys = new Set<string>([
+  ...businessFields.map((field) => field.key),
+  "BUSINESS_MEMBERS",
+]);
 
 export function attachedBusinessFieldDefinitions(
   fundingCallId: string,
 ): FormField[] {
-  return businessFields.map((field, index) => ({
+  const fields: FormField[] = businessFields.map((field, index) => ({
     columnSpan: field.key === "BUSINESS_PHYSICAL_ADDRESS" ? 2 : 1,
     key: field.key,
     label: field.label,
@@ -61,12 +73,65 @@ export function attachedBusinessFieldDefinitions(
     sectionId: fundingCallId,
     type: field.type,
   }));
+  return [
+    ...fields,
+    {
+      columnSpan: 2,
+      key: "BUSINESS_MEMBERS",
+      label: "Principal / founding members",
+      order: fields.length + 1,
+      required: true,
+      sectionId: fundingCallId,
+      type: "REPEATABLE_GROUP",
+      repeatable: {
+        addLabel: "Add member",
+        itemLabel: "Member",
+        minimumItems: 1,
+        maximumItems: 100,
+        fields: [
+          {
+            key: "fullName",
+            label: "Full name",
+            type: "TEXT",
+            required: true,
+            columnSpan: 1,
+            order: 1,
+            maxLength: 160,
+          },
+          {
+            key: "idNumber",
+            label: "ID number",
+            type: "TEXT",
+            required: true,
+            columnSpan: 1,
+            order: 2,
+            maxLength: 80,
+          },
+          {
+            key: "role",
+            label: "Role",
+            type: "SINGLE_SELECT",
+            required: true,
+            columnSpan: 1,
+            order: 3,
+            options: businessMemberRoles.map((role, index) => ({
+              key: role,
+              label: role,
+              order: index + 1,
+            })),
+          },
+        ],
+      },
+    },
+  ];
 }
 
 export function attachedBusinessFieldValues(
   business: ApplicationBusinessSource,
-): Record<string, string | number> {
+): Record<string, unknown> {
   return {
+    BUSINESS_APPLICANT_POSITION: business.applicantPosition ?? "",
+    BUSINESS_MEMBERS: business.members ?? [],
     BUSINESS_LEGAL_NAME: business.legalName,
     BUSINESS_TRADING_NAME: business.tradingName,
     BUSINESS_REGISTRATION_NUMBER: business.registrationNumber,
@@ -84,6 +149,17 @@ export function attachedBusinessFieldValues(
   };
 }
 
+export function needsAttachedBusinessValues(
+  stored: Readonly<Record<string, unknown>>,
+) {
+  return (
+    [...attachedBusinessFieldKeys].some((key) => !Object.hasOwn(stored, key)) ||
+    !stored.BUSINESS_APPLICANT_POSITION ||
+    (Array.isArray(stored.BUSINESS_MEMBERS) &&
+      stored.BUSINESS_MEMBERS.length === 0)
+  );
+}
+
 export function fillMissingAttachedBusinessValues(
   stored: Readonly<Record<string, unknown>>,
   business: ApplicationBusinessSource,
@@ -92,7 +168,12 @@ export function fillMissingAttachedBusinessValues(
   for (const [key, value] of Object.entries(
     attachedBusinessFieldValues(business),
   )) {
-    if (!Object.hasOwn(values, key)) values[key] = value;
+    const incompleteNewField =
+      (key === "BUSINESS_APPLICANT_POSITION" && !values[key]) ||
+      (key === "BUSINESS_MEMBERS" &&
+        Array.isArray(values[key]) &&
+        values[key].length === 0);
+    if (!Object.hasOwn(values, key) || incompleteNewField) values[key] = value;
   }
   return values;
 }

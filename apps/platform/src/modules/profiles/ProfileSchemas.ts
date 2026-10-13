@@ -23,9 +23,11 @@ function isPastCalendarDate(value: string) {
 export const applicantPersonalProfileSchema = z.object({
   firstName: requiredText("First name", 80),
   surname: requiredText("Surname", 80),
-  position: requiredText("Position", 120),
-  dateOfBirth: optionalText(10).refine(isPastCalendarDate, "Use a valid past date"),
-  gender: z.union([z.enum(applicantGenders), z.literal("")]).optional(),
+  dateOfBirth: requiredText("Date of birth", 10).refine(
+    isPastCalendarDate,
+    "Use a valid past date",
+  ),
+  gender: z.enum(applicantGenders, { error: "Select gender" }),
   nationality: requiredText("Nationality", 80),
   region: requiredText("Region", 80),
 });

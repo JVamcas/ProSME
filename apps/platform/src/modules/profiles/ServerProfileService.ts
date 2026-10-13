@@ -14,7 +14,10 @@ import {
   saveApplicantProfile,
 } from "./infrastructure/ApplicantProfileRepository";
 import { applicantGenders } from "./ProfileOptions";
-import type { ApplicantProfileUpdateInput } from "./ProfileSchemas";
+import {
+  applicantProfileUpdateSchema,
+  type ApplicantProfileUpdateInput,
+} from "./ProfileSchemas";
 import type {
   ApplicantDashboardSummary,
   ApplicantProfileView,
@@ -89,7 +92,6 @@ export async function getApplicantProfile(
   return {
     firstName: names[0] ?? "",
     surname: names.slice(1).join(" "),
-    position: "",
     phoneNumber: "",
     dateOfBirth: "",
     gender: "",
@@ -106,7 +108,10 @@ export async function updateApplicantProfile(
   input: ApplicantProfileUpdateInput,
 ): Promise<ApplicantProfileView> {
   const actor = requirePermission(user, permissionCodes.userProfileOwnUpdate);
-  await saveApplicantProfile(actor.id, input);
+  await saveApplicantProfile(
+    actor.id,
+    applicantProfileUpdateSchema.parse(input),
+  );
   const profile = await findApplicantProfile(actor.id);
 
   if (!profile) {

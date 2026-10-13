@@ -5,7 +5,10 @@ import { and, eq, isNull, sql } from "drizzle-orm";
 import { getDatabase } from "@/db/client";
 import { businessProfiles } from "@/db/schema/profiles";
 import { fundingCallPublicationRevisions } from "@/modules/funding-calls/infrastructure/funding-call.schema";
-import { fillMissingAttachedBusinessValues } from "../domain/AttachedApplicationForm";
+import {
+  fillMissingAttachedBusinessValues,
+  needsAttachedBusinessValues,
+} from "../domain/AttachedApplicationForm";
 import {
   applicationAuditEntries,
   applicationCommands,
@@ -85,7 +88,7 @@ export async function readOwnedApplicationDraftResponse(
   if (
     !business ||
     row.attachedFormVersionId !== response.formVersionId ||
-    Object.hasOwn(response.values, "BUSINESS_LEGAL_NAME")
+    !needsAttachedBusinessValues(response.values)
   )
     return response;
   return {

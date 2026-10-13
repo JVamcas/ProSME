@@ -1,5 +1,7 @@
 "use client";
 
+import { uniqueStableKeyFromLabel } from "../../domain/WorkflowStableKey";
+
 import { isSameWorkflowTaskRequirement } from "../../domain/definitions/WorkflowTaskRequirementIdentity";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -45,7 +47,6 @@ export function WorkflowStageChecklistDialog({
       displayOrder:
         checklistItem?.displayOrder ??
         Math.max(0, ...checklistItems.map((item) => item.displayOrder)) + 1,
-      key: checklistItem?.key ?? "",
       mandatory: checklistItem?.mandatory ?? true,
       notes: checklistItem?.notes ?? "",
       responseType: checklistItem?.responseType ?? "YES_NO",
@@ -56,15 +57,25 @@ export function WorkflowStageChecklistDialog({
   });
 
   const submit = form.handleSubmit(async (values) => {
+    const key =
+      checklistItem?.key ??
+      uniqueStableKeyFromLabel(
+        values.text,
+        checklistItems
+          .filter((item) => item.taskStableKey === values.taskStableKey)
+          .map((item) => item.key),
+        "CHECKLIST",
+      );
     const duplicateKey = checklistItems.some(
       (item) =>
         item.taskStableKey === values.taskStableKey &&
-        item.key === values.key &&
+        item.key === key &&
         !isSameWorkflowTaskRequirement(item, checklistItem),
     );
     if (duplicateKey) {
-      form.setError("key", {
-        message: "Checklist key must be unique in this task.",
+      form.setError("taskStableKey", {
+        message:
+          "This checklist item conflicts with an existing item in the selected task.",
       });
       return;
     }
@@ -83,6 +94,7 @@ export function WorkflowStageChecklistDialog({
     const nextItem = {
       ...(checklistItem?.id ? { id: checklistItem.id } : {}),
       ...values,
+      key,
       evidenceRequirement: checklistItem?.evidenceRequirement ?? "NONE",
     };
     await mutation.mutateAsync({
@@ -115,12 +127,7 @@ export function WorkflowStageChecklistDialog({
       <FormProvider {...form}>
         <form className="grid gap-4 sm:grid-cols-2" onSubmit={submit}>
           <FormInput
-            label="Key"
-            name="key"
-            placeholder="OWNERSHIP_CONFIRMED"
-            required
-          />
-          <FormInput
+            containerClassName="sm:col-span-2"
             label="Display order"
             min={1}
             name="displayOrder"

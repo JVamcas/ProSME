@@ -1,9 +1,13 @@
 import "server-only";
+import { adminApplicationVisibilityFilter } from "./AdminApplicationVisibility";
 import { workflowHasActiveApplicationHold } from "@/modules/workflows/infrastructure/WorkflowHoldQueries";
 
 import { sql } from "drizzle-orm";
 
-import { adminApplicationStatusPredicate, adminApplicationPublicStatusSql } from "./AdminApplicationStatusSql";
+import {
+  adminApplicationStatusPredicate,
+  adminApplicationPublicStatusSql,
+} from "./AdminApplicationStatusSql";
 import { adminApplicationDemographicFilters } from "./AdminApplicationListFilters";
 
 import { getDatabase } from "@/db/client";
@@ -59,25 +63,6 @@ const aliasedApplicationOpenRfiExists = sql<boolean>`EXISTS (
     AND open_rfi.status = 'OPEN'
 )`;
 
-function visibilityFilter(actorId: string, visibility: "all" | "assigned") {
-  if (visibility === "all") return sql`TRUE`;
-  return sql`EXISTS (
-    SELECT 1
-    FROM app_workflow_tasks visible_task
-    JOIN app_workflow_stage_instances visible_stage
-      ON visible_stage.id = visible_task.stage_instance_id
-    WHERE visible_stage.workflow_instance_id = workflow.id
-      AND visible_stage.status IN ('ACTIVE', 'BLOCKED')
-      AND visible_task.status IN ('PENDING', 'IN_PROGRESS')
-      AND (
-        visible_task.assigned_user_id = ${actorId}::uuid
-        OR visible_task.assigned_role_id IN (
-          SELECT role_id FROM app_user_roles WHERE user_id = ${actorId}::uuid
-        )
-      )
-  )`;
-}
-
 function applicationSearch(search?: string) {
   if (!search) return sql`TRUE`;
   const pattern = `%${search}%`;
@@ -91,7 +76,7 @@ function applicationSearch(search?: string) {
 }
 
 function stageFilter(stage?: string) {
-  return stage ? sql`stage_definition.name ILIKE ${`%${stage}%`}` : sql`TRUE`;
+  return stage ? sql`stage_definition.name = ${stage}` : sql`TRUE`;
 }
 
 function cursorFilter(cursor?: AdminApplicationCursor) {
@@ -107,6 +92,7 @@ function applicationQuery(input: {
   actorId: string;
   cursor?: AdminApplicationCursor;
   filters: AdminApplicationListInput;
+  includeTotal?: boolean;
   visibility: "all" | "assigned";
 }) {
   return sql`
@@ -159,13 +145,22 @@ function applicationQuery(input: {
           AND task.status IN ('PENDING', 'IN_PROGRESS')
       ) task_summary ON TRUE
       WHERE application.status = 'submitted'
-        AND ${visibilityFilter(input.actorId, input.visibility)}
+        AND ${adminApplicationVisibilityFilter(input.actorId, input.visibility)}
         AND ${adminApplicationStatusPredicate(input.filters.status)}
         AND ${applicationSearch(input.filters.search)}
         AND ${stageFilter(input.filters.stage)}
+        AND ${
+          input.filters.fundingCallId
+            ? sql`application.funding_opportunity_id = ${input.filters.fundingCallId}::uuid`
+            : sql`TRUE`
+        }
         AND ${adminApplicationDemographicFilters(input.filters)}
     )
-    SELECT filtered.*, (SELECT count(*)::integer FROM filtered) AS "totalCount"
+    SELECT filtered.*, ${
+      input.includeTotal === false
+        ? sql`0::integer`
+        : sql`(SELECT count(*)::integer FROM filtered)`
+    } AS "totalCount"
     FROM filtered
     WHERE ${cursorFilter(input.cursor)}
     ORDER BY "submittedAt" DESC, "applicationId" DESC
@@ -187,6 +182,7 @@ export async function readAdminApplications(input: {
   actorId: string;
   cursor?: AdminApplicationCursor;
   filters: AdminApplicationListInput;
+  includeTotal?: boolean;
   visibility: "all" | "assigned";
 }) {
   const result = await getDatabase().execute(applicationQuery(input));
@@ -268,7 +264,7 @@ function detailQuery(input: {
     ) stage_timeline ON TRUE
     WHERE application.id = ${input.applicationId}::uuid
       AND application.status = 'submitted'
-      AND ${visibilityFilter(input.actorId, input.visibility)}
+      AND ${adminApplicationVisibilityFilter(input.actorId, input.visibility)}
     LIMIT 1
   `;
 }

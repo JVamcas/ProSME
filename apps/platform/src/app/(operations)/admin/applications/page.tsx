@@ -13,11 +13,15 @@ export const metadata: Metadata = {
   title: "Applications",
 };
 
-export default async function StaffApplicationsPage({ searchParams }: {
+export default async function StaffApplicationsPage({
+  searchParams,
+}: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const parsed = adminApplicationListSchema.safeParse(await searchParams);
-  const initialFilters = parsed.success ? parsed.data : { limit: 25, status: "all" as const };
+  const initialFilters = parsed.success
+    ? parsed.data
+    : { limit: 25, status: "all" as const };
   const user = await getAuthenticatedPageUser();
   const canRead =
     can(user, permissionCodes.workflowTaskAssignedRead) ||
@@ -38,6 +42,7 @@ export default async function StaffApplicationsPage({ searchParams }: {
       <StaffApplicationsTable
         key={JSON.stringify(initialFilters)}
         initialFilters={initialFilters}
+        canExport={can(user, permissionCodes.fundingApplicationExport)}
       />
     </PageShell>
   );

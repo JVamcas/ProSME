@@ -1,5 +1,7 @@
 "use client";
 
+import { uniqueStableKeyFromLabel } from "../../domain/WorkflowStableKey";
+
 import { isSameWorkflowTaskRequirement } from "../../domain/definitions/WorkflowTaskRequirementIdentity";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -43,7 +45,6 @@ export function WorkflowStageCommentFieldDialog({
           ...(stage.commentFields ?? []).map((item) => item.displayOrder),
         ) + 1,
       helpText: field?.helpText ?? "",
-      key: field?.key ?? "",
       label: field?.label ?? "",
       taskStableKey: field?.taskStableKey ?? stage.tasks[0]?.stableKey ?? "",
       mandatory: field?.mandatory ?? false,
@@ -52,15 +53,25 @@ export function WorkflowStageCommentFieldDialog({
   });
 
   const submit = form.handleSubmit(async (values) => {
+    const key =
+      field?.key ??
+      uniqueStableKeyFromLabel(
+        values.label,
+        (stage.commentFields ?? [])
+          .filter((item) => item.taskStableKey === values.taskStableKey)
+          .map((item) => item.key),
+        "COMMENT",
+      );
     const duplicateKey = (stage.commentFields ?? []).some(
       (item) =>
         item.taskStableKey === values.taskStableKey &&
-        item.key === values.key &&
+        item.key === key &&
         !isSameWorkflowTaskRequirement(item, field),
     );
     if (duplicateKey) {
-      form.setError("key", {
-        message: "Key must be unique in this task.",
+      form.setError("taskStableKey", {
+        message:
+          "This comment field conflicts with an existing item in the selected task.",
       });
       return;
     }
@@ -79,6 +90,7 @@ export function WorkflowStageCommentFieldDialog({
     const nextField = {
       ...(field?.id ? { id: field.id } : {}),
       ...values,
+      key,
     };
     await mutation.mutateAsync({
       stages: editor.graph.stages.map((item) =>
@@ -114,12 +126,7 @@ export function WorkflowStageCommentFieldDialog({
       <FormProvider {...form}>
         <form className="grid gap-4 sm:grid-cols-2" onSubmit={submit}>
           <FormInput
-            label="Key"
-            name="key"
-            placeholder="REVIEW_RECOMMENDATION"
-            required
-          />
-          <FormInput
+            containerClassName="sm:col-span-2"
             label="Display order"
             min={1}
             name="displayOrder"

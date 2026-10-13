@@ -1,5 +1,7 @@
 "use client";
 
+import { uniqueStableKeyFromLabel } from "../../domain/WorkflowStableKey";
+
 import { isSameWorkflowTaskRequirement } from "../../domain/definitions/WorkflowTaskRequirementIdentity";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -45,7 +47,6 @@ export function WorkflowStageDocumentRequirementDialog({
       mandatory: requirement?.mandatory ?? true,
       maximumSizeMb: requirement?.maximumSizeMb ?? 10,
       name: requirement?.name ?? "",
-      stableKey: requirement?.stableKey ?? "",
       requestOnStageActivation: requirement?.requestOnStageActivation ?? false,
       taskStableKey: requirement?.taskStableKey ?? "",
       templateReference: requirement?.templateReference ?? "",
@@ -58,15 +59,25 @@ export function WorkflowStageDocumentRequirementDialog({
   });
 
   const submit = form.handleSubmit(async (values) => {
+    const stableKey =
+      requirement?.stableKey ??
+      uniqueStableKeyFromLabel(
+        values.name,
+        stage.documentRequirements
+          .filter((item) => item.taskStableKey === values.taskStableKey)
+          .map((item) => item.stableKey),
+        "DOCUMENT",
+      );
     const duplicateKey = stage.documentRequirements.some(
       (item) =>
         item.taskStableKey === values.taskStableKey &&
-        item.stableKey === values.stableKey &&
+        item.stableKey === stableKey &&
         !isSameWorkflowTaskRequirement(item, requirement),
     );
     if (duplicateKey) {
-      form.setError("stableKey", {
-        message: "Stable key must be unique in this task.",
+      form.setError("taskStableKey", {
+        message:
+          "This document requirement conflicts with an existing item in the selected task.",
       });
       return;
     }
@@ -85,6 +96,7 @@ export function WorkflowStageDocumentRequirementDialog({
     const nextRequirement = {
       ...(requirement?.id ? { id: requirement.id } : {}),
       ...values,
+      stableKey,
       uploader: requirement?.uploader ?? "APPLICANT",
       verifier: requirement?.verifier ?? "ASSIGNED_REVIEWER",
     };
@@ -124,15 +136,6 @@ export function WorkflowStageDocumentRequirementDialog({
     >
       <FormProvider {...form}>
         <form className="grid gap-4 sm:grid-cols-2" onSubmit={submit}>
-          <FormInput
-            containerClassName="sm:col-span-2"
-            disabled={Boolean(requirement)}
-            infoTooltip="Immutable identifier used by conditions and runtime context."
-            label="Stable key"
-            name="stableKey"
-            placeholder="TAX_CLEARANCE_CERTIFICATE"
-            required
-          />
           <FormInput
             containerClassName="sm:col-span-2"
             label="Document name"

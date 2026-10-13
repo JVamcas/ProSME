@@ -4,7 +4,7 @@ vi.mock("server-only", () => ({}));
 vi.mock("@/auth/firebase/admin", () => ({
   getFirebaseAdminAuth: vi.fn(),
 }));
-vi.mock("@/db/repositories/UserRepository", () => ({
+vi.mock("@/modules/users/infrastructure/UserRepository", () => ({
   provisionApplicant: vi.fn(),
 }));
 vi.mock("@/integrations/monitoring/logger", () => ({
@@ -12,7 +12,7 @@ vi.mock("@/integrations/monitoring/logger", () => ({
 }));
 
 import { getFirebaseAdminAuth } from "@/auth/firebase/admin";
-import { provisionApplicant } from "@/db/repositories/UserRepository";
+import { provisionApplicant } from "@/modules/users/infrastructure/UserRepository";
 import { createAccount } from "@/modules/users/ServerRegistrationService";
 
 const auth = {
