@@ -97,3 +97,17 @@ describe("admin application public status read model", () => {
     expect(query.sql).not.toContain("business_section ->> \businessId");
   });
 });
+
+it("omits a repeated full count for bounded export pages", async () => {
+  execute.mockResolvedValueOnce({ rows: [] });
+  await readAdminApplications({
+    actorId,
+    filters: { limit: 100, status: "all" },
+    visibility: "assigned",
+    includeTotal: false,
+  });
+  const query = new PgDialect().sqlToQuery(execute.mock.calls[0][0]);
+  expect(query.sql).not.toContain("SELECT count(*)::integer FROM filtered");
+  expect(query.sql).toContain("visible_task.assigned_user_id");
+  expect(query.params).toContain(101);
+});

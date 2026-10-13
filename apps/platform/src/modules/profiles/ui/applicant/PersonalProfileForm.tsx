@@ -18,12 +18,11 @@ import { ProfileFormActions } from "@/components/applicant/profile/ProfileFormAc
 import { PortalErrorState } from "@/shared/ui/portal/PortalErrorState";
 import { PortalLoadingState } from "@/shared/ui/portal/PortalLoadingState";
 
-const defaults: ApplicantPersonalProfileInput = {
+const defaults: Partial<ApplicantPersonalProfileInput> = {
   firstName: "",
   surname: "",
-  position: "",
   dateOfBirth: "",
-  gender: "",
+  gender: undefined,
   nationality: "Namibian",
   region: "",
 };
@@ -38,15 +37,17 @@ export function PersonalProfileForm({ readOnly }: { readOnly: boolean }) {
 
   useEffect(() => {
     if (profile.data) {
-      form.reset(profile.data);
+      form.reset({ ...profile.data, gender: profile.data.gender || undefined });
     }
   }, [form, profile.data]);
 
   if (profile.isPending) {
-    return <PortalLoadingState
+    return (
+      <PortalLoadingState
         title="Loading your profile"
         description="Just a moment..."
-      />;
+      />
+    );
   }
 
   if (profile.isError || !profile.data) {

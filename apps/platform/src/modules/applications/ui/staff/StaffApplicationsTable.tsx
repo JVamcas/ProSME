@@ -1,5 +1,8 @@
 "use client";
 
+import { ApplicationExportActions } from "./ApplicationExportActions";
+import { useAdminApplicationFilterOptions } from "../useAdminApplicationTools";
+import { GeneralButton } from "@/components/ui/button";
 import { useState } from "react";
 
 import { DataTable, type DataTableColumn } from "@/shared/ui/DataTable";
@@ -7,9 +10,7 @@ import { DataTableFilter } from "@/components/ui/data-table-filter";
 import { Pagination } from "@/components/ui/pagination";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { useAdminApplications } from "@/modules/applications/ui/useApplications";
-import type {
-  AdminApplicationListRow,
-} from "@/modules/applications/ApplicationTypes";
+import type { AdminApplicationListRow } from "@/modules/applications/ApplicationTypes";
 import { formatLocalDateTime24 } from "@/lib/dateUtils";
 import { ApplicationNavigationLink } from "../ApplicationNavigationLink";
 import { useForm } from "react-hook-form";
@@ -22,6 +23,7 @@ type FilterInput = z.input<typeof adminApplicationFormSchema>;
 type Filters = z.output<typeof adminApplicationFormSchema>;
 
 const defaultFilters: FilterInput = {
+  fundingCallId: "",
   status: "all",
   search: "",
   stage: "",
@@ -82,15 +84,22 @@ const columns: DataTableColumn<AdminApplicationListRow>[] = [
   },
 ];
 
-export function StaffApplicationsTable({ initialFilters }: {
+export function StaffApplicationsTable({
+  initialFilters,
+  canExport = false,
+}: {
+  canExport?: boolean;
   initialFilters?: Filters;
 }) {
+  const options = useAdminApplicationFilterOptions();
   const initialValues = { ...defaultFilters, ...initialFilters };
   const form = useForm<FilterInput, unknown, Filters>({
     resolver: zodResolver(adminApplicationFormSchema),
     defaultValues: initialValues,
   });
-  const [filters, setFilters] = useState<Filters>(initialFilters ?? { status: "all" });
+  const [filters, setFilters] = useState<Filters>(
+    initialFilters ?? { status: "all" },
+  );
   const [cursors, setCursors] = useState<string[]>([]);
   const applications = useAdminApplications({
     ...filters,
@@ -124,12 +133,34 @@ export function StaffApplicationsTable({ initialFilters }: {
       <div className="py-4 px-1">
         <DataTableFilter
           defaultExpanded
-          description="Filter applications by applicant, business, status and submission date."
+          description="Filter applications by funding call, applicant, business, workflow stage, status and submission date."
           onApply={() => void form.handleSubmit(applyFilters)()}
           onClear={clearFilters}
           title="Application filters"
         >
-          <ApplicationFilterFields register={form.register} />
+          <ApplicationFilterFields
+            register={form.register}
+            control={form.control}
+            options={options.data}
+            optionsPending={options.isPending}
+          />
+          {options.isError ? (
+            <div
+              role="alert"
+              className="col-span-full flex items-center gap-3 text-sm text-red-700"
+            >
+              <span>
+                Funding calls and workflow stages could not be loaded.
+              </span>
+              <GeneralButton
+                type="button"
+                variant="ghost"
+                onClick={() => void options.refetch()}
+              >
+                Retry
+              </GeneralButton>
+            </div>
+          ) : null}
           {Object.values(form.formState.errors).map((error, index) => (
             <p className="text-sm text-red-700" role="alert" key={index}>
               {error.message}
@@ -138,6 +169,14 @@ export function StaffApplicationsTable({ initialFilters }: {
         </DataTableFilter>
       </div>
       <DataTable
+        toolbar={
+          canExport
+            ? {
+                description: "Export all results matching the applied filters.",
+                actions: <ApplicationExportActions filters={filters} />,
+              }
+            : undefined
+        }
         columns={columns}
         data={applications.data?.items ?? []}
         emptyMessage={emptyMessage}

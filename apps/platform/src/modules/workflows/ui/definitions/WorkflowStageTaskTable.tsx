@@ -2,12 +2,8 @@
 
 import { CheckCircle2, Plus } from "lucide-react";
 
-import {
-  DeleteButton,
-  EditButton,
-  PreviewButton,
-} from "@/components/ui/action-buttons";
 import { GeneralButton } from "@/components/ui/button";
+import { ActionMenu } from "@/shared/ui/ActionMenu";
 import { DataTable, type DataTableColumn } from "@/shared/ui/DataTable";
 import type {
   WorkflowAssignmentOptions,
@@ -87,20 +83,29 @@ function taskColumns(
       header: "Actions",
       enableSorting: false,
       cell: ({ row }) => (
-        <div className="flex justify-start gap-1">
-          <PreviewButton
-            onClick={() => onPreview(row.original)}
-            title={`Preview ${row.original.name}`}
-          />
-          <EditButton
-            disabled={!canEdit}
-            onClick={() => onEdit(row.original)}
-            title={`Edit ${row.original.name}`}
-          />
-          <DeleteButton
-            disabled={!canEdit}
-            onClick={() => onDelete(row.original)}
-            title={`Delete ${row.original.name}`}
+        <div className="flex justify-start">
+          <ActionMenu
+            items={[
+              {
+                id: "preview",
+                label: "Preview",
+                onAction: () => onPreview(row.original),
+              },
+              {
+                id: "edit",
+                label: "Edit",
+                disabled: !canEdit,
+                onAction: () => onEdit(row.original),
+              },
+              {
+                id: "delete",
+                label: "Delete",
+                disabled: !canEdit,
+                destructive: true,
+                onAction: () => onDelete(row.original),
+              },
+            ]}
+            label={`Actions for ${row.original.name}`}
           />
         </div>
       ),

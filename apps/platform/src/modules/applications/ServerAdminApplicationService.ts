@@ -1,4 +1,5 @@
 import "server-only";
+import { readAdminApplicationFilterOptions } from "./infrastructure/AdminApplicationFilterOptionsRepository";
 
 import { permissionCodes } from "@/auth/authorization/permissions";
 import { can, requireAnyPermission } from "@/auth/authorization/policy";
@@ -19,12 +20,14 @@ import type {
 export async function listAdminApplications(
   user: AuthenticatedUser | null,
   input: AdminApplicationListInput,
+  options: { includeTotal?: boolean } = {},
 ): Promise<AdminApplicationPage> {
   const actor = requireAnyPermission(user, [
     permissionCodes.workflowTaskAssignedRead,
     permissionCodes.fundingApplicationAllRead,
   ]);
   const projection = await readAdminApplications({
+    ...options,
     actorId: actor.id,
     cursor: input.after ? decodeAdminApplicationCursor(input.after) : undefined,
     filters: input,
@@ -54,6 +57,21 @@ export async function getAdminApplicationOverview(
   return readAdminApplication({
     actorId: actor.id,
     applicationId,
+    visibility: can(actor, permissionCodes.fundingApplicationAllRead)
+      ? "all"
+      : "assigned",
+  });
+}
+
+export async function getAdminApplicationFilterOptions(
+  user: AuthenticatedUser | null,
+) {
+  const actor = requireAnyPermission(user, [
+    permissionCodes.workflowTaskAssignedRead,
+    permissionCodes.fundingApplicationAllRead,
+  ]);
+  return readAdminApplicationFilterOptions({
+    actorId: actor.id,
     visibility: can(actor, permissionCodes.fundingApplicationAllRead)
       ? "all"
       : "assigned",

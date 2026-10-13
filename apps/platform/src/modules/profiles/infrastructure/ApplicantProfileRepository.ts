@@ -3,17 +3,12 @@ import "server-only";
 import { and, eq } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
-import {
-  applicantProfiles,
-  profileAuditEntries,
-  users,
-} from "@/db/schema";
+import { applicantProfiles, profileAuditEntries, users } from "@/db/schema";
 import type { ApplicantProfileUpdateInput } from "../ProfileSchemas";
 
 const applicantColumns = {
   firstName: applicantProfiles.firstName,
   surname: applicantProfiles.surname,
-  position: applicantProfiles.position,
   phoneNumber: applicantProfiles.phoneNumber,
   dateOfBirth: applicantProfiles.dateOfBirth,
   gender: applicantProfiles.gender,
@@ -27,7 +22,6 @@ const applicantColumns = {
 type ApplicantProfileRow = {
   firstName: string;
   surname: string;
-  position: string;
   phoneNumber: string;
   dateOfBirth: string | null;
   gender?: string | null;
@@ -46,10 +40,7 @@ export async function findApplicantProfile(
     .from(applicantProfiles)
     .innerJoin(users, eq(users.id, applicantProfiles.userId))
     .where(
-      and(
-        eq(applicantProfiles.userId, ownerUserId),
-        eq(users.id, ownerUserId),
-      ),
+      and(eq(applicantProfiles.userId, ownerUserId), eq(users.id, ownerUserId)),
     )
     .limit(1);
 

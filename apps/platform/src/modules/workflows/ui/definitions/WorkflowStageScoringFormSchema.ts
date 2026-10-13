@@ -14,30 +14,24 @@ export const workflowStageAggregationFormSchema = z.object({
   taskStableKey: z.string().min(1, "Select a workflow task."),
 });
 
-export const workflowStageScoringCriterionFormSchema = z.object({
-  stableKey: z.string()
-    .trim()
-    .min(2, "Stable key is required.")
-    .max(80)
-    .regex(
-      /^[A-Z][A-Z0-9_]*$/,
-      "Use uppercase letters, numbers, and underscores, starting with a letter.",
-    ),
-  criterion: z.string().trim().min(2).max(160),
-  description: z.string().trim().max(1000),
-  weight: z.number().positive().max(100),
-  scaleMinimum: z.number().min(0).max(1000),
-  scaleMaximum: z.number().positive().max(1000),
-  mandatoryComment: z.boolean(),
-}).superRefine((criterion, context) => {
-  if (criterion.scaleMaximum <= criterion.scaleMinimum) {
-    context.addIssue({
-      code: "custom",
-      message: "Scale maximum must be greater than scale minimum.",
-      path: ["scaleMaximum"],
-    });
-  }
-});
+export const workflowStageScoringCriterionFormSchema = z
+  .object({
+    criterion: z.string().trim().min(2).max(160),
+    description: z.string().trim().max(1000),
+    weight: z.number().positive().max(100),
+    scaleMinimum: z.number().min(0).max(1000),
+    scaleMaximum: z.number().positive().max(1000),
+    mandatoryComment: z.boolean(),
+  })
+  .superRefine((criterion, context) => {
+    if (criterion.scaleMaximum <= criterion.scaleMinimum) {
+      context.addIssue({
+        code: "custom",
+        message: "Scale maximum must be greater than scale minimum.",
+        path: ["scaleMaximum"],
+      });
+    }
+  });
 
 export type WorkflowStageAggregationFormValues = z.infer<
   typeof workflowStageAggregationFormSchema

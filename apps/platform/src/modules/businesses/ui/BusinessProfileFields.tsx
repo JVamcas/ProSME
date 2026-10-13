@@ -15,6 +15,12 @@ export function BusinessProfileFields({ disabled }: { disabled?: boolean }) {
     <>
       <FormInput
         disabled={disabled}
+        label="Position of applicant"
+        name="applicantPosition"
+        required
+      />
+      <FormInput
+        disabled={disabled}
         label="Legal business name"
         name="legalName"
         required

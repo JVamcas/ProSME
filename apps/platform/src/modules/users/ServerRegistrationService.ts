@@ -2,7 +2,7 @@ import "server-only";
 
 import { getFirebaseAdminAuth } from "@/auth/firebase/admin";
 import type { RegistrationValues } from "@/platform/auth/firebase/auth-form.schemas";
-import { provisionApplicant } from "@/db/repositories/UserRepository";
+import { provisionApplicant } from "@/modules/users/infrastructure/UserRepository";
 import { logger } from "@/integrations/monitoring/logger";
 
 export async function createAccount(input: RegistrationValues) {

@@ -3,7 +3,7 @@ import "server-only";
 import { headers } from "next/headers";
 import { cache } from "react";
 
-import { findUserByFirebaseSubject } from "@/db/repositories/UserRepository";
+import { findUserByFirebaseSubject } from "@/modules/users/infrastructure/UserRepository";
 import {
   verifyFirebaseSessionFromHeaders,
   type FirebaseSessionVerificationOptions,

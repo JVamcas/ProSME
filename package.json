@@ -22,8 +22,5 @@
     "check": "npm run check:architecture && npm run check:files && npm run lint && npm run typecheck && npm run test && npm run build",
     "test:chatbot": "npm run test:chatbot --workspace @prosme/platform",
     "test:component-reuse": "npm run test:component-reuse --workspace @prosme/platform"
-  },
-  "devDependencies": {
-    "monaco-editor": "0.37.1"
   }
 }

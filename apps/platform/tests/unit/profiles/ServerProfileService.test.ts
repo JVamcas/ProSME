@@ -57,10 +57,10 @@ describe("P3.1 profile ownership policy", () => {
       {
         section: "personal",
         data: {
+          gender: "Female",
           firstName: "Anna",
           surname: "Ndeitunga",
-          position: "Managing director",
-          dateOfBirth: "",
+          dateOfBirth: "1990-06-12",
           nationality: "Namibian",
           region: "Khomas",
         },

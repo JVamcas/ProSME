@@ -1,11 +1,13 @@
 import {
   index,
   integer,
+  jsonb,
   pgTable,
   text,
   timestamp,
   uuid,
 } from "drizzle-orm/pg-core";
+import type { BusinessMember } from "../BusinessSchemas";
 import { users } from "@/db/schema/identity";
 
 export const businessProfiles = pgTable(
@@ -15,6 +17,8 @@ export const businessProfiles = pgTable(
     userId: uuid("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
+    applicantPosition: text("applicant_position").notNull().default(""),
+    members: jsonb("members").$type<BusinessMember[]>().notNull().default([]),
     legalName: text("legal_name").notNull(),
     tradingName: text("trading_name").notNull().default(""),
     registrationNumber: text("registration_number").notNull().default(""),

@@ -22,9 +22,8 @@ import {
 const applicantInput = {
   firstName: "Anna",
   surname: "Ndeitunga",
-  position: "Managing director",
   phoneNumber: "+264810000000",
-  dateOfBirth: "",
+  dateOfBirth: "1990-06-12",
   gender: "Female" as const,
   nationality: "Namibian",
   region: "Khomas",
@@ -36,7 +35,6 @@ const personalUpdate = {
   data: {
     firstName: applicantInput.firstName,
     surname: applicantInput.surname,
-    position: applicantInput.position,
     dateOfBirth: applicantInput.dateOfBirth,
     gender: applicantInput.gender,
     nationality: applicantInput.nationality,
@@ -68,11 +66,12 @@ function user(
 function request(path: string, body?: unknown) {
   return new Request(`http://localhost:3008${path}`, {
     body: body === undefined ? undefined : JSON.stringify(body),
-    headers: body === undefined
-      ? undefined
-      : {
-          "Content-Type": "application/json",
-        },
+    headers:
+      body === undefined
+        ? undefined
+        : {
+            "Content-Type": "application/json",
+          },
     method: body === undefined ? "GET" : "PATCH",
   });
 }
@@ -102,9 +101,7 @@ describe("protected portal context route", () => {
         user([permissionCodes.userProfileOwnRead], status),
       );
 
-      const response = await contextRoute.GET(
-        request("/api/portal/context"),
-      );
+      const response = await contextRoute.GET(request("/api/portal/context"));
 
       expect(response.status).toBe(403);
       await expect(response.json()).resolves.toMatchObject({
@@ -209,3 +206,27 @@ describe("protected applicant profile routes", () => {
     expect(body.meta.correlationId).toBeDefined();
   });
 });
+
+it.each([
+  "firstName",
+  "surname",
+  "dateOfBirth",
+  "gender",
+  "nationality",
+  "region",
+])(
+  "rejects an empty required personal field %s before persistence",
+  async (field) => {
+    vi.mocked(resolveUserFromHeaders).mockResolvedValue(
+      user([permissionCodes.userProfileOwnUpdate]),
+    );
+    const response = await profileRoute.PATCH(
+      request("/api/portal/profile", {
+        ...personalUpdate,
+        data: { ...personalUpdate.data, [field]: "" },
+      }),
+    );
+    expect(response.status).toBe(400);
+    expect(saveApplicantProfile).not.toHaveBeenCalled();
+  },
+);

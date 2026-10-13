@@ -15,8 +15,26 @@ function isReasonableEstablishedYear(value: string) {
   );
 }
 
+export const businessMemberRoles = [
+  "Principal",
+  "Founding member",
+  "Both",
+] as const;
+
+export const businessMemberSchema = z.object({
+  fullName: requiredText("Full name", 160),
+  idNumber: requiredText("ID number", 80),
+  role: z.enum(businessMemberRoles),
+});
+export type BusinessMember = z.infer<typeof businessMemberSchema>;
+
 export const businessProfileSchema = z
   .object({
+    applicantPosition: requiredText("Position of applicant"),
+    members: z
+      .array(businessMemberSchema)
+      .min(1, "Add at least one principal or founding member.")
+      .max(100),
     legalName: requiredText("Legal business name"),
     tradingName: requiredText("Trading name", 160),
     registrationNumber: requiredText("Registration number", 80),

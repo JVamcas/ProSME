@@ -4,12 +4,16 @@ import {
   deleteData,
   patchData,
   requestData,
+  requestBlob,
   requestJson,
 } from "@/lib/client-http";
 import type {
   CreateApplicationDraftInput,
   SaveApplicationDraftInput,
 } from "./ApplicationSchemas";
+import { adminApplicationQuery } from "./api/AdminApplicationQuery";
+import type { AdminApplicationExportInput } from "./api/AdminApplicationSchemas";
+import type { AdminApplicationFilterOptions } from "./ApplicationTypes";
 import type { ApplicationSubmissionCommandInput } from "./api/ApplicationSubmissionSchemas";
 import type { ApplicationWithdrawalInput } from "./api/ApplicationWithdrawalSchemas";
 import type {
@@ -55,20 +59,9 @@ type AdminApplicationEnvelope = {
 async function listAdminApplications(
   input: AdminApplicationListInput,
 ): Promise<AdminApplicationPage> {
-  const query = new URLSearchParams({
-    limit: String(input.limit),
-    status: input.status,
-  });
+  const query = adminApplicationQuery(input);
+  query.set("limit", String(input.limit));
   if (input.after) query.set("after", input.after);
-  if (input.search) query.set("search", input.search);
-  if (input.stage) query.set("stage", input.stage);
-  for (const key of [
-    "ageMin", "ageMax", "gender", "region", "sector", "submittedFrom", "submittedTo",
-    "submittedAfter", "submittedBefore",
-  ] as const) {
-    const value = input[key];
-    if (value !== undefined && value !== "") query.set(key, String(value));
-  }
   const envelope = await requestJson<AdminApplicationEnvelope>(
     `/api/admin/applications?${query.toString()}`,
     { cache: "no-store" },
@@ -204,6 +197,18 @@ function withdrawApplication(
 }
 
 export const clientApplicationService = {
+  applicationFilterOptions: () =>
+    requestData<AdminApplicationFilterOptions>(
+      "/api/admin/applications/filter-options",
+      { cache: "no-store" },
+    ),
+  exportApplications: (input: AdminApplicationExportInput) => {
+    const query = adminApplicationQuery(input);
+    query.set("format", input.format);
+    return requestBlob(`/api/admin/applications/export?${query}`, {
+      cache: "no-store",
+    });
+  },
   createApplication,
   deleteApplicationDraft,
   getOwnApplication,

@@ -4,13 +4,13 @@ vi.mock("next/headers", () => ({ headers: vi.fn() }));
 vi.mock("@/platform/auth/firebase/ServerFirebaseSession", () => ({
   verifyFirebaseSessionFromHeaders: vi.fn(),
 }));
-vi.mock("@/db/repositories/UserRepository", () => ({
+vi.mock("@/modules/users/infrastructure/UserRepository", () => ({
   findUserByFirebaseSubject: vi.fn(),
 }));
 
 import { resolveUserFromHeaders } from "@/auth/authorization/current-user";
 import { verifyFirebaseSessionFromHeaders } from "@/platform/auth/firebase/ServerFirebaseSession";
-import { findUserByFirebaseSubject } from "@/db/repositories/UserRepository";
+import { findUserByFirebaseSubject } from "@/modules/users/infrastructure/UserRepository";
 
 beforeEach(() => vi.clearAllMocks());
 

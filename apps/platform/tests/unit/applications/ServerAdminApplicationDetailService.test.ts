@@ -4,13 +4,20 @@ vi.mock("server-only", () => ({}));
 vi.mock("@/modules/applications/ServerAdminApplicationService", () => ({
   getAdminApplicationOverview: vi.fn(),
 }));
-vi.mock("@/modules/applications/ServerApplicationSubmissionSnapshotService", () => ({
-  getApplicationSubmissionSnapshot: vi.fn(),
-}));
-vi.mock("@/modules/applications/infrastructure/AttachedApplicationFormRepository", () => ({
-  getAttachedApplicationForm: vi.fn(),
-}));
+vi.mock(
+  "@/modules/applications/ServerApplicationSubmissionSnapshotService",
+  () => ({
+    getApplicationSubmissionSnapshot: vi.fn(),
+  }),
+);
+vi.mock(
+  "@/modules/applications/infrastructure/AttachedApplicationFormRepository",
+  () => ({
+    getAttachedApplicationForm: vi.fn(),
+  }),
+);
 
+import { staffApplicationStatusDescription } from "@/modules/applications/domain/ApplicationDetailStatus";
 import { ResourceNotFoundError } from "@/lib/resource-errors";
 import { getAdminApplicationOverview } from "@/modules/applications/ServerAdminApplicationService";
 import { getAdminApplicationDetail } from "@/modules/applications/ServerAdminApplicationDetailService";
@@ -32,7 +39,8 @@ beforeEach(() => {
     currentStageName: "Screening",
     publicStatus: {
       actionRequired: false,
-      description: "Your application is being checked for completeness and eligibility.",
+      description:
+        "Your application is being checked for completeness and eligibility.",
       label: "Application under assessment",
       status: "UNDER_REVIEW",
     },
@@ -43,24 +51,28 @@ beforeEach(() => {
     priority: null,
     reference: "SME Fund-001",
     requestedAmount: 250000,
-    stages: [{
-      endedAt: null,
-      name: "Screening",
-      startedAt: "2026-09-24T12:00:00.000Z",
-      status: "ACTIVE",
-    }],
+    stages: [
+      {
+        endedAt: null,
+        name: "Screening",
+        startedAt: "2026-09-24T12:00:00.000Z",
+        status: "ACTIVE",
+      },
+    ],
     submittedAt: "2026-09-24T12:00:00.000Z",
   });
   vi.mocked(getApplicationSubmissionSnapshot).mockResolvedValue({
     snapshot: {
       applicant: { displayName: "Lodged Applicant", userId: "private-id" },
       business: { legalName: "Lodged SME Fund" },
-      documents: [{
-        id: "30000000-0000-4000-8000-000000000003",
-        originalName: "Business plan.pdf",
-        requirementKey: "BUSINESS_PLAN",
-        sizeBytes: 2048,
-      }],
+      documents: [
+        {
+          id: "30000000-0000-4000-8000-000000000003",
+          originalName: "Business plan.pdf",
+          requirementKey: "BUSINESS_PLAN",
+          sizeBytes: 2048,
+        },
+      ],
       form: {
         normalizedValues: { GOAL: "Lodged answer", INTERNAL: "Hidden" },
         versionId: formVersionId,
@@ -69,19 +81,23 @@ beforeEach(() => {
     },
   } as never);
   vi.mocked(getAttachedApplicationForm).mockResolvedValue({
-    fields: [{
-      key: "GOAL",
-      label: "Project goal",
-      order: 1,
-      sectionId: "project-section",
-      type: "TEXT",
-    }],
-    sections: [{
-      id: "project-section",
-      key: "project",
-      order: 1,
-      title: "Project",
-    }],
+    fields: [
+      {
+        key: "GOAL",
+        label: "Project goal",
+        order: 1,
+        sectionId: "project-section",
+        type: "TEXT",
+      },
+    ],
+    sections: [
+      {
+        id: "project-section",
+        key: "project",
+        order: 1,
+        title: "Project",
+      },
+    ],
     versionId: formVersionId,
   } as never);
 });
@@ -106,6 +122,9 @@ describe("admin application detail", () => {
     expect(detail.model.statusBadgeLabel).toBe("IN PROGRESS");
     expect(detail.model.statusLabel).toBe("Application under assessment");
     expect(detail.model.statusDescription).toBe(
+      "This application is being checked for completeness and eligibility.",
+    );
+    expect(detail.overview.publicStatus.description).toBe(
       "Your application is being checked for completeness and eligibility.",
     );
     expect(detail.model.facts.map((fact) => fact.label)).toEqual([
@@ -117,19 +136,25 @@ describe("admin application detail", () => {
       "Project location",
       "Submission date",
     ]);
-    expect(detail.model.sections).toEqual([{
-      key: "project",
-      title: "Project",
-      answers: [{
-        key: "GOAL",
-        label: "Project goal",
-        value: "Lodged answer",
-      }],
-    }]);
-    expect(detail.model.applicantDetails).toEqual([{
-      label: "Name",
-      value: "Lodged Applicant",
-    }]);
+    expect(detail.model.sections).toEqual([
+      {
+        key: "project",
+        title: "Project",
+        answers: [
+          {
+            key: "GOAL",
+            label: "Project goal",
+            value: "Lodged answer",
+          },
+        ],
+      },
+    ]);
+    expect(detail.model.applicantDetails).toEqual([
+      {
+        label: "Name",
+        value: "Lodged Applicant",
+      },
+    ]);
     expect(detail.model.documents[0]?.href).toContain(
       `/api/admin/applications/${applicationId}/documents/`,
     );
@@ -138,9 +163,24 @@ describe("admin application detail", () => {
   it("does not access lodged data when the user cannot see the application", async () => {
     vi.mocked(getAdminApplicationOverview).mockResolvedValue(null);
 
-    await expect(getAdminApplicationDetail(user, applicationId, "correlation-id"))
-      .rejects.toBeInstanceOf(ResourceNotFoundError);
+    await expect(
+      getAdminApplicationDetail(user, applicationId, "correlation-id"),
+    ).rejects.toBeInstanceOf(ResourceNotFoundError);
     expect(getApplicationSubmissionSnapshot).not.toHaveBeenCalled();
     expect(getAttachedApplicationForm).not.toHaveBeenCalled();
   });
+});
+
+it.each([
+  [
+    "Your application's financial information is being assessed.",
+    "This application's financial information is being assessed.",
+  ],
+  ["We are reviewing your application.", "We are reviewing this application."],
+  [
+    "This application has been withdrawn.",
+    "This application has been withdrawn.",
+  ],
+])("uses staff wording for %s", (description, expected) => {
+  expect(staffApplicationStatusDescription(description)).toBe(expected);
 });

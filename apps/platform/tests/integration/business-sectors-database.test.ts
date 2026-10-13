@@ -30,6 +30,14 @@ const other = randomUUID();
 const legacy = randomUUID();
 let created = false;
 const input = {
+  applicantPosition: "Director",
+  members: [
+    {
+      fullName: "Synthetic Member",
+      idNumber: "TEST-123",
+      role: "Principal" as const,
+    },
+  ],
   businessType: "Company",
   employeeCount: "4",
   establishedYear: "2020",
@@ -47,6 +55,7 @@ beforeAll(async () => {
   created = true;
   for (const table of [
     "app_users",
+    "app_applicant_profiles",
     "app_business_profiles",
     "app_profile_audit_entries",
     "app_applications",
@@ -74,6 +83,16 @@ beforeAll(async () => {
   );
   await pool.query(migration);
   await pool.query(migration);
+  await pool.query(
+    "INSERT INTO app_applicant_profiles (user_id, position) VALUES ($1, 'Legacy director')",
+    [owner],
+  );
+  const memberMigration = readFileSync(
+    path.resolve(process.cwd(), "drizzle/0205_business_members_position.sql"),
+    "utf8",
+  );
+  await pool.query(memberMigration);
+  await pool.query(memberMigration);
   vi.mocked(getDatabase).mockReturnValue(drizzle(pool, { schema }));
 }, 60_000);
 
@@ -89,6 +108,8 @@ afterAll(async () => {
 (enabled ? describe : describe.skip)("business sector persistence", () => {
   it("preserves legacy primary text and starts with no secondary sector on repeated migration", async () => {
     expect(await findOwnedBusiness(owner, legacy)).toMatchObject({
+      applicantPosition: "Legacy director",
+      members: [],
       sector: "Legacy local trade",
       secondarySector: null,
     });
@@ -103,6 +124,8 @@ afterAll(async () => {
       secondarySectorOther: " Custom secondary ",
     });
     expect(await findOwnedBusiness(owner, id)).toMatchObject({
+      applicantPosition: input.applicantPosition,
+      members: input.members,
       sector: "Custom primary",
       secondarySector: "Custom secondary",
     });
@@ -111,6 +134,10 @@ afterAll(async () => {
     expect(
       await updateOwnedBusiness(owner, id, {
         ...input,
+        applicantPosition: "Founder",
+        members: [
+          { ...input.members[0], fullName: "Updated Member", role: "Both" },
+        ],
         sectorOther: "Hidden old primary",
         secondarySector: "",
         secondarySectorOther: "Hidden old secondary",
@@ -118,11 +145,17 @@ afterAll(async () => {
     ).toBe(id);
     const updated = (await findOwnedBusiness(owner, id))!;
     expect(updated).toMatchObject({
+      applicantPosition: "Founder",
+      members: [
+        { ...input.members[0], fullName: "Updated Member", role: "Both" },
+      ],
       sector: "Blue economy",
       secondarySector: null,
     });
     expect(Object.keys(updated).sort()).toEqual(
       [
+        "applicantPosition",
+        "members",
         "businessType",
         "createdAt",
         "employeeCount",

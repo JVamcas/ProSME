@@ -6,6 +6,14 @@ import {
 } from "@/modules/businesses/domain/BusinessSectors";
 
 const input = {
+  applicantPosition: "Director",
+  members: [
+    {
+      fullName: "Synthetic Member",
+      idNumber: "TEST-123",
+      role: "Principal" as const,
+    },
+  ],
   businessType: "Close corporation",
   employeeCount: "4",
   establishedYear: "2020",
@@ -148,4 +156,28 @@ describe("required business details", () => {
       ).toBe(false);
     },
   );
+});
+
+it("requires a business-specific position and at least one complete member", () => {
+  expect(
+    businessProfileSchema.safeParse({ ...input, applicantPosition: " " })
+      .success,
+  ).toBe(false);
+  expect(
+    businessProfileSchema.safeParse({ ...input, members: [] }).success,
+  ).toBe(false);
+  for (const field of ["fullName", "idNumber", "role"]) {
+    expect(
+      businessProfileSchema.safeParse({
+        ...input,
+        members: [{ ...input.members[0], [field]: "" }],
+      }).success,
+    ).toBe(false);
+  }
+  expect(
+    businessProfileSchema.safeParse({
+      ...input,
+      members: [{ ...input.members[0], role: "Unlisted" }],
+    }).success,
+  ).toBe(false);
 });

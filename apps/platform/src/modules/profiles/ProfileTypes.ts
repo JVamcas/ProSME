@@ -5,7 +5,8 @@ import type {
 } from "@/auth/authorization/portal-access";
 import type { AuthenticatedUser } from "@/auth/types";
 
-export type ApplicantProfileView = ApplicantProfileInput & {
+export type ApplicantProfileView = Omit<ApplicantProfileInput, "gender"> & {
+  gender: ApplicantProfileInput["gender"] | "";
   email: string;
   updatedAt: string | null;
 };

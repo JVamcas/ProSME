@@ -28,6 +28,14 @@ import {
 const ownerId = "79e20de0-3558-4d63-90a4-8c9f5125df07";
 const businessId = "99e20de0-3558-4d63-90a4-8c9f5125df07";
 const input = {
+  applicantPosition: "Director",
+  members: [
+    {
+      fullName: "Synthetic Member",
+      idNumber: "TEST-123",
+      role: "Principal" as const,
+    },
+  ],
   businessType: "Close corporation",
   employeeCount: "4",
   establishedYear: "2020",
@@ -141,6 +149,7 @@ describe("owned business routes", () => {
         user([permissionCodes.businessOwnUpdate]),
       );
       for (const field of [
+        "applicantPosition",
         "registrationNumber",
         "tradingName",
         "employeeCount",

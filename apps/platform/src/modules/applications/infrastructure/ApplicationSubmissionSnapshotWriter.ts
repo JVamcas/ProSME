@@ -64,7 +64,10 @@ export async function createSubmissionSnapshot(
       firstName: input.applicant.firstName,
       nationality: input.applicant.nationality,
       phoneNumber: input.applicant.phoneNumber,
-      position: input.applicant.position,
+      position: copiedText(
+        "BUSINESS_APPLICANT_POSITION",
+        input.business.applicantPosition,
+      ),
       postalAddress: input.applicant.postalAddress,
       profileUpdatedAt: input.applicant.profileUpdatedAt?.toISOString() ?? null,
       region: input.applicant.region,
@@ -85,6 +88,13 @@ export async function createSubmissionSnapshot(
       status: "submitted",
     },
     business: {
+      applicantPosition: copiedText(
+        "BUSINESS_APPLICANT_POSITION",
+        input.business.applicantPosition,
+      ),
+      members: Array.isArray(formValues.BUSINESS_MEMBERS)
+        ? formValues.BUSINESS_MEMBERS
+        : input.business.members,
       businessType: copiedText("BUSINESS_TYPE", input.business.businessType),
       employeeCount: copiedNumber(
         "BUSINESS_EMPLOYEE_COUNT",

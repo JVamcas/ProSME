@@ -10,7 +10,7 @@ vi.mock("@/platform/auth/ServerSessionActivityService", () => ({
   findActiveApplicationSession: vi.fn(),
   renewApplicationSession: vi.fn(),
 }));
-vi.mock("@/db/repositories/UserRepository", () => ({
+vi.mock("@/modules/users/infrastructure/UserRepository", () => ({
   provisionApplicant: vi.fn(),
 }));
 
@@ -24,7 +24,7 @@ import {
   readSessionActivity,
   renewSessionActivity,
 } from "@/platform/auth/ServerSessionService";
-import { provisionApplicant } from "@/db/repositories/UserRepository";
+import { provisionApplicant } from "@/modules/users/infrastructure/UserRepository";
 import { getSessionCookieName } from "@/auth/firebase/cookies";
 import {
   findActiveApplicationSession,
@@ -108,14 +108,23 @@ describe("application session service", () => {
   });
 
   it("does not issue a session for an inactive account", async () => {
-    vi.mocked(createFirebaseSession).mockResolvedValue(firebaseSession(currentTime) as never);
-    vi.mocked(provisionApplicant).mockResolvedValue({ ...user, status: "suspended" });
-    await expect(establishApplicationSession("token")).rejects.toThrow("active account");
+    vi.mocked(createFirebaseSession).mockResolvedValue(
+      firebaseSession(currentTime) as never,
+    );
+    vi.mocked(provisionApplicant).mockResolvedValue({
+      ...user,
+      status: "suspended",
+    });
+    await expect(establishApplicationSession("token")).rejects.toThrow(
+      "active account",
+    );
     expect(registerApplicationSession).not.toHaveBeenCalled();
   });
 
   it("reads status without extending the inactivity deadline", async () => {
-    vi.mocked(verifyFirebaseSessionCookie).mockResolvedValue({ uid: "firebase-subject" } as never);
+    vi.mocked(verifyFirebaseSessionCookie).mockResolvedValue({
+      uid: "firebase-subject",
+    } as never);
     vi.mocked(findActiveApplicationSession).mockResolvedValue({
       expiresAt: new Date(currentTime + 60_000),
     });
@@ -124,17 +133,27 @@ describe("application session service", () => {
       expiresAt: currentTime + 60_000,
       sessionCookie: "cookie",
     });
-    expect(verifyFirebaseSessionCookie).toHaveBeenCalledWith("cookie", { checkRevoked: true });
+    expect(verifyFirebaseSessionCookie).toHaveBeenCalledWith("cookie", {
+      checkRevoked: true,
+    });
     expect(renewApplicationSession).not.toHaveBeenCalled();
   });
 
   it("requires verified identity and atomically renews only an active own session", async () => {
-    vi.mocked(verifyFirebaseSessionCookie).mockResolvedValue({ uid: "firebase-subject" } as never);
+    vi.mocked(verifyFirebaseSessionCookie).mockResolvedValue({
+      uid: "firebase-subject",
+    } as never);
     vi.mocked(renewApplicationSession).mockResolvedValue(null);
     const headers = new Headers({ cookie: `${getSessionCookieName()}=cookie` });
     await expect(renewSessionActivity(headers, 15_000)).resolves.toBeNull();
-    expect(renewApplicationSession).toHaveBeenCalledWith("cookie", "firebase-subject", 15_000);
-    vi.mocked(verifyFirebaseSessionCookie).mockRejectedValueOnce(new Error("revoked"));
+    expect(renewApplicationSession).toHaveBeenCalledWith(
+      "cookie",
+      "firebase-subject",
+      15_000,
+    );
+    vi.mocked(verifyFirebaseSessionCookie).mockRejectedValueOnce(
+      new Error("revoked"),
+    );
     vi.mocked(renewApplicationSession).mockClear();
     await expect(renewSessionActivity(headers, 0)).resolves.toBeNull();
     expect(renewApplicationSession).not.toHaveBeenCalled();

@@ -23,12 +23,12 @@ vi.mock("@/modules/profiles/ClientProfileService", () => ({
 }));
 
 const profile = {
-  dateOfBirth: "",
+  dateOfBirth: "1990-06-12",
   email: "maria@example.test",
+  gender: "Female" as const,
   firstName: "Maria",
   nationality: "Namibian",
   phoneNumber: "+264810000000",
-  position: "Director",
   postalAddress: "",
   region: "Zambezi",
   surname: "Amutenya",
@@ -37,25 +37,26 @@ const profile = {
 
 function Harness({ section }: { section: "contact" | "personal" }) {
   const mutation = useUpdateApplicantProfile();
-  const input = section === "personal"
-    ? {
-        section,
-        data: {
-          dateOfBirth: profile.dateOfBirth,
-          firstName: profile.firstName,
-          nationality: profile.nationality,
-          position: profile.position,
-          region: profile.region,
-          surname: profile.surname,
-        },
-      } as const
-    : {
-        section,
-        data: {
-          phoneNumber: profile.phoneNumber,
-          postalAddress: profile.postalAddress,
-        },
-      } as const;
+  const input =
+    section === "personal"
+      ? ({
+          section,
+          data: {
+            dateOfBirth: profile.dateOfBirth,
+            gender: "Female" as const,
+            firstName: profile.firstName,
+            nationality: profile.nationality,
+            region: profile.region,
+            surname: profile.surname,
+          },
+        } as const)
+      : ({
+          section,
+          data: {
+            phoneNumber: profile.phoneNumber,
+            postalAddress: profile.postalAddress,
+          },
+        } as const);
 
   return (
     <button onClick={() => mutation.mutate(input)} type="button">
