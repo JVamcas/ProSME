@@ -43,17 +43,10 @@ function checklistColumns(
       header: "Order",
     },
     {
-      accessorKey: "key",
-      header: "Key",
-      cell: ({ row }) => (
-        <span className="font-mono text-xs">{row.original.key}</span>
-      ),
-    },
-    {
       accessorKey: "text",
       header: "Text",
       cell: ({ row }) => (
-        <span className="block max-w-80 whitespace-normal">
+        <span className="block  whitespace-normal">
           {row.original.text}
         </span>
       ),

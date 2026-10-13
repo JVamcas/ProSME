@@ -95,3 +95,30 @@ it("rejects an empty members table and incomplete added rows", async () => {
   expect(container.textContent).toContain("Full name is required");
   expect(container.textContent).toContain("ID number is required");
 });
+
+it("clears detail errors as corrected values are entered after Next", async () => {
+  await act(async () => root.render(<BusinessForm />));
+  await click("Next");
+  for (const [name, value] of Object.entries({
+    applicantPosition: "Engineer",
+    registrationNumber: "TEST-REG",
+    establishedYear: "2025",
+    employeeCount: "10",
+  })) {
+    const input = container.querySelector<HTMLInputElement>(
+      `input[name="${name}"]`,
+    )!;
+    expect(input.getAttribute("aria-invalid")).toBe("true");
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(
+        HTMLInputElement.prototype,
+        "value",
+      )!.set!.call(input, value);
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    expect(input.getAttribute("aria-invalid")).not.toBe("true");
+    expect(container.querySelector(`#${name}-error`)).toBeNull();
+  }
+  expect(mocks.save).not.toHaveBeenCalled();
+  expect(container.querySelector("table")).toBeNull();
+});

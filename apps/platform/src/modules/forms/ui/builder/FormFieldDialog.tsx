@@ -27,7 +27,6 @@ import {
   type FormFieldType,
   type FormSection,
 } from "@/modules/forms/FormTypes";
-import { FormFieldRulePanel } from "./FormFieldRulePanel";
 import { DocumentFieldLimits } from "./DocumentFieldLimits";
 import { RepeatableGroupConfigurationEditor } from "./RepeatableGroupConfigurationEditor";
 
@@ -121,7 +120,6 @@ function SelectOptions({
 function FormFieldDialogContent({
   field,
   fields,
-  visibilityFields,
   nextOrder,
   onClose,
   onSave,
@@ -130,7 +128,6 @@ function FormFieldDialogContent({
 }: {
   field?: FormField;
   fields: readonly FormField[];
-  visibilityFields: readonly FormField[];
   nextOrder: number;
   onClose: () => void;
   onSave: (field: FormField) => Promise<void>;
@@ -250,13 +247,6 @@ function FormFieldDialogContent({
           />
           <FormInput label="Help text" name="helpText" />
           <CheckboxField label="Required" name="required" />
-          <FormFieldRulePanel
-            field={field}
-            fields={fields}
-            precedingFields={visibilityFields.filter(
-              (item) => item.id !== field?.id,
-            )}
-          />
           {["NUMBER", "CURRENCY", "PERCENTAGE"].includes(type) ? (
             <div className="grid gap-4 sm:grid-cols-2">
               <FormInput label="Minimum" name="minimum" type="number" />
@@ -316,7 +306,6 @@ function FormFieldDialogContent({
 export function FormFieldDialog({
   field,
   fields,
-  visibilityFields = fields,
   isOpen,
   nextOrder,
   onClose,
@@ -326,7 +315,6 @@ export function FormFieldDialog({
 }: {
   field?: FormField;
   fields: readonly FormField[];
-  visibilityFields?: readonly FormField[];
   isOpen: boolean;
   nextOrder: number;
   onClose: () => void;
@@ -339,7 +327,6 @@ export function FormFieldDialog({
     <FormFieldDialogContent
       field={field}
       fields={fields}
-      visibilityFields={visibilityFields}
       key={field?.id ?? `${sectionId}-${nextOrder}`}
       nextOrder={nextOrder}
       onClose={onClose}

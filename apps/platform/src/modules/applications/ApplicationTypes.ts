@@ -173,12 +173,12 @@ export type AdminApplicationFilterOptions = {
 };
 
 export type AdminApplicationListInput = {
-  fundingCallId?: string;
-  gender?: string;
+  fundingCallId?: string | string[];
+  gender?: string | string[];
   ageMin?: number;
   ageMax?: number;
-  region?: string;
-  sector?: string;
+  region?: string | string[];
+  sector?: string | string[];
   submittedAfter?: string;
   submittedBefore?: string;
   submittedFrom?: string;
@@ -186,8 +186,8 @@ export type AdminApplicationListInput = {
   after?: string;
   limit: number;
   search?: string;
-  stage?: string;
-  status: AdminApplicationStatusFilter;
+  stage?: string | string[];
+  status: AdminApplicationStatusFilter | AdminApplicationStatusFilter[];
 };
 
 export type AdminApplicationPage = {

@@ -1,4 +1,5 @@
 // @vitest-environment happy-dom
+import { condition } from "../../support/FormFieldRuleFixture";
 
 import { act } from "react";
 import { createRoot } from "react-dom/client";
@@ -6,9 +7,6 @@ import { describe, expect, it, vi } from "vitest";
 import { FormFieldDialog } from "@/modules/forms/ui/builder/FormFieldDialog";
 import type { FormField } from "@/modules/forms/FormTypes";
 
-vi.mock("@/modules/forms/ui/builder/FormConditionRuleEditor", () => ({
-  FormConditionRuleEditor: () => null,
-}));
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 
 const existing: FormField = {
@@ -37,7 +35,6 @@ async function saveField(field?: FormField, type?: "CHECKBOX") {
         <FormFieldDialog
           field={field}
           fields={[existing]}
-          visibilityFields={[]}
           isOpen
           nextOrder={2}
           onClose={closed}
@@ -49,6 +46,14 @@ async function saveField(field?: FormField, type?: "CHECKBOX") {
     );
     expect(document.querySelector('[name="key"]')).toBeNull();
     expect(document.body.textContent).not.toContain("Field key");
+    for (const title of [
+      "Validation rules",
+      "Visibility condition",
+      "Editable when",
+      "Required when",
+    ]) {
+      expect(document.body.textContent).not.toContain(title);
+    }
     if (type) {
       await act(async () => {
         const select =
@@ -131,4 +136,24 @@ describe("automatic form field keys", () => {
     expect(field.key).toBe("REGISTERED_NAME");
     expect(field.label).toBe("Renamed business name");
   });
+});
+
+it("preserves rules and visibility when saving field details", async () => {
+  const original: FormField = {
+    ...existing,
+    visibilityCondition: condition("ENABLED"),
+    rules: {
+      validationCondition: condition("AMOUNT", 10),
+      editableCondition: condition("ENABLED"),
+      requiredCondition: condition("ENABLED"),
+      validationSettings: {
+        message: "Check amount",
+        modes: ["SUBMIT"],
+        missing: "REJECT",
+      },
+    },
+  };
+  const saved = await saveField(original);
+  expect(saved.rules).toEqual(original.rules);
+  expect(saved.visibilityCondition).toEqual(original.visibilityCondition);
 });

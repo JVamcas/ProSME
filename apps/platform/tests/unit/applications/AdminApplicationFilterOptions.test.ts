@@ -41,8 +41,10 @@ it("selects distinct options in SQL within the actor's assignment scope", async 
   expect(options.stages).toEqual([{ id: "Screening", label: "Screening" }]);
   const query = new PgDialect().sqlToQuery(execute.mock.calls[0][0]);
   expect(query.sql).toContain("GROUP BY call_id");
-  expect(query.sql).toContain("GROUP BY stage_name");
-  expect(query.sql).toContain("ORDER BY label, id");
+  expect(query.sql).toContain("SELECT DISTINCT 'stage'");
+  expect(query.sql).toContain("FROM app_workflow_stage_definitions");
+  expect(query.sql).not.toContain("current_stage_instance_id");
+  expect(query.sql).toContain("ORDER BY label DESC, id DESC");
   expect(query.sql).toContain("visible_task.assigned_user_id");
   expect(query.params).toContain(actorId);
   expect(execute).toHaveBeenCalledTimes(1);

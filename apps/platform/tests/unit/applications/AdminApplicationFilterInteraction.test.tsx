@@ -86,11 +86,15 @@ it("retains initial selections when dropdown options finish loading", async () =
 });
 it("exports applied filters until edits are applied, then clears both new filters", async () => {
   await renderLoaded();
-  const stage = container.querySelector<HTMLSelectElement>('[name="stage"]')!;
-  await act(async () => {
-    stage.value = "Decision";
-    stage.dispatchEvent(new Event("change", { bubbles: true }));
-  });
+  await act(async () =>
+    container.querySelector<HTMLButtonElement>("#application-stage")!.click(),
+  );
+  const decision = [...document.querySelectorAll('[role="option"]')].find(
+    (node) => node.textContent === "Decision",
+  )!;
+  await act(async () =>
+    decision.querySelector<HTMLInputElement>("input")!.click(),
+  );
   await click("Export CSV");
   expect(mocks.download).toHaveBeenLastCalledWith(
     expect.objectContaining({ ...initial, format: "CSV" }),
@@ -99,7 +103,7 @@ it("exports applied filters until edits are applied, then clears both new filter
   expect(mocks.list).toHaveBeenLastCalledWith(
     expect.objectContaining({
       fundingCallId: callId,
-      stage: "Decision",
+      stage: ["Screening", "Decision"],
       after: undefined,
     }),
   );
@@ -107,7 +111,7 @@ it("exports applied filters until edits are applied, then clears both new filter
   expect(mocks.download).toHaveBeenLastCalledWith(
     expect.objectContaining({
       fundingCallId: callId,
-      stage: "Decision",
+      stage: ["Screening", "Decision"],
       format: "XLSX",
     }),
   );
@@ -117,7 +121,9 @@ it("exports applied filters until edits are applied, then clears both new filter
     after: undefined,
     limit: 25,
   });
-  expect(stage.value).toBe("");
+  expect(container.querySelector("#application-stage")?.textContent).toContain(
+    "All stages",
+  );
   expect(
     container.querySelector<HTMLSelectElement>('[name="fundingCallId"]')?.value,
   ).toBe("");

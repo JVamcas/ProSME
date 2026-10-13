@@ -32,21 +32,25 @@ describe("applicant status projection", () => {
   });
 
   it("does not reveal unreleased terminal outcomes", () => {
-    expect(projectApplicantStatus({
-      lifecycleStatus: "submitted",
-      workflowStatus: "REJECTED",
-      terminalPublicStatus: null,
-      hasOpenRfi: false,
-      activeStageStatuses: [{
-        status: "UNDER_REVIEW",
-        label: "Under review",
-        description: "Review continues.",
-      }],
-    })).toEqual({
+    expect(
+      projectApplicantStatus({
+        lifecycleStatus: "submitted",
+        workflowStatus: "REJECTED",
+        terminalPublicStatus: null,
+        hasOpenRfi: false,
+        activeStageStatuses: [
+          {
+            status: "UNDER_REVIEW",
+            label: "Under review",
+            description: "Review continues.",
+          },
+        ],
+      }),
+    ).toEqual({
       actionRequired: false,
       status: "CLOSED",
       label: "Closed",
-      description: "Processing of this application has ended.",
+      description: "Processing of your application has ended.",
     });
   });
 
@@ -55,20 +59,26 @@ describe("applicant status projection", () => {
       workflowStatus: "ACTIVE",
       terminalPublicStatus: null,
       hasOpenRfi: false,
-      activeStageStatuses: [{
-        status: "UNDER_REVIEW" as const,
-        label: "Under review",
-        description: "Review continues.",
-      }],
+      activeStageStatuses: [
+        {
+          status: "UNDER_REVIEW" as const,
+          label: "Under review",
+          description: "Review continues.",
+        },
+      ],
     };
-    expect(projectApplicantStatus({
-      ...source,
-      lifecycleStatus: "draft",
-    }).status).toBe("DRAFT");
-    expect(projectApplicantStatus({
-      ...source,
-      lifecycleStatus: "withdrawn",
-    }).status).toBe("WITHDRAWN");
+    expect(
+      projectApplicantStatus({
+        ...source,
+        lifecycleStatus: "draft",
+      }).status,
+    ).toBe("DRAFT");
+    expect(
+      projectApplicantStatus({
+        ...source,
+        lifecycleStatus: "withdrawn",
+      }).status,
+    ).toBe("WITHDRAWN");
   });
 
   it("projects an open RFI as action required without changing lifecycle state", () => {
@@ -77,18 +87,21 @@ describe("applicant status projection", () => {
       workflowStatus: "ACTIVE",
       terminalPublicStatus: null,
       hasOpenRfi: true,
-      activeStageStatuses: [{
-        status: "UNDER_REVIEW",
-        label: "Under review",
-        description: "Review continues.",
-      }],
+      activeStageStatuses: [
+        {
+          status: "UNDER_REVIEW",
+          label: "Under review",
+          description: "Review continues.",
+        },
+      ],
     });
 
     expect(projected).toEqual({
       actionRequired: true,
       status: "ACTION_REQUIRED",
       label: "Information requested",
-      description: "Please respond to the request for information by the deadline.",
+      description:
+        "Please respond to the request for information by the deadline.",
     });
   });
 
@@ -100,13 +113,33 @@ describe("applicant status projection", () => {
       activeStageStatuses: [],
     };
 
-    expect(projectApplicantStatus({
-      ...source,
-      lifecycleStatus: "draft",
-    }).status).toBe("DRAFT");
-    expect(projectApplicantStatus({
-      ...source,
-      lifecycleStatus: "withdrawn",
-    }).status).toBe("WITHDRAWN");
+    expect(
+      projectApplicantStatus({
+        ...source,
+        lifecycleStatus: "draft",
+      }).status,
+    ).toBe("DRAFT");
+    expect(
+      projectApplicantStatus({
+        ...source,
+        lifecycleStatus: "withdrawn",
+      }).status,
+    ).toBe("WITHDRAWN");
   });
+});
+
+it("uses applicant wording for existing published close-out messages", () => {
+  expect(
+    projectApplicantStatus({
+      lifecycleStatus: "submitted",
+      workflowStatus: "COMPLETED",
+      terminalPublicStatus: {
+        status: "CLOSED",
+        label: "Closed",
+        description: "The funded project has completed close-out.",
+      },
+      activeStageStatuses: [],
+      hasOpenRfi: false,
+    }).description,
+  ).toBe("Your funded project has completed close-out.");
 });

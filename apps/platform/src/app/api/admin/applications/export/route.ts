@@ -1,3 +1,4 @@
+import { parseAdminApplicationQuery } from "@/modules/applications/api/AdminApplicationQuery";
 import { resolveUserFromHeaders } from "@/auth/authorization/current-user";
 import {
   createCorrelationId,
@@ -12,7 +13,7 @@ export async function GET(request: Request) {
   try {
     const user = await resolveUserFromHeaders(request.headers);
     const input = adminApplicationExportSchema.parse(
-      Object.fromEntries(new URL(request.url).searchParams),
+      parseAdminApplicationQuery(new URL(request.url).searchParams),
     );
     return documentDownloadResponse(
       await exportAdminApplications(user, input, request.signal),

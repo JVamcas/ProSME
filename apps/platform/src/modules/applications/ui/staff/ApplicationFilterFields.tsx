@@ -1,19 +1,23 @@
 import type { AdminApplicationFilterOptions } from "../../ApplicationTypes";
-import { useWatch, type Control, type UseFormRegister } from "react-hook-form";
+import {
+  useController,
+  type Control,
+  type UseFormRegister,
+} from "react-hook-form";
 import type { z } from "zod";
 
-import { Input, Label, Select } from "@/shared/ui/FormPrimitives";
+import { FormInput, FormSelect } from "@/components/ui/form-fields";
 import { businessSectors } from "@/modules/businesses/domain/BusinessSectors";
 import {
   applicantGenders,
   namibianRegions,
+  selectItems,
 } from "@/modules/profiles/ProfileOptions";
 import type { adminApplicationFormSchema } from "../../api/AdminApplicationSchemas";
 
 type FilterInput = z.input<typeof adminApplicationFormSchema>;
 
 const statusOptions = [
-  { value: "all", label: "All statuses" },
   { value: "submitted", label: "Submitted" },
   { value: "under-review", label: "Under review" },
   { value: "action-required", label: "Action required" },
@@ -37,139 +41,140 @@ export function ApplicationFilterFields({
     z.output<typeof adminApplicationFormSchema>
   >;
 }) {
-  const [fundingCallId, stage] = useWatch({
-    control,
-    name: ["fundingCallId", "stage"],
-  });
   return (
     <div className="col-span-full grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-      <div>
-        <Label htmlFor="application-search">Search</Label>
-        <Input
-          id="application-search"
-          placeholder="Reference, applicant, business or funding call"
-          {...register("search")}
-        />
-      </div>
-      <div>
-        <Label htmlFor="application-funding-call">Funding call</Label>
-        <Select
-          id="application-funding-call"
-          disabled={optionsPending}
-          {...register("fundingCallId")}
-          value={fundingCallId ?? ""}
-        >
-          <option value="">All funding calls</option>
-          {options?.fundingCalls.map((call) => (
-            <option key={call.id} value={call.id}>
-              {call.label}
-            </option>
-          ))}
-        </Select>
-      </div>
-      <div>
-        <Label htmlFor="application-status">Status</Label>
-        <Select id="application-status" {...register("status")}>
-          {statusOptions.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </Select>
-      </div>
-      <div>
-        <Label htmlFor="application-gender">Gender</Label>
-        <Select id="application-gender" {...register("gender")}>
-          <option value="">All genders</option>
-          {applicantGenders.map((gender) => (
-            <option key={gender} value={gender}>
-              {gender}
-            </option>
-          ))}
-        </Select>
-      </div>
-      <div>
-        <Label htmlFor="application-region">Business region</Label>
-        <Select id="application-region" {...register("region")}>
-          <option value="">All regions</option>
-          {namibianRegions.map((region) => (
-            <option key={region} value={region}>
-              {region}
-            </option>
-          ))}
-        </Select>
-      </div>
-      <div>
-        <Label htmlFor="application-age-min">Minimum age at submission</Label>
-        <Input
-          id="application-age-min"
-          type="number"
-          min={0}
-          max={150}
-          {...register("ageMin")}
-        />
-      </div>
-      <div>
-        <Label htmlFor="application-age-max">Maximum age at submission</Label>
-        <Input
-          id="application-age-max"
-          type="number"
-          min={0}
-          max={150}
-          {...register("ageMax")}
-        />
-      </div>
-      <div>
-        <Label htmlFor="application-sector">Business sector</Label>
-        <Select id="application-sector" {...register("sector")}>
-          <option value="">All sectors</option>
-          {businessSectors.map((sector) => (
-            <option key={sector} value={sector}>
-              {sector}
-            </option>
-          ))}
-        </Select>
-      </div>
-      <div>
-        <Label htmlFor="application-stage">Workflow stage</Label>
-        <Select
-          id="application-stage"
-          disabled={optionsPending}
-          {...register("stage")}
-          value={stage ?? ""}
-        >
-          <option value="">All stages</option>
-          {options?.stages.map((stage) => (
-            <option key={stage.id} value={stage.id}>
-              {stage.label}
-            </option>
-          ))}
-        </Select>
-      </div>
+      <FormInput
+        id="application-search"
+        label="Search"
+        {...register("search")}
+        placeholder="Reference, applicant, business or funding call"
+      />
+      <ApplicationMultiSelect
+        id="application-funding-call"
+        label="Funding call"
+        name="fundingCallId"
+        control={control}
+        items={(options?.fundingCalls ?? []).map((call) => ({
+          value: call.id,
+          label: call.label,
+        }))}
+        placeholder="All funding calls"
+        disabled={optionsPending}
+      />
+      <ApplicationMultiSelect
+        id="application-status"
+        label="Status"
+        name="status"
+        control={control}
+        placeholder="All statuses"
+        items={statusOptions}
+      />
+      <ApplicationMultiSelect
+        id="application-gender"
+        label="Gender"
+        name="gender"
+        control={control}
+        items={selectItems(applicantGenders)}
+        placeholder="All genders"
+      />
+      <ApplicationMultiSelect
+        id="application-region"
+        label="Business region"
+        name="region"
+        control={control}
+        items={selectItems(namibianRegions)}
+        placeholder="All regions"
+      />
+      <FormInput
+        id="application-age-min"
+        label="Minimum age at submission"
+        {...register("ageMin")}
+        type="number"
+        min={0}
+        max={150}
+      />
+      <FormInput
+        id="application-age-max"
+        label="Maximum age at submission"
+        {...register("ageMax")}
+        type="number"
+        min={0}
+        max={150}
+      />
+      <ApplicationMultiSelect
+        id="application-sector"
+        label="Business sector"
+        name="sector"
+        control={control}
+        items={selectItems(businessSectors)}
+        placeholder="All sectors"
+      />
+      <ApplicationMultiSelect
+        id="application-stage"
+        label="Workflow stage"
+        name="stage"
+        control={control}
+        items={(options?.stages ?? []).map((stage) => ({
+          value: stage.id,
+          label: stage.label,
+        }))}
+        placeholder="All stages"
+        disabled={optionsPending}
+      />
       <div
         aria-label="Submission date range"
         className="grid w-full max-w-lg gap-4 sm:col-span-2 sm:grid-cols-2"
         role="group"
       >
-        <div>
-          <Label htmlFor="application-submitted-from">
-            Submission start date
-          </Label>
-          <Input
-            id="application-submitted-from"
-            type="date"
-            {...register("submittedFrom")}
-          />
-        </div>
-        <div>
-          <Label htmlFor="application-submitted-to">Submission end date</Label>
-          <Input
-            id="application-submitted-to"
-            type="date"
-            {...register("submittedTo")}
-          />
-        </div>
+        <FormInput
+          id="application-submitted-from"
+          label="Submission start date"
+          type="date"
+          {...register("submittedFrom")}
+        />
+        <FormInput
+          id="application-submitted-to"
+          label="Submission end date"
+          type="date"
+          {...register("submittedTo")}
+        />
       </div>
     </div>
+  );
+}
+
+function ApplicationMultiSelect({
+  control,
+  name,
+  ...props
+}: {
+  control: Control<
+    FilterInput,
+    unknown,
+    z.output<typeof adminApplicationFormSchema>
+  >;
+  name: "fundingCallId" | "status" | "gender" | "region" | "sector" | "stage";
+  id: string;
+  label: string;
+  items: { value: string; label: string }[];
+  placeholder: string;
+  disabled?: boolean;
+}) {
+  const { field, fieldState } = useController({ control, name });
+  const values = Array.isArray(field.value)
+    ? field.value
+    : field.value
+      ? [field.value]
+      : [];
+  return (
+    <FormSelect
+      {...props}
+      name={name}
+      multiple
+      value={values.filter((value) => value !== "all")}
+      onMultipleChange={field.onChange}
+      onMultipleBlur={field.onBlur}
+      error={fieldState.error?.message}
+    />
   );
 }

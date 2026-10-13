@@ -1,14 +1,17 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  generateWorkflowStableKey,
+  isWorkflowStableKey,
   stableKeyFromLabel,
   uniqueStableKeyFromLabel,
 } from "@/modules/workflows/domain/WorkflowStableKey";
 
 describe("workflow stable keys", () => {
   it("generates a normalized key from a user-facing name", () => {
-    expect(stableKeyFromLabel("Administrative & eligibility screening", "STAGE"))
-      .toBe("ADMINISTRATIVE_ELIGIBILITY_SCREENING");
+    expect(
+      stableKeyFromLabel("Administrative & eligibility screening", "STAGE"),
+    ).toBe("ADMINISTRATIVE_ELIGIBILITY_SCREENING");
   });
 
   it("generates valid keys for names with little or no ASCII text", () => {
@@ -17,16 +20,19 @@ describe("workflow stable keys", () => {
   });
 
   it("prefixes names that do not start with a letter", () => {
-    expect(stableKeyFromLabel("2026 review", "STAGE"))
-      .toBe("STAGE_2026_REVIEW");
+    expect(stableKeyFromLabel("2026 review", "STAGE")).toBe(
+      "STAGE_2026_REVIEW",
+    );
   });
 
   it("adds a deterministic suffix when a generated key already exists", () => {
-    expect(uniqueStableKeyFromLabel(
-      "Finance review",
-      ["FINANCE_REVIEW", "FINANCE_REVIEW_2"],
-      "STAGE",
-    )).toBe("FINANCE_REVIEW_3");
+    expect(
+      uniqueStableKeyFromLabel(
+        "Finance review",
+        ["FINANCE_REVIEW", "FINANCE_REVIEW_2"],
+        "STAGE",
+      ),
+    ).toBe("FINANCE_REVIEW_3");
   });
 
   it("keeps collision-safe keys within the maximum length", () => {
@@ -37,4 +43,12 @@ describe("workflow stable keys", () => {
     expect(key).toHaveLength(80);
     expect(key.endsWith("_2")).toBe(true);
   });
+});
+
+it("generates distinct UUID-based keys compatible with workflow validation", () => {
+  const first = generateWorkflowStableKey();
+  const second = generateWorkflowStableKey();
+  expect(first).toMatch(/^K_[A-F0-9]{32}$/);
+  expect(isWorkflowStableKey(first)).toBe(true);
+  expect(first).not.toBe(second);
 });

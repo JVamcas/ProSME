@@ -8,7 +8,10 @@ import {
   adminApplicationStatusPredicate,
   adminApplicationPublicStatusSql,
 } from "./AdminApplicationStatusSql";
-import { adminApplicationDemographicFilters } from "./AdminApplicationListFilters";
+import {
+  adminApplicationDemographicFilters,
+  applicationSelectionFilter,
+} from "./AdminApplicationListFilters";
 
 import { getDatabase } from "@/db/client";
 import type { AdminApplicationCursor } from "@/modules/applications/AdminApplicationCursor";
@@ -73,10 +76,6 @@ function applicationSearch(search?: string) {
     OR business.trading_name ILIKE ${pattern}
     OR application.funding_opportunity_title ILIKE ${pattern}
   )`;
-}
-
-function stageFilter(stage?: string) {
-  return stage ? sql`stage_definition.name = ${stage}` : sql`TRUE`;
 }
 
 function cursorFilter(cursor?: AdminApplicationCursor) {
@@ -148,12 +147,8 @@ function applicationQuery(input: {
         AND ${adminApplicationVisibilityFilter(input.actorId, input.visibility)}
         AND ${adminApplicationStatusPredicate(input.filters.status)}
         AND ${applicationSearch(input.filters.search)}
-        AND ${stageFilter(input.filters.stage)}
-        AND ${
-          input.filters.fundingCallId
-            ? sql`application.funding_opportunity_id = ${input.filters.fundingCallId}::uuid`
-            : sql`TRUE`
-        }
+        AND ${applicationSelectionFilter(sql`stage_definition.name`, input.filters.stage)}
+        AND ${applicationSelectionFilter(sql`application.funding_opportunity_id`, input.filters.fundingCallId)}
         AND ${adminApplicationDemographicFilters(input.filters)}
     )
     SELECT filtered.*, ${

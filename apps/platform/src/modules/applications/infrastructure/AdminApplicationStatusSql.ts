@@ -1,4 +1,4 @@
-import { sql } from "drizzle-orm";
+import { sql, or, type SQL } from "drizzle-orm";
 
 import type { AdminApplicationStatusFilter } from "../ApplicationTypes";
 
@@ -32,7 +32,14 @@ export const adminApplicationPendingDecisionSql = sql`EXISTS (
     )
 )`;
 
-export function adminApplicationStatusPredicate(status: AdminApplicationStatusFilter) {
+export function adminApplicationStatusPredicate(
+  status: AdminApplicationStatusFilter | AdminApplicationStatusFilter[],
+): SQL {
+  if (Array.isArray(status)) {
+    return status.length
+      ? or(...status.map(adminApplicationStatusPredicate))!
+      : sql`TRUE`;
+  }
   if (status === "all") return sql`TRUE`;
   if (status === "pending-decision") return adminApplicationPendingDecisionSql;
   return sql`${adminApplicationPublicStatusSql} = ${status.replaceAll("-", "_").toUpperCase()}`;

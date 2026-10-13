@@ -1,3 +1,4 @@
+import { parseAdminApplicationQuery } from "@/modules/applications/api/AdminApplicationQuery";
 import { resolveUserFromHeaders } from "@/auth/authorization/current-user";
 import {
   createCorrelationId,
@@ -7,14 +8,12 @@ import {
 import { adminApplicationListSchema } from "@/modules/applications/api/AdminApplicationSchemas";
 import { listAdminApplications } from "@/modules/applications/ServerAdminApplicationService";
 
-
-
 export async function GET(request: Request) {
   const correlationId = createCorrelationId();
   try {
     const user = await resolveUserFromHeaders(request.headers);
     const input = adminApplicationListSchema.parse(
-      Object.fromEntries(new URL(request.url).searchParams.entries()),
+      parseAdminApplicationQuery(new URL(request.url).searchParams),
     );
     const page = await listAdminApplications(user, input);
     return portalListRouteSuccess(page.items, correlationId, {
