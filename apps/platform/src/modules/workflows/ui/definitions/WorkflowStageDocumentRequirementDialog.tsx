@@ -1,6 +1,6 @@
 "use client";
 
-import { uniqueStableKeyFromLabel } from "../../domain/WorkflowStableKey";
+import { generateWorkflowStableKey } from "../../domain/WorkflowStableKey";
 
 import { isSameWorkflowTaskRequirement } from "../../domain/definitions/WorkflowTaskRequirementIdentity";
 
@@ -59,15 +59,7 @@ export function WorkflowStageDocumentRequirementDialog({
   });
 
   const submit = form.handleSubmit(async (values) => {
-    const stableKey =
-      requirement?.stableKey ??
-      uniqueStableKeyFromLabel(
-        values.name,
-        stage.documentRequirements
-          .filter((item) => item.taskStableKey === values.taskStableKey)
-          .map((item) => item.stableKey),
-        "DOCUMENT",
-      );
+    const stableKey = requirement?.stableKey ?? generateWorkflowStableKey();
     const duplicateKey = stage.documentRequirements.some(
       (item) =>
         item.taskStableKey === values.taskStableKey &&

@@ -173,6 +173,10 @@ describe("admin application detail", () => {
 
 it.each([
   [
+    "Your funded project has completed close-out.",
+    "The funded project has completed close-out.",
+  ],
+  [
     "Your application's financial information is being assessed.",
     "This application's financial information is being assessed.",
   ],

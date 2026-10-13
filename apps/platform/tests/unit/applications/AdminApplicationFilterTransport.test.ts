@@ -135,3 +135,26 @@ it("exports applied filters without the visible page cursor or limit", async () 
     gender: "Female" as const,
   });
 });
+
+it("preserves repeated selections at the protected list route", async () => {
+  vi.mocked(resolveUserFromHeaders).mockResolvedValue(null);
+  vi.mocked(listAdminApplications).mockResolvedValue({
+    items: [],
+    total: 0,
+    nextCursor: null,
+  });
+  const response = await GET(
+    new Request(
+      "http://localhost/api/admin/applications?stage=Screening&stage=Decision&status=closed&status=under-review&gender=Female&gender=Male",
+    ),
+  );
+  expect(response.status).toBe(200);
+  expect(listAdminApplications).toHaveBeenCalledWith(
+    null,
+    expect.objectContaining({
+      stage: ["Screening", "Decision"],
+      status: ["closed", "under-review"],
+      gender: ["Female", "Male"],
+    }),
+  );
+});

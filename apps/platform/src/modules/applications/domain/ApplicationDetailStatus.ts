@@ -27,7 +27,21 @@ export function applicantDetailProgressLabel(
 }
 
 export function staffApplicationStatusDescription(description: string): string {
-  return description.replace(/\byour application\b/gi, (match) =>
-    match.startsWith("Y") ? "This application" : "this application",
+  return description
+    .replace(/\byour application\b/gi, (match) =>
+      match.startsWith("Y") ? "This application" : "this application",
+    )
+    .replace(/\byour funded project\b/gi, (match) =>
+      match.startsWith("Y") ? "The funded project" : "the funded project",
+    );
+}
+
+export function applicantApplicationStatusDescription(
+  description: string,
+): string {
+  return description.replace(
+    /\b(?:this|the) (application|funded project)\b/gi,
+    (match, subject: string) =>
+      `${/^[A-Z]/.test(match) ? "Your" : "your"} ${subject}`,
   );
 }

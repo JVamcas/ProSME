@@ -168,7 +168,8 @@ describe("automatic workflow requirement keys", () => {
             );
         });
         expect(harness.save).toHaveBeenCalledOnce();
-        expect(savedKey(kind)).toBe("ORIGINAL_KEY_2");
+        expect(savedKey(kind)).toMatch(/^K_[A-F0-9]{32}$/);
+        expect(savedKey(kind)).not.toContain("ORIGINAL");
       } finally {
         await act(async () => {
           root.unmount();

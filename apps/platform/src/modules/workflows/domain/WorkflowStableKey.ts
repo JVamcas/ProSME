@@ -1,9 +1,9 @@
 const stableKeyPattern = /^[A-Z][A-Z0-9_]*$/;
 
 export function isWorkflowStableKey(value: string) {
-  return value.length >= 2
-    && value.length <= 80
-    && stableKeyPattern.test(value);
+  return (
+    value.length >= 2 && value.length <= 80 && stableKeyPattern.test(value)
+  );
 }
 
 export function stableKeyFromLabel(value: string, fallback: string) {
@@ -34,4 +34,8 @@ export function uniqueStableKeyFromLabel(
     if (!existing.has(candidate)) return candidate;
     suffixNumber += 1;
   }
+}
+
+export function generateWorkflowStableKey() {
+  return `K_${crypto.randomUUID().replaceAll("-", "").toUpperCase()}`;
 }

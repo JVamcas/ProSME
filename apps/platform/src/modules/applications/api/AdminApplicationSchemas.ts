@@ -30,16 +30,24 @@ const optionalDate = z
     );
   }, "Use a valid date");
 
+function selection<T extends z.ZodType>(item: T) {
+  return z.union([item, z.array(item).max(200)]);
+}
+
+const statusSelection = selection(z.enum(adminApplicationStatuses));
+
 export const adminApplicationFilterSchema = z.object({
-  fundingCallId: z.union([z.uuid(), z.literal("")]).optional(),
+  fundingCallId: selection(z.union([z.uuid(), z.literal("")])).optional(),
   search: z.string().trim().max(120).optional(),
-  stage: z.string().trim().max(160).optional(),
-  status: z.enum(adminApplicationStatuses),
+  stage: selection(z.string().trim().max(160)).optional(),
+  status: statusSelection,
   ageMin: optionalAge,
   ageMax: optionalAge,
-  gender: z.union([z.enum(applicantGenders), z.literal("")]).optional(),
-  region: z.string().trim().max(80).optional(),
-  sector: z.string().trim().max(120).optional(),
+  gender: selection(
+    z.union([z.enum(applicantGenders), z.literal("")]),
+  ).optional(),
+  region: selection(z.string().trim().max(80)).optional(),
+  sector: selection(z.string().trim().max(120)).optional(),
   submittedAfter: z.iso.datetime({ offset: true }).optional(),
   submittedBefore: z.iso.datetime({ offset: true }).optional(),
   submittedFrom: optionalDate,
@@ -90,7 +98,7 @@ export const adminApplicationFormSchema =
 
 export const adminApplicationListSchema = adminApplicationFilterSchema
   .extend({
-    status: z.enum(adminApplicationStatuses).default("all"),
+    status: statusSelection.default("all"),
     after: z.string().max(500).optional(),
     limit: z.coerce.number().int().min(1).max(100).default(25),
   })
@@ -98,7 +106,7 @@ export const adminApplicationListSchema = adminApplicationFilterSchema
 
 export const adminApplicationExportSchema = adminApplicationFilterSchema
   .extend({
-    status: z.enum(adminApplicationStatuses).default("all"),
+    status: statusSelection.default("all"),
     format: reportFormatSchema,
   })
   .superRefine(validateRanges);

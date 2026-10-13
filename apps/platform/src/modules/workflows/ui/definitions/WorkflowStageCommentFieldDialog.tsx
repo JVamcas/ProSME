@@ -1,6 +1,6 @@
 "use client";
 
-import { uniqueStableKeyFromLabel } from "../../domain/WorkflowStableKey";
+import { generateWorkflowStableKey } from "../../domain/WorkflowStableKey";
 
 import { isSameWorkflowTaskRequirement } from "../../domain/definitions/WorkflowTaskRequirementIdentity";
 
@@ -53,15 +53,7 @@ export function WorkflowStageCommentFieldDialog({
   });
 
   const submit = form.handleSubmit(async (values) => {
-    const key =
-      field?.key ??
-      uniqueStableKeyFromLabel(
-        values.label,
-        (stage.commentFields ?? [])
-          .filter((item) => item.taskStableKey === values.taskStableKey)
-          .map((item) => item.key),
-        "COMMENT",
-      );
+    const key = field?.key ?? generateWorkflowStableKey();
     const duplicateKey = (stage.commentFields ?? []).some(
       (item) =>
         item.taskStableKey === values.taskStableKey &&

@@ -1,4 +1,8 @@
-import type { WorkflowPublicStatus, WorkflowPublicStatusMapping } from "@/modules/workflows/domain/definitions/WorkflowStageDefinition";
+import { applicantApplicationStatusDescription } from "./ApplicationDetailStatus";
+import type {
+  WorkflowPublicStatus,
+  WorkflowPublicStatusMapping,
+} from "@/modules/workflows/domain/definitions/WorkflowStageDefinition";
 
 export type ApplicantStatusSource = {
   lifecycleStatus: "draft" | "submitted" | "withdrawn";
@@ -57,10 +61,10 @@ const rfiActionRequired = {
 } satisfies WorkflowPublicStatusMapping;
 
 function approved(mapping: WorkflowPublicStatusMapping | null) {
-  return mapping
-    && priority.includes(mapping.status)
-    && mapping.label.trim()
-    && mapping.description.trim()
+  return mapping &&
+    priority.includes(mapping.status) &&
+    mapping.label.trim() &&
+    mapping.description.trim()
     ? mapping
     : null;
 }
@@ -81,9 +85,15 @@ export function projectApplicantStatus(
     const stages = source.activeStageStatuses
       .map(approved)
       .filter((item): item is WorkflowPublicStatusMapping => item !== null);
-    mapping = stages.sort(
-      (left, right) => priority.indexOf(left.status) - priority.indexOf(right.status),
-    )[0] ?? fallback.SUBMITTED;
+    mapping =
+      stages.sort(
+        (left, right) =>
+          priority.indexOf(left.status) - priority.indexOf(right.status),
+      )[0] ?? fallback.SUBMITTED;
   }
-  return { ...mapping, actionRequired: mapping.status === "ACTION_REQUIRED" };
+  return {
+    ...mapping,
+    description: applicantApplicationStatusDescription(mapping.description),
+    actionRequired: mapping.status === "ACTION_REQUIRED",
+  };
 }

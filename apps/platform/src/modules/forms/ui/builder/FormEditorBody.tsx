@@ -91,17 +91,6 @@ export function FormEditorBody({
     (item) =>
       (sectionOrders.get(item.sectionId) ?? Infinity) < targetSectionOrder,
   );
-  const targetFieldOrder = field?.order ?? nextFieldOrder;
-  const targetFieldSectionOrder =
-    sectionOrders.get(fieldSectionId ?? "") ?? Infinity;
-  const fieldVisibilityFields = fields.filter((item) => {
-    const sourceSectionOrder = sectionOrders.get(item.sectionId) ?? Infinity;
-    return (
-      sourceSectionOrder < targetFieldSectionOrder ||
-      (sourceSectionOrder === targetFieldSectionOrder &&
-        item.order < targetFieldOrder)
-    );
-  });
   return (
     <>
       <FormPresentationSettings
@@ -143,7 +132,6 @@ export function FormEditorBody({
       <FormFieldDialog
         field={field?.id ? field : undefined}
         fields={fields}
-        visibilityFields={fieldVisibilityFields}
         isOpen={dialogOpen}
         nextOrder={nextFieldOrder}
         onClose={onCloseDialog}

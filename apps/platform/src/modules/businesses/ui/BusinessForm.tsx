@@ -63,6 +63,7 @@ export function BusinessForm({
     defaultValues: initialValues
       ? businessSectorFormValues(initialValues)
       : defaults,
+    mode: "onChange",
     resolver: zodResolver(businessProfileSchema),
   });
 

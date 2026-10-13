@@ -23,15 +23,15 @@ type FilterInput = z.input<typeof adminApplicationFormSchema>;
 type Filters = z.output<typeof adminApplicationFormSchema>;
 
 const defaultFilters: FilterInput = {
-  fundingCallId: "",
-  status: "all",
+  fundingCallId: [],
+  status: [],
   search: "",
-  stage: "",
+  stage: [],
   ageMin: "",
   ageMax: "",
-  gender: "",
-  region: "",
-  sector: "",
+  gender: [],
+  region: [],
+  sector: [],
   submittedFrom: "",
   submittedTo: "",
 };

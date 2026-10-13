@@ -1,6 +1,6 @@
 "use client";
 
-import { uniqueStableKeyFromLabel } from "../../domain/WorkflowStableKey";
+import { generateWorkflowStableKey } from "../../domain/WorkflowStableKey";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { FormProvider, useForm } from "react-hook-form";
@@ -53,13 +53,7 @@ export function WorkflowStageScoringCriterionDialog({
   });
 
   const submit = form.handleSubmit(async (values) => {
-    const stableKey =
-      criterion?.stableKey ??
-      uniqueStableKeyFromLabel(
-        values.criterion,
-        criteria.map((item) => item.stableKey),
-        "SCORE",
-      );
+    const stableKey = criterion?.stableKey ?? generateWorkflowStableKey();
     const duplicateKey = criteria.some(
       (item) =>
         item.stableKey === stableKey && item.stableKey !== criterion?.stableKey,

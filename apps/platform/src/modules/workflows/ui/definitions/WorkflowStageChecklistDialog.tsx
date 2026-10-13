@@ -1,6 +1,6 @@
 "use client";
 
-import { uniqueStableKeyFromLabel } from "../../domain/WorkflowStableKey";
+import { generateWorkflowStableKey } from "../../domain/WorkflowStableKey";
 
 import { isSameWorkflowTaskRequirement } from "../../domain/definitions/WorkflowTaskRequirementIdentity";
 
@@ -57,15 +57,7 @@ export function WorkflowStageChecklistDialog({
   });
 
   const submit = form.handleSubmit(async (values) => {
-    const key =
-      checklistItem?.key ??
-      uniqueStableKeyFromLabel(
-        values.text,
-        checklistItems
-          .filter((item) => item.taskStableKey === values.taskStableKey)
-          .map((item) => item.key),
-        "CHECKLIST",
-      );
+    const key = checklistItem?.key ?? generateWorkflowStableKey();
     const duplicateKey = checklistItems.some(
       (item) =>
         item.taskStableKey === values.taskStableKey &&
@@ -126,6 +118,13 @@ export function WorkflowStageChecklistDialog({
     >
       <FormProvider {...form}>
         <form className="grid gap-4 sm:grid-cols-2" onSubmit={submit}>
+                    <FormInput
+            containerClassName="sm:col-span-2"
+            label="Checklist Label"
+            name="text"
+            placeholder="Confirm that the ownership requirement is met."
+            required
+          />
           <FormInput
             containerClassName="sm:col-span-2"
             label="Display order"
@@ -134,13 +133,6 @@ export function WorkflowStageChecklistDialog({
             registrationOptions={{ valueAsNumber: true }}
             required
             type="number"
-          />
-          <FormInput
-            containerClassName="sm:col-span-2"
-            label="Checklist Label"
-            name="text"
-            placeholder="Confirm that the ownership requirement is met."
-            required
           />
           <FormSelect
             items={stage.tasks.map((task) => ({

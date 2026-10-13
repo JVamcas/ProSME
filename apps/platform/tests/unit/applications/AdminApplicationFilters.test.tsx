@@ -156,8 +156,8 @@ describe("staff application filters", () => {
       },
     });
     const query = new PgDialect().sqlToQuery(execute.mock.calls[0]![0]);
-    expect(query.sql).toContain("application.funding_opportunity_id =");
-    expect(query.sql).toContain("stage_definition.name =");
+    expect(query.sql).toContain("application.funding_opportunity_id IN");
+    expect(query.sql).toContain("stage_definition.name IN");
     expect(query.sql).not.toContain("stage_definition.name ILIKE");
     expect(query.sql).toContain(
       "snapshot.id = application.submission_snapshot_id",
@@ -177,8 +177,8 @@ describe("staff application filters", () => {
         18,
         35,
         "Female",
-        "Khomas",
-        "Blue economy",
+        "khomas",
+        "blue economy",
         "UNDER_REVIEW",
         "2026-10-01",
         "2026-10-12",
