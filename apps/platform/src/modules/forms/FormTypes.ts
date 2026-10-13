@@ -28,7 +28,11 @@ export {
   type FormRuntimeBindingInput,
 } from "./domain/FormRuntimeBinding";
 
-export { formPurposes, formPurposeOptions, type FormPurpose } from "./domain/FormPurpose";
+export {
+  formPurposes,
+  formPurposeOptions,
+  type FormPurpose,
+} from "./domain/FormPurpose";
 
 export const formFieldTypes = [
   "TEXT",
@@ -60,8 +64,7 @@ export const repeatableItemFieldTypes = [
   "SINGLE_SELECT",
   "MULTI_SELECT",
 ] as const;
-export type RepeatableItemFieldType =
-  (typeof repeatableItemFieldTypes)[number];
+export type RepeatableItemFieldType = (typeof repeatableItemFieldTypes)[number];
 
 export type FormOption = {
   key: string;
@@ -99,6 +102,7 @@ export type FormField = {
   key: string;
   label: string;
   type: FormFieldType;
+  acceptedExtensions?: import("./domain/FormDocumentTypes").FormDocumentExtension[];
   maxPages?: number;
   maximumFileSizeMb?: number;
   required: boolean;
@@ -111,6 +115,7 @@ export type FormField = {
   options?: FormOption[];
   repeatable?: RepeatableGroupConfiguration | null;
   visibilityCondition?: ConditionGroup | null;
+  rules?: import("./domain/FormFieldRules").FormFieldRules | null;
 };
 
 export type FormEditorView = {
@@ -173,10 +178,9 @@ export type FormResponse = {
 
 export type TaskFormData = {
   readOnly?: boolean;
-  context: Readonly<Record<
-    string,
-    import("./engine/FormRuntimeContext").FormContextValue
-  >>;
+  context: Readonly<
+    Record<string, import("./engine/FormRuntimeContext").FormContextValue>
+  >;
   schema: FormRuntimeSchema;
   response: FormResponse | null;
   taskRowVersion: number;

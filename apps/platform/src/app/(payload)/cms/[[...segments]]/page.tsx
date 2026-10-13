@@ -2,6 +2,8 @@ import config from "@payload-config";
 import { RootPage } from "@payloadcms/next/views";
 import { notFound, redirect } from "next/navigation";
 
+import { getCmsLoginDestination } from "@/platform/auth/ServerCmsAuthNavigation";
+
 import { homeEditorSectionForPath } from "@/modules/content/ui/admin/HomeEditorSections";
 import { getPageEditorSegments } from "@/modules/content/ServerCmsPageEditorService";
 import {
@@ -21,7 +23,11 @@ export default async function PayloadAdminPage(props: Props) {
   const { segments = [] } = await props.params;
 
   if (segments[0] === "login") {
-    redirect("/cms");
+    redirect(await getCmsLoginDestination());
+  }
+
+  if (segments[0] === "unauthorized") {
+    redirect("/unauthorized");
   }
 
   if (segments.join("/") === "globals/contact-details") {

@@ -22,6 +22,7 @@ const field: FormField = {
   type: "DOCUMENT",
   required: true,
   order: 1,
+  acceptedExtensions: [".pdf"],
   maxPages: 12,
   maximumFileSizeMb: 4,
 };
@@ -36,6 +37,8 @@ describe("document limit repository projections", () => {
         'insert into "app_form_fields"',
       ),
     ) as unknown as [string, unknown[]];
+    expect(insert[0]).toContain('"accepted_extensions"');
+    expect(insert[1]).toContain('{".pdf"}');
     expect(insert[0]).toContain('"max_pages", "maximum_file_size_mb"');
     expect(insert[1]).toContain(12);
     expect(insert[1]).toContain(4);
@@ -54,6 +57,7 @@ describe("document limit repository projections", () => {
                 field.key,
                 field.label,
                 null,
+                [".pdf"],
                 12,
                 4,
                 null,
@@ -64,6 +68,7 @@ describe("document limit repository projections", () => {
                 true,
                 field.sectionId,
                 "DOCUMENT",
+                null,
                 null,
               ],
             ]
@@ -78,6 +83,7 @@ describe("document limit repository projections", () => {
       expect(result).toMatchObject([
         {
           key: "BUSINESS_PROFILE",
+          acceptedExtensions: [".pdf"],
           maxPages: 12,
           maximumFileSizeMb: 4,
         },

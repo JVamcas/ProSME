@@ -14,7 +14,11 @@ import {
   retireFormVersion,
   saveFormDraft,
 } from "@/modules/forms/infrastructure/FormWriteRepository";
-import { saveDraftFormResponse } from "@/modules/forms/infrastructure/FormResponseRepository";
+import { validatedFormResponseValues } from "./FormResponseValidation";
+import {
+  readFormResponse,
+  saveDraftFormResponse,
+} from "@/modules/forms/infrastructure/FormResponseRepository";
 import {
   completeFormTask,
   readFormTaskCompletion,
@@ -32,18 +36,11 @@ import {
   ResourceConflictError,
   ResourceNotFoundError,
 } from "@/lib/resource-errors";
-import {
-  formPublicationErrors,
-  validateFormValues,
-} from "@/modules/forms/FormValidation";
+import { formPublicationErrors } from "@/modules/forms/FormValidation";
 import {
   captureFormResponseValues,
   InvalidFormRuntimeBindingError,
 } from "@/modules/forms/engine/FormRuntimeContext";
-import {
-  activeFormDefinition,
-  sanitizeFormResponseValues,
-} from "@/modules/forms/engine/FormVisibility";
 import type {
   CreateFormInput,
   FormCommandInput,
@@ -278,11 +275,23 @@ export async function saveTaskForm(
   const schema = await getFormRuntime(task.formVersionId);
   if (!schema) throw new ResourceNotFoundError("published form");
   const captured = capturedResponseValues(schema.fields, input.values);
-  const values = sanitizeFormResponseValues(schema, captured);
-  const activeDefinition = activeFormDefinition(schema, captured);
-  if (!validateFormValues(activeDefinition.fields, values, false)) {
-    throw new RequestValidationError("The form values are invalid.");
+  const previous = schema.fields.some((field) => field.rules?.editableCondition)
+    ? await readFormResponse(actor.id, input.taskInstanceId, task.formVersionId)
+    : null;
+  if (
+    schema.fields.some((field) => field.rules?.editableCondition) &&
+    previous?.rowVersion !== input.expectedResponseRowVersion
+  ) {
+    throw new ResourceConflictError(
+      "The saved form changed. Refresh and retry.",
+    );
   }
+  const values = validatedFormResponseValues(
+    schema,
+    captured,
+    false,
+    previous?.values,
+  );
   const saved = await saveDraftFormResponse({
     actorId: actor.id,
     correlationId: input.correlationId,
@@ -330,13 +339,23 @@ export async function completeTaskForm(
   const schema = await getFormRuntime(task.formVersionId);
   if (!schema) throw new ResourceNotFoundError("published form");
   const captured = capturedResponseValues(schema.fields, input.values);
-  const values = sanitizeFormResponseValues(schema, captured);
-  const activeDefinition = activeFormDefinition(schema, captured);
-  if (!validateFormValues(activeDefinition.fields, values, true)) {
-    throw new RequestValidationError(
-      "Complete all required form fields with valid values.",
+  const previous = schema.fields.some((field) => field.rules?.editableCondition)
+    ? await readFormResponse(actor.id, input.taskInstanceId, task.formVersionId)
+    : null;
+  if (
+    schema.fields.some((field) => field.rules?.editableCondition) &&
+    previous?.rowVersion !== input.expectedResponseRowVersion
+  ) {
+    throw new ResourceConflictError(
+      "The saved form changed. Refresh and retry.",
     );
   }
+  const values = validatedFormResponseValues(
+    schema,
+    captured,
+    true,
+    previous?.values,
+  );
   const result = await completeFormTask(
     {
       actionKey: input.actionKey,

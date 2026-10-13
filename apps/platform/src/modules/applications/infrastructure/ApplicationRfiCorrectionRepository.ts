@@ -4,6 +4,7 @@ import { and, eq, isNull, sql } from "drizzle-orm";
 import { ResourceConflictError } from "@/lib/resource-errors";
 import { readFormFields } from "@/modules/forms/infrastructure/FormRepository";
 import { validateFormValues } from "@/modules/forms/FormValidation";
+import { nonEditableFormFieldChanges } from "@/modules/forms/engine/FormFieldBehaviour";
 import { captureFormResponseValues } from "@/modules/forms/engine/FormRuntimeContext";
 import { isWorkflowRfiEditableField } from "@/modules/workflows/domain/runtime/WorkflowRfiFields";
 import type { WorkflowActionExecutionTransaction } from "@/modules/workflows/infrastructure/WorkflowActionExecutionRepository";
@@ -23,10 +24,7 @@ export async function applyWorkflowRfiApplicationCorrections(
     .select({
       formVersionId: applicationDraftResponses.formVersionId,
       id: applicationDraftResponses.id,
-      values: sql<Record<string, unknown>>`(
-        SELECT jsonb_object_agg(requested.key, ${applicationDraftResponses.values} -> requested.key)
-        FROM jsonb_array_elements_text(${JSON.stringify(keys)}::jsonb) requested(key)
-      )`,
+      values: applicationDraftResponses.values,
     })
     .from(applicationDraftResponses)
     .innerJoin(
@@ -52,14 +50,16 @@ export async function applyWorkflowRfiApplicationCorrections(
     throw new ResourceConflictError(
       "The submitted application answers are unavailable.",
     );
-  const fields = (
-    await readFormFields(response.formVersionId, transaction, keys)
-  ).filter(
+  // Cross-field rules require the pinned form's other answer values.
+  const allFields = await readFormFields(response.formVersionId, transaction);
+  const fields = allFields.filter(
     (field) => keys.includes(field.key) && isWorkflowRfiEditableField(field),
   );
+  const ruleValues = { ...response.values, ...input.fieldValues };
   if (
     fields.length !== keys.length ||
-    !validateFormValues(fields, input.fieldValues, true)
+    !validateFormValues(fields, input.fieldValues, true, ruleValues) ||
+    nonEditableFormFieldChanges(fields, ruleValues, response.values).length > 0
   ) {
     throw new ResourceConflictError(
       "Complete the requested fields using the application form's validation rules.",

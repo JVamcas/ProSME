@@ -44,6 +44,9 @@ export function workflowRfiResponseDefinition(
       sectionId: detail.id,
       type: field.type,
       visibilityCondition: null,
+      // This RFI projection exposes only requested fields. The correction
+      // repository evaluates the original rules against authoritative answers.
+      rules: null,
     })),
   };
 }

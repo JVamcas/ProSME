@@ -44,6 +44,7 @@ vi.mock("@/modules/applications/ServerApplicationService", async () => {
   };
 });
 
+import { condition, definition } from "../../support/FormFieldRuleFixture";
 import { permissionCodes } from "@/auth/authorization/permissions";
 import type { AuthenticatedUser } from "@/auth/types";
 import {
@@ -54,7 +55,7 @@ import {
   createApplicationDraft,
   getOwnApplicationDraft,
   saveOwnApplicationDraft,
-} from "@/modules/applications/ServerApplicationFormService";
+} from "@/modules/applications/application/ServerApplicationFormService";
 import { createApplicationDraft as persistApplicationDraft } from "@/modules/applications/infrastructure/ApplicationCreationRepository";
 import {
   readOwnedApplicationDraftResponse,
@@ -265,5 +266,32 @@ describe("application draft creation and exact-version autosave", () => {
         },
       ),
     ).rejects.toThrow("no longer accepts draft changes");
+  });
+});
+
+describe("application form rules", () => {
+  it("denies changing a conditionally locked field before persistence", async () => {
+    vi.mocked(getAttachedApplicationForm).mockResolvedValue({
+      ...definition({ editableCondition: condition("ENABLED") }),
+      versionId: formVersionId,
+    });
+    vi.mocked(readOwnedApplicationDraftResponse).mockResolvedValue({
+      ...response,
+      values: { ENABLED: true, AMOUNT: 10 },
+    });
+    await expect(
+      saveOwnApplicationDraft(
+        user(permissionCodes.fundingApplicationOwnUpdate),
+        applicationId,
+        {
+          correlationId: applicationId,
+          expectedApplicationRowVersion: 2,
+          expectedResponseRowVersion: 1,
+          idempotencyKey: applicationId,
+          values: { ENABLED: false, AMOUNT: 20 },
+        },
+      ),
+    ).rejects.toThrow("Amount is not editable");
+    expect(saveApplicationDraftResponse).not.toHaveBeenCalled();
   });
 });

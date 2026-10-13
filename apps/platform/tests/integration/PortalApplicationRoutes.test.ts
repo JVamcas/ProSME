@@ -7,11 +7,14 @@ vi.mock("@/auth/authorization/current-user", () => ({
 vi.mock("@/modules/applications/ServerApplicationService", () => ({
   listOwnApplications: vi.fn(),
 }));
-vi.mock("@/modules/applications/ServerApplicationFormService", () => ({
-  createApplicationDraft: vi.fn(),
-  getOwnApplicationDraft: vi.fn(),
-  saveOwnApplicationDraft: vi.fn(),
-}));
+vi.mock(
+  "@/modules/applications/application/ServerApplicationFormService",
+  () => ({
+    createApplicationDraft: vi.fn(),
+    getOwnApplicationDraft: vi.fn(),
+    saveOwnApplicationDraft: vi.fn(),
+  }),
+);
 vi.mock("@/modules/applications/ServerApplicationDeletionService", () => ({
   deleteOwnApplicationDraft: vi.fn(),
 }));
@@ -20,15 +23,16 @@ import * as itemRoute from "@/app/api/portal/applications/[id]/route";
 import * as listRoute from "@/app/api/portal/applications/route";
 import { resolveUserFromHeaders } from "@/auth/authorization/current-user";
 import type { AuthenticatedUser } from "@/auth/types";
-import { ResourceConflictError, ResourceNotFoundError } from "@/lib/resource-errors";
-import { deleteOwnApplicationDraft } from "@/modules/applications/ServerApplicationDeletionService";
 import {
-  listOwnApplications,
-} from "@/modules/applications/ServerApplicationService";
+  ResourceConflictError,
+  ResourceNotFoundError,
+} from "@/lib/resource-errors";
+import { deleteOwnApplicationDraft } from "@/modules/applications/ServerApplicationDeletionService";
+import { listOwnApplications } from "@/modules/applications/ServerApplicationService";
 import {
   createApplicationDraft,
   saveOwnApplicationDraft,
-} from "@/modules/applications/ServerApplicationFormService";
+} from "@/modules/applications/application/ServerApplicationFormService";
 
 const actor = {
   id: "79e20de0-3558-4d63-90a4-8c9f5125df07",
@@ -88,10 +92,15 @@ describe("portal application routes", () => {
     vi.mocked(createApplicationDraft).mockResolvedValue(created);
     const idempotencyKey = "10000000-0000-4000-8000-000000000001";
     const createResponse = await listRoute.POST(
-      request("/api/portal/applications", "POST", {
-        businessId: "20000000-0000-4000-8000-000000000001",
-        fundingCallIdOrSlug: "00000000-0000-4000-8000-000000000042",
-      }, idempotencyKey),
+      request(
+        "/api/portal/applications",
+        "POST",
+        {
+          businessId: "20000000-0000-4000-8000-000000000001",
+          fundingCallIdOrSlug: "00000000-0000-4000-8000-000000000042",
+        },
+        idempotencyKey,
+      ),
     );
     expect(createResponse.status).toBe(200);
     expect(createApplicationDraft).toHaveBeenCalledWith(
@@ -140,7 +149,9 @@ describe("portal application routes", () => {
     });
   });
   it("deletes a draft through the protected service", async () => {
-    vi.mocked(deleteOwnApplicationDraft).mockResolvedValue({ id: applicationId });
+    vi.mocked(deleteOwnApplicationDraft).mockResolvedValue({
+      id: applicationId,
+    });
     const response = await itemRoute.DELETE(
       request(`/api/portal/applications/${applicationId}`, "DELETE"),
       { params: Promise.resolve({ id: applicationId }) },
@@ -163,5 +174,4 @@ describe("portal application routes", () => {
     );
     expect(response.status).toBe(404);
   });
-
 });

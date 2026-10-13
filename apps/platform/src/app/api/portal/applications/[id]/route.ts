@@ -11,7 +11,7 @@ import { saveApplicationDraftSchema } from "@/modules/applications/ApplicationSc
 import {
   getOwnApplicationDraft,
   saveOwnApplicationDraft,
-} from "@/modules/applications/ServerApplicationFormService";
+} from "@/modules/applications/application/ServerApplicationFormService";
 
 type ApplicationRouteContext = { params: Promise<{ id: string }> };
 const applicationIdSchema = z.uuid();
@@ -60,7 +60,11 @@ export async function DELETE(request: Request, route: ApplicationRouteContext) {
   try {
     const resolved = await context(request, route);
     return portalRouteSuccess(
-      await deleteOwnApplicationDraft(resolved.user, resolved.id, correlationId),
+      await deleteOwnApplicationDraft(
+        resolved.user,
+        resolved.id,
+        correlationId,
+      ),
       correlationId,
     );
   } catch (error) {

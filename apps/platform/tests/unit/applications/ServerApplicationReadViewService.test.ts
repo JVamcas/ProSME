@@ -1,22 +1,31 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
-vi.mock("@/modules/applications/ServerApplicationFormService", () => ({
-  getOwnApplicationDraft: vi.fn(),
-}));
+vi.mock(
+  "@/modules/applications/application/ServerApplicationFormService",
+  () => ({
+    getOwnApplicationDraft: vi.fn(),
+  }),
+);
 vi.mock("@/modules/applications/ServerApplicationService", () => ({
   getOwnApplicationStatus: vi.fn(),
 }));
-vi.mock("@/modules/applications/ServerApplicationSubmissionSnapshotService", () => ({
-  getApplicationSubmissionSnapshot: vi.fn(),
-}));
-vi.mock("@/modules/applications/application/ServerApplicationDocumentService", () => ({
-  getOwnApplicationDocuments: vi.fn(),
-}));
+vi.mock(
+  "@/modules/applications/ServerApplicationSubmissionSnapshotService",
+  () => ({
+    getApplicationSubmissionSnapshot: vi.fn(),
+  }),
+);
+vi.mock(
+  "@/modules/applications/application/ServerApplicationDocumentService",
+  () => ({
+    getOwnApplicationDocuments: vi.fn(),
+  }),
+);
 
 import { getOwnApplicationDocuments } from "@/modules/applications/application/ServerApplicationDocumentService";
 import { getOwnApplicationReadView } from "@/modules/applications/ServerApplicationReadViewService";
-import { getOwnApplicationDraft } from "@/modules/applications/ServerApplicationFormService";
+import { getOwnApplicationDraft } from "@/modules/applications/application/ServerApplicationFormService";
 import { getOwnApplicationStatus } from "@/modules/applications/ServerApplicationService";
 import { getApplicationSubmissionSnapshot } from "@/modules/applications/ServerApplicationSubmissionSnapshotService";
 
@@ -42,25 +51,33 @@ beforeEach(() => {
   vi.mocked(getOwnApplicationDraft).mockResolvedValue(draft as never);
   vi.mocked(getOwnApplicationStatus).mockResolvedValue(summary as never);
   vi.mocked(getOwnApplicationDocuments).mockResolvedValue({
-    documents: [{
-      fileName: "Business plan.pdf",
-      requirementKey: "BUSINESS_PLAN",
-      sizeBytes: 4096,
-      storageStatus: "finalized",
-      versionId: "30000000-0000-4000-8000-000000000003",
-    }],
+    documents: [
+      {
+        fileName: "Business plan.pdf",
+        requirementKey: "BUSINESS_PLAN",
+        sizeBytes: 4096,
+        storageStatus: "finalized",
+        versionId: "30000000-0000-4000-8000-000000000003",
+      },
+    ],
     requirements: [],
   } as never);
 });
 
 describe("own application read view", () => {
   it("uses saved dynamic answers and owned documents for a draft", async () => {
-    const view = await getOwnApplicationReadView(actor, applicationId, "correlation");
+    const view = await getOwnApplicationReadView(
+      actor,
+      applicationId,
+      "correlation",
+    );
     expect(view.values).toEqual({ GOAL: "Changed after submission" });
-    expect(view.documents).toEqual([expect.objectContaining({
-      name: "Business plan.pdf",
-      versionId: "30000000-0000-4000-8000-000000000003",
-    })]);
+    expect(view.documents).toEqual([
+      expect.objectContaining({
+        name: "Business plan.pdf",
+        versionId: "30000000-0000-4000-8000-000000000003",
+      }),
+    ]);
     expect(getApplicationSubmissionSnapshot).not.toHaveBeenCalled();
   });
 
@@ -73,12 +90,14 @@ describe("own application read view", () => {
       snapshot: {
         applicant: { displayName: "Applicant", userId: "internal-id" },
         business: { legalName: "Example SME Fund", id: "internal-business-id" },
-        documents: [{
-          id: "40000000-0000-4000-8000-000000000004",
-          originalName: "Lodged plan.pdf",
-          requirementKey: "BUSINESS_PLAN",
-          sizeBytes: 5120,
-        }],
+        documents: [
+          {
+            id: "40000000-0000-4000-8000-000000000004",
+            originalName: "Lodged plan.pdf",
+            requirementKey: "BUSINESS_PLAN",
+            sizeBytes: 5120,
+          },
+        ],
         form: {
           normalizedValues: { GOAL: "Lodged answer", INTERNAL_KEY: "hidden" },
           versionId: formVersionId,
@@ -86,18 +105,29 @@ describe("own application read view", () => {
       },
     } as never);
 
-    const view = await getOwnApplicationReadView(actor, applicationId, "correlation");
+    const view = await getOwnApplicationReadView(
+      actor,
+      applicationId,
+      "correlation",
+    );
     expect(view.values).toEqual({ GOAL: "Lodged answer" });
     expect(view.documents[0]?.name).toBe("Lodged plan.pdf");
-    expect(view.applicantDetails).toEqual([{ label: "Name", value: "Applicant" }]);
-    expect(view.businessDetails).toEqual([{ label: "Legal name", value: "Example SME Fund" }]);
+    expect(view.applicantDetails).toEqual([
+      { label: "Name", value: "Applicant" },
+    ]);
+    expect(view.businessDetails).toEqual([
+      { label: "Legal name", value: "Example SME Fund" },
+    ]);
     expect(getOwnApplicationDocuments).not.toHaveBeenCalled();
   });
 
   it("does not read a snapshot when the owner-scoped application read fails", async () => {
-    vi.mocked(getOwnApplicationStatus).mockRejectedValue(new Error("not owned"));
-    await expect(getOwnApplicationReadView(actor, applicationId, "correlation"))
-      .rejects.toThrow("not owned");
+    vi.mocked(getOwnApplicationStatus).mockRejectedValue(
+      new Error("not owned"),
+    );
+    await expect(
+      getOwnApplicationReadView(actor, applicationId, "correlation"),
+    ).rejects.toThrow("not owned");
     expect(getApplicationSubmissionSnapshot).not.toHaveBeenCalled();
   });
 });

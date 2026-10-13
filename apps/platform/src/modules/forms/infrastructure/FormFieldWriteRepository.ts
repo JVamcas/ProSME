@@ -3,11 +3,7 @@ import "server-only";
 import { eq, sql } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
-import {
-  formFieldOptions,
-  formFields,
-  formSections,
-} from "@/db/schema";
+import { formFieldOptions, formFields, formSections } from "@/db/schema";
 import type { FormField, FormSection } from "@/modules/forms/FormTypes";
 
 export type FormTransaction = Parameters<
@@ -86,6 +82,7 @@ async function copyFields(
       formVersionId: targetVersionId,
       helpText: field.helpText,
       maximum: field.maximum,
+      acceptedExtensions: field.acceptedExtensions,
       maxPages: field.maxPages,
       maximumFileSizeMb: field.maximumFileSizeMb,
       maxLength: field.maxLength,
@@ -100,6 +97,7 @@ async function copyFields(
       sectionId: sectionIds.get(field.sectionId)!,
       type: field.type,
       visibilityCondition: field.visibilityCondition,
+      rules: field.rules,
     })),
   );
   if (options.length) {
@@ -124,21 +122,18 @@ export async function copyFormVersionChildren(
     sourceVersionId,
     targetVersionId,
   );
-  await copyFields(
-    transaction,
-    sourceVersionId,
-    targetVersionId,
-    sectionIds,
-  );
+  await copyFields(transaction, sourceVersionId, targetVersionId, sectionIds);
 }
 
 async function deleteDraftFields(
   transaction: FormTransaction,
   versionId: string,
 ) {
-  await transaction.delete(formFieldOptions).where(
-    sql`${formFieldOptions.fieldId} in (select ${formFields.id} from ${formFields} where ${formFields.formVersionId} = ${versionId})`,
-  );
+  await transaction
+    .delete(formFieldOptions)
+    .where(
+      sql`${formFieldOptions.fieldId} in (select ${formFields.id} from ${formFields} where ${formFields.formVersionId} = ${versionId})`,
+    );
   await transaction
     .delete(formFields)
     .where(eq(formFields.formVersionId, versionId));
@@ -181,6 +176,7 @@ async function insertDraftFields(
       formVersionId: versionId,
       helpText: field.helpText ?? null,
       maximum: field.maximum ?? null,
+      acceptedExtensions: field.acceptedExtensions ?? null,
       maxPages: field.maxPages ?? null,
       maximumFileSizeMb: field.maximumFileSizeMb ?? null,
       maxLength: field.maxLength ?? null,
@@ -195,14 +191,15 @@ async function insertDraftFields(
       sectionId: field.sectionId,
       type: field.type,
       visibilityCondition: field.visibilityCondition ?? null,
+      rules: field.rules ?? null,
     })),
   );
-  const options = fields.flatMap((field, index) => (
+  const options = fields.flatMap((field, index) =>
     (field.options ?? []).map((option) => ({
       ...option,
       fieldId: fieldIds[index],
-    }))
-  ));
+    })),
+  );
   if (options.length) {
     await transaction.insert(formFieldOptions).values(options);
   }
@@ -232,6 +229,7 @@ export async function readPublicationFields(
         key: formFields.key,
         label: formFields.label,
         maximum: formFields.maximum,
+        acceptedExtensions: formFields.acceptedExtensions,
         maxPages: formFields.maxPages,
         maximumFileSizeMb: formFields.maximumFileSizeMb,
         maxLength: formFields.maxLength,
@@ -243,6 +241,7 @@ export async function readPublicationFields(
         sectionId: formFields.sectionId,
         type: formFields.type,
         visibilityCondition: formFields.visibilityCondition,
+        rules: formFields.rules,
       })
       .from(formFields)
       .where(eq(formFields.formVersionId, versionId)),
@@ -266,6 +265,7 @@ export async function readPublicationFields(
   return fields.map((field) => ({
     ...field,
     maximum: field.maximum ?? undefined,
+    acceptedExtensions: field.acceptedExtensions ?? undefined,
     maxPages: field.maxPages ?? undefined,
     maximumFileSizeMb: field.maximumFileSizeMb ?? undefined,
     maxLength: field.maxLength ?? undefined,

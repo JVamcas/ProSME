@@ -6,8 +6,8 @@ import { describe, expect, it, vi } from "vitest";
 import { FormFieldDialog } from "@/modules/forms/ui/builder/FormFieldDialog";
 import type { FormField } from "@/modules/forms/FormTypes";
 
-vi.mock("@/modules/forms/ui/builder/FormVisibilityConditionEditor", () => ({
-  FormVisibilityConditionEditor: () => null,
+vi.mock("@/modules/forms/ui/builder/FormConditionRuleEditor", () => ({
+  FormConditionRuleEditor: () => null,
 }));
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 
@@ -32,42 +32,57 @@ async function saveField(field?: FormField, type?: "CHECKBOX") {
   document.body.append(container);
   const root = createRoot(container);
   try {
-    await act(async () => root.render(
-      <FormFieldDialog
-        field={field}
-        fields={[existing]}
-        visibilityFields={[]}
-        isOpen
-        nextOrder={2}
-        onClose={closed}
-        onSave={saved}
-        sectionColumnSpan={1}
-        sectionId={existing.sectionId}
-      />,
-    ));
+    await act(async () =>
+      root.render(
+        <FormFieldDialog
+          field={field}
+          fields={[existing]}
+          visibilityFields={[]}
+          isOpen
+          nextOrder={2}
+          onClose={closed}
+          onSave={saved}
+          sectionColumnSpan={1}
+          sectionId={existing.sectionId}
+        />,
+      ),
+    );
     expect(document.querySelector('[name="key"]')).toBeNull();
     expect(document.body.textContent).not.toContain("Field key");
     if (type) {
       await act(async () => {
-        const select = document.querySelector<HTMLSelectElement>('[name="type"]')!;
-        expect(Array.from(select.options).some((option) => option.textContent === "Checkbox")).toBe(true);
+        const select =
+          document.querySelector<HTMLSelectElement>('[name="type"]')!;
+        expect(
+          Array.from(select.options).some(
+            (option) => option.textContent === "Checkbox",
+          ),
+        ).toBe(true);
         select.value = type;
         select.dispatchEvent(new Event("change", { bubbles: true }));
       });
     }
-    const input = document.querySelector<HTMLInputElement | HTMLTextAreaElement>('[name="label"]')!;
+    const input = document.querySelector<
+      HTMLInputElement | HTMLTextAreaElement
+    >('[name="label"]')!;
     await act(async () => {
       const setValue = Object.getOwnPropertyDescriptor(
-        type === "CHECKBOX" ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype,
+        type === "CHECKBOX"
+          ? HTMLTextAreaElement.prototype
+          : HTMLInputElement.prototype,
         "value",
       )!.set!;
       setValue.call(input, field ? "Renamed business name" : "Registered name");
       input.dispatchEvent(new Event("input", { bubbles: true }));
       input.dispatchEvent(new Event("change", { bubbles: true }));
     });
-    const form = document.querySelector<HTMLFormElement>('[role="dialog"] form')!;
+    const form = document.querySelector<HTMLFormElement>(
+      '[role="dialog"] form',
+    )!;
     await act(async () => {
-      form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+      form.dispatchEvent(
+        new Event("submit", { bubbles: true, cancelable: true }),
+      );
     });
     expect(saved).toHaveBeenCalledTimes(1);
     expect(closed).toHaveBeenCalledTimes(1);
@@ -83,9 +98,11 @@ describe("automatic form field keys", () => {
     const field = await saveField({
       ...existing,
       type: "DOCUMENT",
+      acceptedExtensions: [".pdf"],
       maxPages: 12,
       maximumFileSizeMb: 4,
     });
+    expect(field.acceptedExtensions).toEqual([".pdf"]);
     expect(field.maxPages).toBe(12);
     expect(field.maximumFileSizeMb).toBe(4);
   });
@@ -94,6 +111,15 @@ describe("automatic form field keys", () => {
     expect(field.type).toBe("CHECKBOX");
     expect(field.key).toBe("REGISTERED_NAME_2");
   });
+  it("preserves selected document formats without a page limit", async () => {
+    const field = await saveField({
+      ...existing,
+      type: "DOCUMENT",
+      acceptedExtensions: [".xls", ".xlsx", ".csv"],
+    });
+    expect(field.acceptedExtensions).toEqual([".xls", ".xlsx", ".csv"]);
+  });
+
   it("generates a unique key from the label when adding a field", async () => {
     const field = await saveField();
     expect(field.key).toBe("REGISTERED_NAME_2");

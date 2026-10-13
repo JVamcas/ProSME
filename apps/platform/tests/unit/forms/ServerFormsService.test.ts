@@ -30,6 +30,7 @@ vi.mock("@/modules/forms/application/FormTaskRuntimeContext", () => ({
   exposeTaskFormRuntimeContext: vi.fn(),
 }));
 
+import { condition, definition } from "../../support/FormFieldRuleFixture";
 import { permissionCodes } from "@/auth/authorization/permissions";
 import {
   getFormEditor,
@@ -41,9 +42,7 @@ import {
   saveDraftFormResponse,
 } from "@/modules/forms/infrastructure/FormResponseRepository";
 import { readFormTaskCompletion } from "@/modules/forms/infrastructure/FormTaskCompletionRepository";
-import {
-  readAssignedFormTask,
-} from "@/modules/workflows/infrastructure/WorkflowTaskRepository";
+import { readAssignedFormTask } from "@/modules/workflows/infrastructure/WorkflowTaskRepository";
 import {
   completeTaskForm,
   saveTaskForm,
@@ -109,13 +108,15 @@ describe("ServerFormsService", () => {
       taskInstanceId: taskId,
       values: {},
     });
-    expect(saveDraftFormResponse).toHaveBeenCalledWith(expect.objectContaining({
-      actorId,
-      correlationId: versionId,
-      expectedResponseRowVersion: 1,
-      formVersionId: versionId,
-      workflowTaskId: taskId,
-    }));
+    expect(saveDraftFormResponse).toHaveBeenCalledWith(
+      expect.objectContaining({
+        actorId,
+        correlationId: versionId,
+        expectedResponseRowVersion: 1,
+        formVersionId: versionId,
+        workflowTaskId: taskId,
+      }),
+    );
   });
 
   it("persists partial values without requiring incomplete fields", async () => {
@@ -128,29 +129,28 @@ describe("ServerFormsService", () => {
     });
     vi.mocked(getFormRuntime).mockResolvedValue({
       ...runtime,
-      fields: [{
-        columnSpan: 1,
-        key: "NOTES",
-        label: "Notes",
-        order: 1,
-        required: true,
-        sectionId: "20000000-0000-4000-8000-000000000001",
-        type: "TEXTAREA",
-      }],
+      fields: [
+        {
+          columnSpan: 1,
+          key: "NOTES",
+          label: "Notes",
+          order: 1,
+          required: true,
+          sectionId: "20000000-0000-4000-8000-000000000001",
+          type: "TEXTAREA",
+        },
+      ],
     });
     vi.mocked(saveDraftFormResponse).mockResolvedValue({
       id: "submission",
       rowVersion: 1,
     } as never);
-    await saveTaskForm(
-      staff([permissionCodes.workflowTaskAssignedProcess]),
-      {
-        correlationId: versionId,
-        expectedTaskRowVersion: 3,
-        taskInstanceId: taskId,
-        values: {},
-      },
-    );
+    await saveTaskForm(staff([permissionCodes.workflowTaskAssignedProcess]), {
+      correlationId: versionId,
+      expectedTaskRowVersion: 3,
+      taskInstanceId: taskId,
+      values: {},
+    });
     expect(saveDraftFormResponse).toHaveBeenCalledWith(
       expect.objectContaining({ values: {} }),
     );
@@ -167,18 +167,19 @@ describe("ServerFormsService", () => {
       taskInstanceId: taskId,
       taskStatus: "IN_PROGRESS",
     });
-    await expect(saveTaskForm(
-      staff([permissionCodes.workflowTaskAssignedProcess]),
-      {
+    await expect(
+      saveTaskForm(staff([permissionCodes.workflowTaskAssignedProcess]), {
         correlationId: versionId,
         expectedTaskRowVersion: 3,
         taskInstanceId: taskId,
         values: {},
-      },
-    )).rejects.toBeInstanceOf(PermissionDeniedError);
+      }),
+    ).rejects.toBeInstanceOf(PermissionDeniedError);
     expect(saveDraftFormResponse).not.toHaveBeenCalled();
   });
+});
 
+describe("ServerFormsService capture and completion", () => {
   it("does not persist runtime context as captured response values", async () => {
     vi.mocked(readAssignedFormTask).mockResolvedValue({
       formVersionId: versionId,
@@ -189,20 +190,21 @@ describe("ServerFormsService", () => {
     });
     vi.mocked(getFormRuntime).mockResolvedValue({
       ...runtime,
-      fields: [{
-        columnSpan: 1,
-        key: "RECOMMENDATION",
-        label: "Recommendation",
-        order: 1,
-        required: false,
-        sectionId: "20000000-0000-4000-8000-000000000001",
-        type: "TEXTAREA",
-      }],
+      fields: [
+        {
+          columnSpan: 1,
+          key: "RECOMMENDATION",
+          label: "Recommendation",
+          order: 1,
+          required: false,
+          sectionId: "20000000-0000-4000-8000-000000000001",
+          type: "TEXTAREA",
+        },
+      ],
     });
 
-    await expect(saveTaskForm(
-      staff([permissionCodes.workflowTaskAssignedProcess]),
-      {
+    await expect(
+      saveTaskForm(staff([permissionCodes.workflowTaskAssignedProcess]), {
         correlationId: versionId,
         expectedTaskRowVersion: 3,
         taskInstanceId: taskId,
@@ -210,8 +212,8 @@ describe("ServerFormsService", () => {
           "application.project_title": "Harbour expansion",
           RECOMMENDATION: "Proceed",
         },
-      },
-    )).rejects.toBeInstanceOf(RequestValidationError);
+      }),
+    ).rejects.toBeInstanceOf(RequestValidationError);
     expect(saveDraftFormResponse).not.toHaveBeenCalled();
   });
 
@@ -256,13 +258,15 @@ describe("ServerFormsService", () => {
       submitLabel: "Complete",
     });
 
-    expect(saveFormDraft).toHaveBeenCalledWith(expect.objectContaining({
-      actorId,
-      code: "UPDATED_FORM",
-      definitionId: taskId,
-      instructions: "Updated instructions",
-      submitLabel: "Complete",
-    }));
+    expect(saveFormDraft).toHaveBeenCalledWith(
+      expect.objectContaining({
+        actorId,
+        code: "UPDATED_FORM",
+        definitionId: taskId,
+        instructions: "Updated instructions",
+        submitLabel: "Complete",
+      }),
+    );
   });
   it("returns a completion replay after enforcing the configured permission", async () => {
     const result = {
@@ -284,16 +288,75 @@ describe("ServerFormsService", () => {
       taskInstanceId: taskId,
       taskStatus: "IN_PROGRESS",
     });
-    await expect(completeTaskForm(
-      staff([permissionCodes.workflowTaskAssignedDecide]), {
-      actionKey: "ADVANCE",
-      correlationId: versionId,
-      expectedTaskRowVersion: 3,
-      idempotencyKey: versionId,
-      taskInstanceId: taskId,
-      values: {},
-      },
-    )).resolves.toEqual(result);
+    await expect(
+      completeTaskForm(staff([permissionCodes.workflowTaskAssignedDecide]), {
+        actionKey: "ADVANCE",
+        correlationId: versionId,
+        expectedTaskRowVersion: 3,
+        idempotencyKey: versionId,
+        taskInstanceId: taskId,
+        values: {},
+      }),
+    ).resolves.toEqual(result);
     expect(readAssignedFormTask).toHaveBeenCalledWith(actorId, taskId);
+  });
+});
+
+describe("server-side field rules", () => {
+  beforeEach(() => {
+    vi.mocked(readAssignedFormTask).mockResolvedValue({
+      formVersionId: versionId,
+      permissions: defaultWorkflowElementPermissions,
+      rowVersion: 3,
+      taskInstanceId: taskId,
+      taskStatus: "IN_PROGRESS",
+    });
+  });
+
+  it("denies locked-field changes using the saved actor-scoped response", async () => {
+    vi.mocked(getFormRuntime).mockResolvedValue({
+      ...definition({ editableCondition: condition("ENABLED") }),
+      versionId,
+    });
+    vi.mocked(readFormResponse).mockResolvedValue({
+      rowVersion: 1,
+      values: { ENABLED: true, AMOUNT: 10 },
+    } as never);
+    await expect(
+      saveTaskForm(staff([permissionCodes.workflowTaskAssignedProcess]), {
+        correlationId: versionId,
+        expectedResponseRowVersion: 1,
+        expectedTaskRowVersion: 3,
+        taskInstanceId: taskId,
+        values: { ENABLED: false, AMOUNT: 20 },
+      }),
+    ).rejects.toThrow("Amount is not editable");
+    expect(readFormResponse).toHaveBeenCalledWith(actorId, taskId, versionId);
+    expect(saveDraftFormResponse).not.toHaveBeenCalled();
+  });
+
+  it("checks submission-only rules during task completion", async () => {
+    vi.mocked(getFormRuntime).mockResolvedValue({
+      ...definition({
+        validationCondition: condition("AMOUNT", 10),
+        validationSettings: {
+          message: "Use the approved amount.",
+          modes: ["SUBMIT"],
+          missing: "REJECT",
+        },
+      }),
+      versionId,
+    });
+    vi.mocked(readFormTaskCompletion).mockResolvedValue(null as never);
+    await expect(
+      completeTaskForm(staff([permissionCodes.workflowTaskAssignedDecide]), {
+        actionKey: null,
+        correlationId: versionId,
+        expectedTaskRowVersion: 3,
+        idempotencyKey: versionId,
+        taskInstanceId: taskId,
+        values: { AMOUNT: 5 },
+      }),
+    ).rejects.toThrow("Use the approved amount.");
   });
 });

@@ -27,6 +27,7 @@ import {
   applicationDocumentAllowedFiles,
   applicationDocumentRequirements,
 } from "../domain/ApplicationDocumentPolicy";
+import { documentMimeTypeMatches } from "@/modules/forms/domain/FormDocumentTypes";
 import { validateApplicationDocumentPages } from "./ApplicationDocumentPageValidation";
 import {
   safeApplicationDocumentName,
@@ -58,9 +59,9 @@ async function loadDocumentContext(
 ) {
   const application = await findOwnedApplication(ownerUserId, applicationId);
   if (
-    !application
-    || requireDraft && application.status !== "draft"
-    || !application.formVersionId
+    !application ||
+    (requireDraft && application.status !== "draft") ||
+    !application.formVersionId
   ) {
     throw new ResourceNotFoundError("application draft");
   }
@@ -72,9 +73,9 @@ async function loadDocumentContext(
     readOwnedApplicationDraftResponse(ownerUserId, applicationId),
   ]);
   if (
-    !form
-    || !response
-    || response.formVersionId !== application.formVersionId
+    !form ||
+    !response ||
+    response.formVersionId !== application.formVersionId
   ) {
     throw new ResourceNotFoundError("application configuration");
   }
@@ -111,22 +112,23 @@ function validateFile(file: File, requirement: ApplicationDocumentRequirement) {
       `Choose a non-empty file no larger than ${requirement.maximumBytes / (1024 * 1024)} MB.`,
     );
   }
-  const extension = path.extname(file.name).toLowerCase() as
-    keyof typeof applicationDocumentAllowedFiles;
+  const extension = path
+    .extname(file.name)
+    .toLowerCase() as keyof typeof applicationDocumentAllowedFiles;
   const allowed = applicationDocumentAllowedFiles[extension];
   if (!requirement.acceptedExtensions.includes(extension)) {
     throw new InvalidApplicationDocumentError(
       requirement.maxPages === undefined
-        ? "Choose a PDF, JPEG, PNG, or DOCX file."
+        ? `Choose an allowed file type: ${requirement.acceptedExtensions.join(", ")}.`
         : "Choose a PDF so its page count can be checked.",
     );
   }
   if (!allowed) {
     throw new InvalidApplicationDocumentError(
-      "Choose a PDF, JPEG, PNG, or DOCX file.",
+      "The selected file type is not supported.",
     );
   }
-  if (file.type && file.type !== allowed.contentType) {
+  if (!documentMimeTypeMatches(extension, file.type)) {
     throw new InvalidApplicationDocumentError(
       "The file type does not match its extension.",
     );
@@ -156,9 +158,8 @@ export async function uploadOwnApplicationDocument(
     user,
     permissionCodes.fundingApplicationDocumentOwnUpload,
   );
-  const requirementKey = applicationDocumentRequirementKeySchema.parse(
-    requirementKeyInput,
-  );
+  const requirementKey =
+    applicationDocumentRequirementKeySchema.parse(requirementKeyInput);
   const context = await loadDocumentContext(actor.id, applicationId, true);
   const requirement = context.requirements.find(
     (item) => item.key === requirementKey,
@@ -166,6 +167,11 @@ export async function uploadOwnApplicationDocument(
   if (!requirement) {
     throw new InvalidApplicationDocumentError(
       "The selected document requirement is not available for this application.",
+    );
+  }
+  if (requirement.editable === false) {
+    throw new InvalidApplicationDocumentError(
+      `${requirement.label} is not editable under the current form rules.`,
     );
   }
   const validated = validateFile(file, requirement);
@@ -201,11 +207,14 @@ export async function uploadOwnApplicationDocument(
       contentType: validated.contentType,
       objectKey,
     });
-    if (!await finalizeApplicationDocumentVersion(version.id)) {
+    if (!(await finalizeApplicationDocumentVersion(version.id))) {
       throw new Error("Document finalization state changed unexpectedly.");
     }
   } catch (error) {
-    await failApplicationDocumentVersion(version.id, "STORAGE_FINALIZATION_FAILED");
+    await failApplicationDocumentVersion(
+      version.id,
+      "STORAGE_FINALIZATION_FAILED",
+    );
     await storage.delete(objectKey).catch(() => undefined);
     throw error;
   }

@@ -188,6 +188,9 @@ export const formFields = pgTable(
     maximum: doublePrecision("maximum"),
     minLength: integer("min_length"),
     maxLength: integer("max_length"),
+    acceptedExtensions: text("accepted_extensions")
+      .array()
+      .$type<import("../domain/FormDocumentTypes").FormDocumentExtension[]>(),
     maxPages: integer("max_pages"),
     maximumFileSizeMb: integer("maximum_file_size_mb"),
     repeatableConfiguration: jsonb(
@@ -195,6 +198,8 @@ export const formFields = pgTable(
     ).$type<RepeatableGroupConfiguration>(),
     order: integer("display_order").notNull(),
     visibilityCondition: jsonb("visibility_condition").$type<ConditionGroup>(),
+    rules:
+      jsonb("rules").$type<import("../domain/FormFieldRules").FormFieldRules>(),
   },
   (table) => [
     uniqueIndex("app_form_fields_version_key_unique").on(
@@ -235,6 +240,21 @@ export const formFields = pgTable(
     check(
       "app_form_fields_length_limits_check",
       sql`(${table.minLength} is null and ${table.maxLength} is null) or (${table.type} in ('TEXT', 'TEXTAREA') and coalesce(${table.minLength}, 0) >= 0 and coalesce(${table.maxLength}, 0) >= 0 and (${table.minLength} is null or ${table.maxLength} is null or ${table.minLength} <= ${table.maxLength}))`,
+    ),
+    check(
+      "app_form_fields_rules_check",
+      sql`${table.rules} is null or jsonb_typeof(${table.rules}) = 'object'`,
+    ),
+    check(
+      "app_form_fields_document_extensions_check",
+      sql`${table.acceptedExtensions} is null or (
+        ${table.type} = 'DOCUMENT'
+        and cardinality(${table.acceptedExtensions}) > 0
+        and ${table.acceptedExtensions} <@ array[
+          '.pdf', '.docx', '.xls', '.xlsx', '.txt', '.csv', '.jpg', '.jpeg', '.png'
+        ]::text[]
+        and (${table.maxPages} is null or ${table.acceptedExtensions} = array['.pdf']::text[])
+      )`,
     ),
     check(
       "app_form_fields_document_limits_check",

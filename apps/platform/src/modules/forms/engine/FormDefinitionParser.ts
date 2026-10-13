@@ -6,7 +6,11 @@ import type {
   FormSection,
   RepeatableItemField,
 } from "@/modules/forms/FormTypes";
-import { activeFormDefinition } from "./FormVisibility";
+import { formFieldIsEditable } from "./FormFieldBehaviour";
+import {
+  activeFormDefinition,
+  sanitizeFormResponseValues,
+} from "./FormVisibility";
 
 export type RenderSection = FormSection & {
   id: string;
@@ -42,7 +46,10 @@ function sorted<T extends { order: number }>(items: readonly T[]) {
   return [...items].sort((left, right) => left.order - right.order);
 }
 
-function ordered<T extends { order: number }>(items: readonly T[], label: string) {
+function ordered<T extends { order: number }>(
+  items: readonly T[],
+  label: string,
+) {
   const result = sorted(items);
   if (result.some((item, index) => item.order !== index + 1)) {
     invalid(`${label} order must be contiguous and start at one.`);
@@ -54,8 +61,12 @@ type ValueField = FormField | RepeatableItemField;
 
 function optionSchema(field: ValueField) {
   const options = ordered(field.options ?? [], `Options for ${field.key}`);
-  if (options.length === 0) invalid(`Select field ${field.key} has no options.`);
-  assertUnique(options.map((option) => option.key), `Options for ${field.key}`);
+  if (options.length === 0)
+    invalid(`Select field ${field.key} has no options.`);
+  assertUnique(
+    options.map((option) => option.key),
+    `Options for ${field.key}`,
+  );
   return {
     keys: options.map((option) => option.key),
     labels: options.map((option) => option.label),
@@ -72,7 +83,8 @@ function fieldSchema(
   };
   if (field.type === "REPEATABLE_GROUP") {
     const configuration = field.repeatable;
-    if (!configuration) invalid(`Repeatable field ${field.key} has no configuration.`);
+    if (!configuration)
+      invalid(`Repeatable field ${field.key} has no configuration.`);
     const fields = ordered(
       configuration.fields,
       `Fields in repeatable group ${field.key}`,
@@ -85,33 +97,34 @@ function fieldSchema(
       ...common,
       items: {
         additionalProperties: false,
-        properties: Object.fromEntries(fields.map((item) => [
-          item.key,
-          fieldSchema(item, requireCompletedFields),
-        ])),
+        properties: Object.fromEntries(
+          fields.map((item) => [
+            item.key,
+            fieldSchema(item, requireCompletedFields),
+          ]),
+        ),
         required: requireCompletedFields
           ? fields.filter((item) => item.required).map((item) => item.key)
           : [],
         type: "object",
       },
       maxItems: configuration.maximumItems,
-      minItems: requireCompletedFields
-        ? configuration.minimumItems
-        : 0,
+      minItems: requireCompletedFields ? configuration.minimumItems : 0,
       type: "array",
     };
   }
   if (["NUMBER", "CURRENCY", "PERCENTAGE"].includes(field.type)) {
     const percentage = field.type === "PERCENTAGE";
-    const minimum = percentage ? field.minimum ?? 0 : field.minimum;
-    const maximum = percentage ? field.maximum ?? 100 : field.maximum;
-    const rangeDescription = minimum != null && maximum != null
-      ? `Enter a value from ${minimum} to ${maximum}.`
-      : minimum != null
-        ? `Enter a value of at least ${minimum}.`
-        : maximum != null
-          ? `Enter a value no greater than ${maximum}.`
-          : undefined;
+    const minimum = percentage ? (field.minimum ?? 0) : field.minimum;
+    const maximum = percentage ? (field.maximum ?? 100) : field.maximum;
+    const rangeDescription =
+      minimum != null && maximum != null
+        ? `Enter a value from ${minimum} to ${maximum}.`
+        : minimum != null
+          ? `Enter a value of at least ${minimum}.`
+          : maximum != null
+            ? `Enter a value no greater than ${maximum}.`
+            : undefined;
     return {
       ...common,
       description: field.helpText ?? rangeDescription,
@@ -216,17 +229,20 @@ function scalarFieldUiSchema(field: ValueField): UiSchema {
 
 function fieldUiSchema(field: FormField): UiSchema {
   if (field.type !== "REPEATABLE_GROUP") return scalarFieldUiSchema(field);
-  if (!field.repeatable) invalid(`Repeatable field ${field.key} has no configuration.`);
+  if (!field.repeatable)
+    invalid(`Repeatable field ${field.key} has no configuration.`);
   return {
     "ui:options": {
       addLabel: field.repeatable.addLabel,
       itemLabel: field.repeatable.itemLabel,
     },
     items: {
-      ...Object.fromEntries(field.repeatable.fields.map((item) => [
-        item.key,
-        scalarFieldUiSchema(item),
-      ])),
+      ...Object.fromEntries(
+        field.repeatable.fields.map((item) => [
+          item.key,
+          scalarFieldUiSchema(item),
+        ]),
+      ),
       "ui:order": [...field.repeatable.fields]
         .sort((left, right) => left.order - right.order)
         .map((item) => item.key),
@@ -242,7 +258,10 @@ function parseSections(
   const sections = validateContiguousOrder
     ? ordered(definition.sections, "Sections")
     : sorted(definition.sections);
-  assertUnique(sections.map((section) => section.key), "Section keys");
+  assertUnique(
+    sections.map((section) => section.key),
+    "Section keys",
+  );
   return sections.map((section) => {
     if (!section.id) invalid(`Saved section ${section.key} has no identifier.`);
     const matchingFields = fields.filter(
@@ -276,9 +295,15 @@ export function parseFormDefinition(
   if (definition.sections.length === 0 || definition.fields.length === 0) {
     invalid("The saved form must contain sections and fields.");
   }
-  assertUnique(definition.fields.map((field) => field.key), "Field keys");
+  assertUnique(
+    definition.fields.map((field) => field.key),
+    "Field keys",
+  );
   const savedSections = parseSections(definition, definition.fields);
-  assertUnique(savedSections.map((section) => section.id), "Section identifiers");
+  assertUnique(
+    savedSections.map((section) => section.id),
+    "Section identifiers",
+  );
   const savedSectionIds = new Set(savedSections.map((section) => section.id));
   const savedOrphan = definition.fields.find(
     (field) => !savedSectionIds.has(field.sectionId),
@@ -288,17 +313,29 @@ export function parseFormDefinition(
   const activeDefinition = activeFormDefinition(definition, values);
   const fields = [...activeDefinition.fields];
   const sections = parseSections(activeDefinition, fields, false);
-  assertUnique(sections.map((section) => section.id), "Section identifiers");
+  assertUnique(
+    sections.map((section) => section.id),
+    "Section identifiers",
+  );
   const sectionIds = new Set(sections.map((section) => section.id));
   const orphan = fields.find((field) => !sectionIds.has(field.sectionId));
   if (orphan) invalid(`Field ${orphan.key} has no section.`);
 
+  const ruleValues = sanitizeFormResponseValues(definition, values);
   const uiSchema = Object.fromEntries(
-    fields.map((field) => [field.key, fieldUiSchema(field)]),
+    fields.map((field) => [
+      field.key,
+      {
+        ...fieldUiSchema(field),
+        ...(!formFieldIsEditable(field, ruleValues)
+          ? { "ui:readonly": true, "ui:disabled": true }
+          : {}),
+      },
+    ]),
   ) as UiSchema;
-  uiSchema["ui:order"] = sections.flatMap((section) => (
-    section.fields.map((field) => field.key)
-  ));
+  uiSchema["ui:order"] = sections.flatMap((section) =>
+    section.fields.map((field) => field.key),
+  );
 
   return {
     instructions: definition.instructions,

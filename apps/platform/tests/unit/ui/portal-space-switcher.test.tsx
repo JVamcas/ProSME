@@ -7,6 +7,20 @@ import { PortalSpaceSwitcher } from "@/shared/ui/portal/portal-space-switcher";
 const allSpaces: WorkspaceSpace[] = ["applicant", "operations", "cms"];
 
 describe("workspace switcher", () => {
+  it.each(["applicant", "operations"] as const)(
+    "hides CMS without access in the %s workspace",
+    (space) => {
+      const markup = renderToStaticMarkup(
+        <PortalSpaceSwitcher availableSpaces={[space]} currentSpace={space} />,
+      );
+
+      expect(markup).not.toContain("CMS");
+      expect(markup).not.toContain('href="/cms"');
+      expect(markup).toContain("grid-cols-2");
+      expect(markup).not.toContain("grid-cols-3");
+    },
+  );
+
   it("uses white labels for available destinations on the applicant surface", () => {
     const markup = renderToStaticMarkup(
       <PortalSpaceSwitcher
@@ -45,6 +59,7 @@ describe("workspace switcher", () => {
     }[space];
 
     expect(links).toHaveLength(3);
+    expect(markup).toContain("grid-cols-3");
     // Payload uses a smaller root font than the portals. Fixed switcher text
     // sizing keeps every workspace consistent across those layouts.
     for (const link of links) {

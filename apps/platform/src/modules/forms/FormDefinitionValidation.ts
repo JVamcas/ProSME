@@ -1,3 +1,4 @@
+import { formRuleConfigurationErrors } from "./engine/FormRuleConfiguration";
 import { formVisibilityConfigurationErrors } from "./engine/FormVisibility";
 import { repeatableGroupConfigurationSchema } from "./api/RepeatableGroupSchemas";
 import type { FormField, FormSection } from "./FormTypes";
@@ -10,8 +11,8 @@ export function validateFieldOptions(field: FormField) {
   if (options.length === 0) return false;
   const keys = options.map((option) => option.key);
   return (
-    new Set(keys).size === keys.length
-    && options.every((option, index) => option.order === index + 1)
+    new Set(keys).size === keys.length &&
+    options.every((option, index) => option.order === index + 1)
   );
 }
 
@@ -28,53 +29,62 @@ export function validateFieldOrder(fields: readonly FormField[]) {
 
 export function validateFieldConstraints(field: FormField) {
   if (field.type === "REPEATABLE_GROUP") {
-    return repeatableGroupConfigurationSchema.safeParse(field.repeatable).success
-      && field.minimum == null
-      && field.maximum == null
-      && field.minLength == null
-      && field.maxLength == null;
+    return (
+      repeatableGroupConfigurationSchema.safeParse(field.repeatable).success &&
+      field.minimum == null &&
+      field.maximum == null &&
+      field.minLength == null &&
+      field.maxLength == null
+    );
   }
   if (field.repeatable) return false;
   const hasNumberLimits = field.minimum != null || field.maximum != null;
   const hasLengthLimits = field.minLength != null || field.maxLength != null;
   if (
-    hasNumberLimits
-    && !["NUMBER", "CURRENCY", "PERCENTAGE"].includes(field.type)
-  ) return false;
+    hasNumberLimits &&
+    !["NUMBER", "CURRENCY", "PERCENTAGE"].includes(field.type)
+  )
+    return false;
   if (
-    field.type === "PERCENTAGE"
-    && (field.minimum != null && field.minimum < 0
-      || field.maximum != null && field.maximum > 100)
-  ) return false;
+    field.type === "PERCENTAGE" &&
+    ((field.minimum != null && field.minimum < 0) ||
+      (field.maximum != null && field.maximum > 100))
+  )
+    return false;
   if (hasLengthLimits && !["TEXT", "TEXTAREA"].includes(field.type)) {
     return false;
   }
-  if (![field.minimum, field.maximum].every((value) => (
-    value == null || Number.isFinite(value)
-  ))) return false;
   if (
-    field.minimum != null
-    && field.maximum != null
-    && field.minimum > field.maximum
-  ) return false;
+    ![field.minimum, field.maximum].every(
+      (value) => value == null || Number.isFinite(value),
+    )
+  )
+    return false;
   if (
-    field.minLength != null
-    && field.maxLength != null
-    && field.minLength > field.maxLength
-  ) return false;
-  return [field.minLength, field.maxLength].every((value) => (
-    value == null || Number.isInteger(value) && value >= 0
-  ));
+    field.minimum != null &&
+    field.maximum != null &&
+    field.minimum > field.maximum
+  )
+    return false;
+  if (
+    field.minLength != null &&
+    field.maxLength != null &&
+    field.minLength > field.maxLength
+  )
+    return false;
+  return [field.minLength, field.maxLength].every(
+    (value) => value == null || (Number.isInteger(value) && value >= 0),
+  );
 }
 
 export function validateFormFields(fields: readonly FormField[]) {
   const keys = fields.map((field) => field.key);
   return (
-    fields.length > 0
-    && new Set(keys).size === keys.length
-    && fields.every(validateFieldOptions)
-    && fields.every(validateFieldConstraints)
-    && validateFieldOrder(fields)
+    fields.length > 0 &&
+    new Set(keys).size === keys.length &&
+    fields.every(validateFieldOptions) &&
+    fields.every(validateFieldConstraints) &&
+    validateFieldOrder(fields)
   );
 }
 
@@ -91,5 +101,6 @@ export function formPublicationErrors(
     );
   }
   errors.push(...formVisibilityConfigurationErrors(fields, sections));
+  errors.push(...formRuleConfigurationErrors(fields, sections));
   return errors;
 }

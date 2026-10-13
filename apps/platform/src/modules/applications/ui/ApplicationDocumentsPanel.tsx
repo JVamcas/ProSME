@@ -60,7 +60,9 @@ function RequirementRow({
         <div className="min-w-0">
           <p className="text-sm font-semibold text-brand-navy">
             {requirement.label}
-            {requirement.required ? <span className="ml-1 text-brand-orange">*</span> : null}
+            {requirement.required ? (
+              <span className="ml-1 text-brand-orange">*</span>
+            ) : null}
           </p>
           <p className="truncate text-xs text-brand-navy/60">
             {document?.fileName ?? "Not uploaded"}
@@ -148,7 +150,9 @@ export function ApplicationDocumentRegisterPanel({
           {register.requirements.map((requirement) => (
             <RequirementRow
               applicationId={applicationId}
-              disabled={readOnly || upload.isPending}
+              disabled={
+                readOnly || upload.isPending || requirement.editable === false
+              }
               document={register.documents.find(
                 (item) => item.requirementKey === requirement.key,
               )}
@@ -156,8 +160,8 @@ export function ApplicationDocumentRegisterPanel({
               onFile={(file) => submitFile(requirement.key, file)}
               requirement={requirement}
               uploading={
-                upload.isPending
-                && upload.variables?.requirementKey === requirement.key
+                upload.isPending &&
+                upload.variables?.requirementKey === requirement.key
               }
             />
           ))}

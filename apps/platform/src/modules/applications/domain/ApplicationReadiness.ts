@@ -1,5 +1,6 @@
 import type { ApplicationDocumentView } from "../api/ApplicationDocumentSchemas";
 import { applicationDocumentRequirements } from "./ApplicationDocumentPolicy";
+import { formFieldRuleErrors } from "@/modules/forms/engine/FormFieldBehaviour";
 import { activeFormDefinition } from "@/modules/forms/engine/FormVisibility";
 import { validateFormValues } from "@/modules/forms/FormValidation";
 import type { FormField, FormRuntimeSchema } from "@/modules/forms/FormTypes";
@@ -62,16 +63,19 @@ export function currentFormDeclarationValues(
     (item) => item.key === "DECLARATIONS_AND_CONSENT",
   );
   if (!section) return null;
-  const fields = active.fields.filter((field) => field.sectionId === section.id);
+  const fields = active.fields.filter(
+    (field) => field.sectionId === section.id,
+  );
   const answered = Object.fromEntries(
     fields.map((field) => [field.key, values[field.key]]),
   );
   const requiredConfirmations = Object.entries(formDeclarationAnswers);
-  const confirmed = requiredConfirmations.every(([key, expected]) => (
-    fields.some((field) => field.key === key && field.required)
-    && answered[key] === expected
-  ));
-  return confirmed && validateFormValues(fields, answered, true)
+  const confirmed = requiredConfirmations.every(
+    ([key, expected]) =>
+      fields.some((field) => field.key === key && field.required) &&
+      answered[key] === expected,
+  );
+  return confirmed && validateFormValues(fields, answered, true, values)
     ? answered
     : null;
 }
@@ -117,21 +121,41 @@ function formSectionProgress(
   const documents = new Map(
     input.documents.map((document) => [document.requirementKey, document]),
   );
+  const ruleErrors = formFieldRuleErrors(
+    active.fields,
+    input.response.values,
+    "SUBMIT",
+  );
+  for (const [key, message] of Object.entries(ruleErrors)) {
+    const field = active.fields.find((item) => item.key === key);
+    const section = active.sections.find(
+      (item) => item.id === field?.sectionId,
+    );
+    blockers.push({
+      category: "form",
+      code: "FORM_RULE_INVALID",
+      message,
+      requirementKey: key,
+      sectionKey: section?.key,
+    });
+  }
   return active.sections.map((section): ApplicationSectionProgress => {
     const sectionFields = active.fields.filter(
       (field) => field.sectionId === section.id && field.type !== "DOCUMENT",
     );
     const requiredFields = sectionFields.filter((field) => field.required);
     const sectionRequirements = requirements.filter(
-      (requirement) => requirement.sectionKey === section.key && requirement.required,
+      (requirement) =>
+        requirement.sectionKey === section.key && requirement.required,
     );
-    let completedRequired = requiredFields.filter((field) => (
+    let completedRequired = requiredFields.filter((field) =>
       validateFormValues(
         [field],
         valuesForFields([field], input.response.values),
         true,
-      )
-    )).length;
+        input.response.values,
+      ),
+    ).length;
     for (const requirement of sectionRequirements) {
       const document = documents.get(requirement.key);
       if (document?.storageStatus === "finalized") {
@@ -150,7 +174,9 @@ function formSectionProgress(
       });
     }
     const supplied = valuesForFields(sectionFields, input.response.values);
-    if (!validateFormValues(sectionFields, supplied, true)) {
+    if (
+      !validateFormValues(sectionFields, supplied, true, input.response.values)
+    ) {
       blockers.push({
         category: "form",
         code: "SECTION_INCOMPLETE",
@@ -162,11 +188,20 @@ function formSectionProgress(
     return {
       completedRequired,
       key: section.key,
-      percent: required === 0
-        ? 100
-        : Math.round(completedRequired / required * 100),
-      ready: completedRequired === required
-        && validateFormValues(sectionFields, supplied, true),
+      percent:
+        required === 0 ? 100 : Math.round((completedRequired / required) * 100),
+      ready:
+        !sectionFields.some((field) => ruleErrors[field.key]) &&
+        !sectionRequirements.some(
+          (requirement) => ruleErrors[requirement.key],
+        ) &&
+        completedRequired === required &&
+        validateFormValues(
+          sectionFields,
+          supplied,
+          true,
+          input.response.values,
+        ),
       required,
       title: section.title,
     };

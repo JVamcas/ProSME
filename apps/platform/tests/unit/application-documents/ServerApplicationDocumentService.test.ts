@@ -39,10 +39,8 @@ vi.mock(
   }),
 );
 
-import { permissionCodes } from "@/auth/authorization/permissions";
+import { condition } from "../../support/FormFieldRuleFixture";
 import { PermissionDeniedError } from "@/auth/authorization/policy";
-import type { AuthenticatedUser } from "@/auth/types";
-import type { DocumentStorage } from "@/integrations/storage/DocumentStorage";
 import {
   InvalidApplicationDocumentError,
   createOwnApplicationDocumentDownload,
@@ -60,40 +58,15 @@ import { findOwnedApplication } from "@/modules/applications/infrastructure/Appl
 import { readOwnedApplicationDraftResponse } from "@/modules/applications/infrastructure/ApplicationResponseRepository";
 import { getAttachedApplicationForm } from "@/modules/applications/infrastructure/AttachedApplicationFormRepository";
 
-const applicationId = "99e20de0-3558-4d63-90a4-8c9f5125df07";
-const fundingOpportunityId = "79e20de0-3558-4d63-90a4-8c9f5125df08";
-const formVersionId = "89e20de0-3558-4d63-90a4-8c9f5125df07";
-const versionId = "69e20de0-3558-4d63-90a4-8c9f5125df07";
-const actor = {
-  capabilities: new Set([
-    permissionCodes.fundingApplicationDocumentOwnRead,
-    permissionCodes.fundingApplicationDocumentOwnUpload,
-  ]),
-  createdAt: new Date(),
-  displayName: "Applicant",
-  email: "applicant@example.test",
-  id: "79e20de0-3558-4d63-90a4-8c9f5125df07",
-  identitySubject: "firebase-subject",
-  lastLoginAt: null,
-  roleCodes: new Set(["applicant"]),
-  status: "active",
-  updatedAt: new Date(),
-  userType: "applicant",
-} satisfies AuthenticatedUser;
-
-function pdf(name = "registration.pdf") {
-  return new File([Buffer.from("%PDF-1.7\nexample")], name, {
-    type: "application/pdf",
-  });
-}
-
-function storage(): DocumentStorage {
-  return {
-    delete: vi.fn().mockResolvedValue(undefined),
-    put: vi.fn().mockResolvedValue(undefined),
-    read: vi.fn().mockResolvedValue(Buffer.from("document")),
-  };
-}
+import {
+  applicationId,
+  fundingOpportunityId,
+  formVersionId,
+  versionId,
+  actor,
+  pdf,
+  storage,
+} from "../../support/ApplicationDocumentServiceFixture";
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -368,5 +341,59 @@ describe("configured application document limits", () => {
     expect(parser.getInfo).not.toHaveBeenCalled();
     expect(adapter.put).not.toHaveBeenCalled();
   });
+});
 
+describe("configured allowed formats", () => {
+  it.each([true, false])(
+    "enforces the TXT selection: allowed=%s",
+    async (allowed) => {
+      const form = await getAttachedApplicationForm(
+        formVersionId,
+        fundingOpportunityId,
+      );
+      form!.fields[0].acceptedExtensions = allowed ? [".txt"] : [".pdf"];
+      const adapter = storage();
+      const upload = uploadOwnApplicationDocument(
+        actor,
+        applicationId,
+        "BUSINESS_REGISTRATION_DOCUMENT",
+        new File(["Business profile"], "profile.txt", { type: "text/plain" }),
+        adapter,
+      );
+      if (allowed) {
+        await upload;
+        expect(adapter.put).toHaveBeenCalledWith(
+          expect.objectContaining({ contentType: "text/plain" }),
+        );
+      } else {
+        await expect(upload).rejects.toThrow(
+          "Choose an allowed file type: .pdf",
+        );
+        expect(adapter.put).not.toHaveBeenCalled();
+        expect(createPendingApplicationDocumentVersion).not.toHaveBeenCalled();
+      }
+    },
+  );
+});
+
+describe("document edit rules", () => {
+  it("rejects uploads while the document field is conditionally locked", async () => {
+    const form = await getAttachedApplicationForm(
+      formVersionId,
+      fundingOpportunityId,
+    );
+    form!.fields[0].rules = { editableCondition: condition("ENABLED") };
+    const adapter = storage();
+    await expect(
+      uploadOwnApplicationDocument(
+        actor,
+        applicationId,
+        "BUSINESS_REGISTRATION_DOCUMENT",
+        pdf(),
+        adapter,
+      ),
+    ).rejects.toThrow("is not editable under the current form rules");
+    expect(adapter.put).not.toHaveBeenCalled();
+    expect(createPendingApplicationDocumentVersion).not.toHaveBeenCalled();
+  });
 });

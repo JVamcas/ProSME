@@ -39,6 +39,12 @@ export function PortalSpaceSwitcher({
   dark = false,
 }: PortalSpaceSwitcherProps) {
   const prepareData = useNavigationData();
+  const visibleSpaces = workspaceOrder.filter(
+    (space) => space !== "cms" || availableSpaces.includes(space),
+  );
+  const columnClassName = visibleSpaces.length === 3
+    ? "grid-cols-3"
+    : "grid-cols-2";
 
   return (
     <nav aria-label="Switch portal space" className="font-sans">
@@ -48,9 +54,13 @@ export function PortalSpaceSwitcher({
         Workspace
       </p>
       <div
-        className={`grid grid-cols-3 gap-1 rounded-xl p-1 ${dark ? "bg-white/10" : "bg-brand-navy/10"}`}
+        className={cn(
+          "grid gap-1 rounded-xl p-1",
+          columnClassName,
+          dark ? "bg-white/10" : "bg-brand-navy/10",
+        )}
       >
-        {workspaceOrder.map((space) => {
+        {visibleSpaces.map((space) => {
           const details = spaceDetails[space];
           const active = space === currentSpace;
           const baseClassName =
