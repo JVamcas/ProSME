@@ -15,7 +15,7 @@ import type {
   TaskFormSubmissionInput,
   UpdateFormInput,
 } from "./api/FormTransportTypes";
-import type { TaskFormData } from "./FormTypes";
+import type { FormEditorView, TaskFormData } from "./FormTypes";
 
 type CompleteTaskFormInput = TaskFormSubmissionInput & {
   actionKey: string | null;
@@ -23,14 +23,15 @@ type CompleteTaskFormInput = TaskFormSubmissionInput & {
 
 export const formQueryKeys = {
   all: ["admin", "forms"] as const,
-  list: (input: FormListInput) => [
-    "admin",
-    "forms",
-    "list",
-    input.page,
-    input.pageSize,
-    input.search ?? "",
-  ] as const,
+  list: (input: FormListInput) =>
+    [
+      "admin",
+      "forms",
+      "list",
+      input.page,
+      input.pageSize,
+      input.search ?? "",
+    ] as const,
   detail: (id: string) => ["admin", "forms", id] as const,
   version: (id: string, versionId: string) =>
     ["admin", "forms", id, "version", versionId] as const,
@@ -85,11 +86,29 @@ export function useCreateForm() {
 export function useUpdateForm(id: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: UpdateFormInput) => clientFormsService.update(id, input),
+    mutationFn: (input: UpdateFormInput) =>
+      clientFormsService.update(id, input),
     onSuccess: (view) => {
-      queryClient.setQueryData(formQueryKeys.detail(id), view);
-      queryClient.setQueryData(formQueryKeys.version(id, view.version.id), view);
-      void queryClient.invalidateQueries({ queryKey: formQueryKeys.all });
+      const latestDraft = view.versions.find(
+        (version) => version.status === "DRAFT",
+      );
+      queryClient.setQueryData<FormEditorView>(
+        formQueryKeys.detail(id),
+        (current) => {
+          if (latestDraft?.id === view.version.id) return view;
+          return current ? { ...current, versions: view.versions } : current;
+        },
+      );
+      queryClient.setQueryData(
+        formQueryKeys.version(id, view.version.id),
+        view,
+      );
+      void queryClient.invalidateQueries({
+        queryKey: [...formQueryKeys.all, "list"],
+      });
+      void queryClient.invalidateQueries({
+        queryKey: [...formQueryKeys.all, "published"],
+      });
     },
   });
 }
@@ -101,12 +120,13 @@ export function useFormLifecycle(action: "publish" | "retire") {
       definitionId: string;
       expectedRowVersion: number;
       versionId: string;
-    }) => clientFormsService.lifecycle(
-      input.definitionId,
-      action,
-      input.versionId,
-      input.expectedRowVersion,
-    ),
+    }) =>
+      clientFormsService.lifecycle(
+        input.definitionId,
+        action,
+        input.versionId,
+        input.expectedRowVersion,
+      ),
     onSuccess: (_, input) => {
       void queryClient.invalidateQueries({ queryKey: formQueryKeys.all });
       void queryClient.invalidateQueries({
@@ -119,18 +139,10 @@ export function useFormLifecycle(action: "publish" | "retire") {
 export function useCloneForm() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: {
-      definitionId: string;
-      sourceVersionId: string;
-    }) => clientFormsService.clone(
-      input.definitionId,
-      input.sourceVersionId,
-    ),
+    mutationFn: (input: { definitionId: string; sourceVersionId: string }) =>
+      clientFormsService.clone(input.definitionId, input.sourceVersionId),
     onSuccess: (view, input) => {
-      queryClient.setQueryData(
-        formQueryKeys.detail(input.definitionId),
-        view,
-      );
+      queryClient.setQueryData(formQueryKeys.detail(input.definitionId), view);
       void queryClient.invalidateQueries({ queryKey: formQueryKeys.all });
     },
   });
@@ -152,7 +164,7 @@ export function useSaveTaskForm(taskId: string) {
     onSuccess: (response) => {
       queryClient.setQueryData<TaskFormData>(
         formQueryKeys.task(taskId),
-        (current) => current ? { ...current, response } : current,
+        (current) => (current ? { ...current, response } : current),
       );
       void queryClient.invalidateQueries({
         queryKey: workQueueQueryKeys.task(taskId),
@@ -167,7 +179,9 @@ export function useCompleteTaskForm(taskId: string) {
     mutationFn: (input: CompleteTaskFormInput) =>
       clientFormsService.completeTaskForm(taskId, input),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: formQueryKeys.task(taskId) });
+      void queryClient.invalidateQueries({
+        queryKey: formQueryKeys.task(taskId),
+      });
       void queryClient.invalidateQueries({ queryKey: workQueueQueryKeys.all });
     },
   });

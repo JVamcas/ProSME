@@ -79,6 +79,7 @@ export function FormSelectOptionsTable() {
         data={rows}
         emptyMessage="No options added."
         rowKey={(row) => row.id}
+        viewportHeight={280}
         toolbar={{
           actions: (
             <GeneralButton

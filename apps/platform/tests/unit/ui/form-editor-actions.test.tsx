@@ -153,6 +153,7 @@ describe("form editor header actions", () => {
         await new Promise((resolve) => setTimeout(resolve, 20));
       });
       expect(update).toHaveBeenCalledOnce();
+      expect(get).not.toHaveBeenCalled();
       const request = update.mock.calls[0][1];
       expect(request).toMatchObject({
         versionId,
@@ -234,6 +235,7 @@ describe("form editor header actions", () => {
           submitLabel: "Complete review",
         }),
       );
+      expect(get).not.toHaveBeenCalled();
       expect(document.body.querySelector('[role="dialog"]')).toBeNull();
       expect(workspace.container.textContent).toContain("Updated review - V3");
       expect(
