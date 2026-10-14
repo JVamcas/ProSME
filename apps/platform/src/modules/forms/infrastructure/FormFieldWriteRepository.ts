@@ -3,6 +3,7 @@ import "server-only";
 import { eq, sql } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
+import { draftFieldRow, draftSectionRow } from "./FormDraftRowMapping";
 import { formFieldOptions, formFields, formSections } from "@/db/schema";
 import type { FormField, FormSection } from "@/modules/forms/FormTypes";
 
@@ -151,19 +152,9 @@ async function replaceDraftSections(
     .delete(formSections)
     .where(eq(formSections.formVersionId, versionId));
   if (!sections.length) return;
-  await transaction.insert(formSections).values(
-    sections.map((section) => ({
-      columnSpan: section.columnSpan,
-      description: section.description,
-      formVersionId: versionId,
-      id: section.id,
-      key: section.key,
-      order: section.order,
-      showContainer: section.showContainer,
-      title: section.title,
-      visibilityCondition: section.visibilityCondition ?? null,
-    })),
-  );
+  await transaction
+    .insert(formSections)
+    .values(sections.map((section) => draftSectionRow(versionId, section)));
 }
 
 async function insertDraftFields(
@@ -172,34 +163,9 @@ async function insertDraftFields(
   fields: FormField[],
 ) {
   if (!fields.length) return;
-  const fieldIds = fields.map((field) => field.id ?? crypto.randomUUID());
-  await transaction.insert(formFields).values(
-    fields.map((field, index) => ({
-      columnSpan: field.columnSpan,
-      formVersionId: versionId,
-      helpText: field.helpText ?? null,
-      maximum: field.maximum ?? null,
-      acceptedExtensions: field.acceptedExtensions ?? null,
-      maxPages: field.maxPages ?? null,
-      maximumFileSizeMb: field.maximumFileSizeMb ?? null,
-      uploadedBy: field.uploadedBy ?? null,
-      maxLength: field.maxLength ?? null,
-      minimum: field.minimum ?? null,
-      minLength: field.minLength ?? null,
-      repeatableConfiguration: field.repeatable ?? null,
-      id: fieldIds[index],
-      key: field.key,
-      label: field.label,
-      order: field.order,
-      required: field.required,
-      sectionId: field.sectionId,
-      type: field.type,
-      visibilityCondition: field.visibilityCondition ?? null,
-      rules: field.rules ?? null,
-      scoringAggregate: field.scoringAggregate ?? null,
-      workflowDocument: field.workflowDocument ?? null,
-    })),
-  );
+  const rows = fields.map((field) => draftFieldRow(versionId, field));
+  const fieldIds = rows.map((field) => field.id);
+  await transaction.insert(formFields).values(rows);
   const options = fields.flatMap((field, index) =>
     (field.options ?? []).map((option) => ({
       ...option,

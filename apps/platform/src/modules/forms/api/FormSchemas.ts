@@ -272,6 +272,16 @@ export const formEditorSchema = formDefinitionSchema
     sections: z.array(formSectionSchema).max(50),
   })
   .superRefine((value, context) => {
+    for (const path of ["fields", "sections"] as const) {
+      const ids = value[path].flatMap((item) => (item.id ? [item.id] : []));
+      if (new Set(ids).size !== ids.length) {
+        context.addIssue({
+          code: "custom",
+          path: [path],
+          message: "Record IDs must be unique within a form version.",
+        });
+      }
+    }
     for (const message of formScoringErrors(value.fields)) {
       context.addIssue({ code: "custom", path: ["fields"], message });
     }

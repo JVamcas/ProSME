@@ -15,8 +15,9 @@ import { formPublicationErrors } from "@/modules/forms/FormDefinitionValidation"
 import {
   copyFormVersionChildren,
   readPublicationFields,
-  replaceDraftContent,
 } from "./FormFieldWriteRepository";
+
+import { syncDraftContent } from "./FormDraftContentRepository";
 
 export async function createForm(input: {
   actorId: string;
@@ -218,7 +219,7 @@ export async function saveFormDraft(input: {
         })
         .where(eq(formDefinitions.id, input.definitionId));
     }
-    await replaceDraftContent(
+    await syncDraftContent(
       transaction,
       version.id,
       input.fields,

@@ -62,7 +62,7 @@ function SectionFields({
   return (
     <div
       className={cn(
-        "mt-4 flex flex-1 flex-col rounded-xl bg-brand-cream/40 p-3 transition-shadow",
+        "mt-4 flex flex-col rounded-xl bg-brand-cream/40 p-3 transition-shadow",
         isOver && "ring-2 ring-brand-orange/60",
       )}
       ref={setNodeRef}
@@ -148,7 +148,7 @@ function SortableSection({
   return (
     <li
       className={cn(
-        "@container flex h-full flex-col rounded-xl border border-brand-navy/10 bg-brand-white p-4",
+        "@container flex flex-col rounded-xl border border-brand-navy/10 bg-brand-white p-4",
         sectionColumnSpanClass(section.columnSpan),
       )}
       ref={setNodeRef}
@@ -322,7 +322,7 @@ export function FormSectionBuilder({
             items={sections.map(formSectionIdentity)}
             strategy={rectSortingStrategy}
           >
-            <ul className="mt-4 grid grid-cols-1 items-stretch gap-3 lg:grid-cols-2 2xl:grid-cols-3">
+            <ul className="mt-4 grid grid-cols-1 items-start gap-3 lg:grid-cols-2 2xl:grid-cols-3">
               {sections.map((section) => (
                 <SortableSection
                   canEdit={canEdit}
