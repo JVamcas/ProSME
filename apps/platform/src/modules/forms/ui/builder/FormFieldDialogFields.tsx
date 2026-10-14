@@ -1,8 +1,7 @@
 "use client";
 
-import { useFieldArray, useFormContext, useWatch } from "react-hook-form";
+import { useFormContext, useWatch } from "react-hook-form";
 import type { z } from "zod";
-import { GeneralButton } from "@/components/ui/button";
 import { CheckboxField } from "@/components/ui/form-field";
 import {
   FormInput,
@@ -18,6 +17,7 @@ import {
 } from "../../FormTypes";
 import { ScoringAggregateSettings } from "./ScoringAggregateSettings";
 import { DocumentFieldLimits } from "./DocumentFieldLimits";
+import { FormSelectOptionsTable } from "./FormSelectOptionsTable";
 import { RepeatableGroupConfigurationEditor } from "./RepeatableGroupConfigurationEditor";
 
 const fieldTypeLabels: Record<FormFieldType, string> = {
@@ -38,91 +38,48 @@ const fieldTypeLabels: Record<FormFieldType, string> = {
   RICH_TEXT: "Rich Text",
 };
 
-function SelectOptions({
-  append,
-  fields,
-  remove,
-}: {
-  append: (option: { key: string; label: string; order: number }) => void;
-  fields: { id: string }[];
-  remove: (index: number) => void;
-}) {
-  return (
-    <fieldset className="space-y-3 rounded-xl border border-brand-navy/15 p-4">
-      <legend className="px-2 text-sm font-bold text-brand-navy">
-        Select options
-      </legend>
-      {fields.map((option, index) => (
-        <div className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]" key={option.id}>
-          <FormInput
-            label="Option key"
-            name={`options.${index}.key`}
-            required
-          />
-          <FormInput
-            label="Option label"
-            name={`options.${index}.label`}
-            required
-          />
-          <GeneralButton
-            onClick={() => remove(index)}
-            type="button"
-            variant="outline"
-          >
-            Remove
-          </GeneralButton>
-        </div>
-      ))}
-      <GeneralButton
-        onClick={() => {
-          const order = fields.length + 1;
-          append({ key: `OPTION_${order}`, label: "Option", order });
-        }}
-        type="button"
-        variant="outline"
-      >
-        Add option
-      </GeneralButton>
-    </fieldset>
-  );
-}
-
 export function FormFieldDialogFields({
   fields,
   sectionColumnSpan,
+  step,
 }: {
+  step: "details" | "configuration";
   fields: readonly FormField[];
   sectionColumnSpan: FormSection["columnSpan"];
 }) {
   const form = useFormContext<z.input<typeof formFieldSchema>>();
   const type = useWatch({ control: form.control, name: "type" });
-  const options = useFieldArray({ control: form.control, name: "options" });
+  if (step === "details")
+    return (
+      <>
+        {type === "CHECKBOX" ? (
+          <FormTextarea label="Label" name="label" required />
+        ) : (
+          <FormInput label="Label" name="label" required />
+        )}
+        <FormSelect
+          items={formFieldTypes.map((value) => ({
+            label: fieldTypeLabels[value],
+            value,
+          }))}
+          label="Field type"
+          name="type"
+          required
+        />
+        <FormSelect
+          items={[
+            { label: "One column", value: 1 },
+            { label: "Two columns", value: 2 },
+            { label: "Three columns", value: 3 },
+          ].slice(0, sectionColumnSpan)}
+          label="Field width"
+          name="columnSpan"
+          required
+        />
+      </>
+    );
   return (
     <>
-      {type === "CHECKBOX" ? (
-        <FormTextarea label="Label" name="label" required />
-      ) : (
-        <FormInput label="Label" name="label" required />
-      )}
-      <FormSelect
-        items={formFieldTypes.map((value) => ({
-          label: fieldTypeLabels[value],
-          value,
-        }))}
-        label="Field type"
-        name="type"
-        required
-      />
-      <FormSelect
-        items={[
-          { label: "One column", value: 1 },
-          { label: "Two columns", value: 2 },
-          { label: "Three columns", value: 3 },
-        ].slice(0, sectionColumnSpan)}
-        label="Field width"
-        name="columnSpan"
-        required
-      />
       <FormInput label="Help text" name="helpText" />
       <CheckboxField label="Required" name="required" />
       {["NUMBER", "CURRENCY", "PERCENTAGE", "SCORE"].includes(type) ? (
@@ -150,21 +107,7 @@ export function FormFieldDialogFields({
         </div>
       ) : null}
       {type === "SINGLE_SELECT" || type === "MULTI_SELECT" ? (
-        <SelectOptions
-          append={options.append}
-          fields={options.fields}
-          remove={(index) => {
-            options.remove(index);
-            const remaining = form.getValues("options") ?? [];
-            form.setValue(
-              "options",
-              remaining.map((option, optionIndex) => ({
-                ...option,
-                order: optionIndex + 1,
-              })),
-            );
-          }}
-        />
+        <FormSelectOptionsTable />
       ) : null}
       {type === "SCORING_AGGREGATE" ? (
         <ScoringAggregateSettings fields={fields} />

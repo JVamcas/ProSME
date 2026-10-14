@@ -219,6 +219,11 @@ const staticPermissionCatalogue: readonly PermissionDefinition[] = [
     "Submit any draft workflow template version for approval.",
   ),
   define(
+    permissionCodes.workflowDefinitionDraftDeleteAll,
+    "Delete all draft-only workflow templates",
+    "Delete any unreferenced workflow template whose versions are all drafts.",
+  ),
+  define(
     permissionCodes.workflowDefinitionReturn,
     "Return all workflow templates to draft",
     "Return any pending workflow template version to draft with a reason.",

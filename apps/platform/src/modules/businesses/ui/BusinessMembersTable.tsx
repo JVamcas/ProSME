@@ -87,7 +87,7 @@ export function BusinessMembersTable({
         emptyMessage="Add at least one principal or founding member."
         toolbar={{
           title: "Principal / founding members",
-          description: "Enter each member's full name, ID number, and role.",
+          description: "",
           actions: (
             <GeneralButton
               type="button"

@@ -132,6 +132,7 @@ export const permissionCodes = {
   workflowDefinitionRead: "workflow.definition.read",
   workflowDefinitionCreate: "workflow.definition.create",
   workflowDefinitionUpdate: "workflow.definition.update",
+  workflowDefinitionDraftDeleteAll: "workflow.definition.draft.delete.all",
   workflowDefinitionSubmit: "workflow.definition.submit.all",
   workflowDefinitionReturn: "workflow.definition.return.all",
   workflowDefinitionApprove: "workflow.definition.approve.all",

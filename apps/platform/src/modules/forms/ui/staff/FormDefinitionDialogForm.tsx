@@ -6,7 +6,11 @@ import { FormProvider, useForm } from "react-hook-form";
 import { toast } from "sonner";
 
 import { GeneralButton } from "@/components/ui/button";
-import { FormInput, FormSelect, FormTextarea } from "@/components/ui/form-fields";
+import {
+  FormInput,
+  FormSelect,
+  FormTextarea,
+} from "@/components/ui/form-fields";
 import { formDefinitionDialogSchema } from "@/modules/forms/api/FormSchemas";
 import type {
   CreateFormInput,
@@ -14,6 +18,7 @@ import type {
 } from "@/modules/forms/api/FormTransportTypes";
 import { formPurposeOptions } from "@/modules/forms/FormTypes";
 import type { FormEditorView } from "@/modules/forms/FormTypes";
+import { generateWorkflowStableKey } from "@/modules/workflows/domain/WorkflowStableKey";
 
 type CreateProps = {
   editor?: never;
@@ -34,7 +39,7 @@ type Props = CreateProps | EditProps;
 function defaultValues(props: Props): CreateFormInput {
   if (props.mode === "create") {
     return {
-      code: "",
+      code: generateWorkflowStableKey(),
       description: "",
       displayMode: "SINGLE_PAGE",
       instructions: "",
@@ -66,6 +71,7 @@ export function FormDefinitionDialogForm(props: Props) {
       } else {
         await props.mutation.mutateAsync({
           ...values,
+          versionId: props.editor.version.id,
           expectedRowVersion: props.editor.version.rowVersion,
           fields: props.editor.fields,
           sections: props.editor.sections,
@@ -84,12 +90,6 @@ export function FormDefinitionDialogForm(props: Props) {
     <FormProvider {...form}>
       <form className="space-y-4" onSubmit={submit}>
         <FormInput
-          label="Form code"
-          name="code"
-          placeholder="FINANCE_REVIEW"
-          required
-        />
-        <FormInput
           label="Form name"
           name="name"
           placeholder="Finance Review"
@@ -99,8 +99,10 @@ export function FormDefinitionDialogForm(props: Props) {
           items={formPurposeOptions.map((item) => ({ ...item }))}
           label="Purpose"
           name="purpose"
-          disabled={props.mode === "edit"
-            && props.editor.versions.some((version) => version.status !== "DRAFT")}
+          disabled={
+            props.mode === "edit" &&
+            props.editor.versions.some((version) => version.status !== "DRAFT")
+          }
           required
         />
         <FormTextarea label="Description" name="description" />

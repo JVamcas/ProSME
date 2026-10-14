@@ -1,7 +1,18 @@
 import type { FormField } from "@/modules/forms/FormTypes";
+import { createDuplicatedFormField } from "./FormFieldDuplication";
 
 export function formFieldIdentity(field: FormField) {
   return `field:${field.id ?? field.key}`;
+}
+
+export function duplicateFormField(fields: FormField[], fieldId: string) {
+  const index = fields.findIndex(
+    (field) => formFieldIdentity(field) === fieldId,
+  );
+  if (index < 0) return fields;
+  const next = [...fields];
+  next.splice(index + 1, 0, createDuplicatedFormField(fields[index]));
+  return normaliseFieldOrder(next);
 }
 
 function normaliseFieldOrder(fields: FormField[]) {
@@ -26,8 +37,9 @@ export function moveFormField(
   const overIndex = overId
     ? fields.findIndex((field) => formFieldIdentity(field) === overId)
     : -1;
-  const movingWithinSection = overIndex >= 0
-    && fields[overIndex].sectionId === fields[activeIndex].sectionId;
+  const movingWithinSection =
+    overIndex >= 0 &&
+    fields[overIndex].sectionId === fields[activeIndex].sectionId;
 
   const nextFields = [...fields];
   const [activeField] = nextFields.splice(activeIndex, 1);

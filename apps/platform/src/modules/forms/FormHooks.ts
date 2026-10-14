@@ -29,6 +29,7 @@ export const formQueryKeys = {
     "list",
     input.page,
     input.pageSize,
+    input.search ?? "",
   ] as const,
   detail: (id: string) => ["admin", "forms", id] as const,
   version: (id: string, versionId: string) =>
@@ -87,6 +88,7 @@ export function useUpdateForm(id: string) {
     mutationFn: (input: UpdateFormInput) => clientFormsService.update(id, input),
     onSuccess: (view) => {
       queryClient.setQueryData(formQueryKeys.detail(id), view);
+      queryClient.setQueryData(formQueryKeys.version(id, view.version.id), view);
       void queryClient.invalidateQueries({ queryKey: formQueryKeys.all });
     },
   });

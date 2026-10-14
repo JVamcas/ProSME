@@ -32,6 +32,7 @@ COPY --chown=nextjs:nodejs \
     scripts/seed/seed-standard-workflow.ts \
     scripts/seed/seed-notifications.ts \
     scripts/seed/seed-reporting.ts \
+    scripts/seed/migrate-workflow-forms.ts \
     scripts/seed/reset-platform-data.ts \
     scripts/seed/
 COPY --chown=nextjs:nodejs --chmod=755 \

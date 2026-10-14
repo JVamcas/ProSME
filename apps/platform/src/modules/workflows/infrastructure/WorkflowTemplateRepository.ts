@@ -24,6 +24,11 @@ const versionSelection = {
   metadata: workflowDefinitionVersions.metadata,
   updatedAt: workflowDefinitionVersions.updatedAt,
   isLatest: sql<boolean>`${workflowDefinitionVersions.versionNumber} = max(${workflowDefinitionVersions.versionNumber}) over (partition by ${workflowDefinitions.id})`,
+  draftOnly: sql<boolean>`NOT EXISTS (
+    SELECT 1 FROM app_workflow_definition_versions protected_version
+    WHERE protected_version.definition_id = ${workflowDefinitions.id}
+      AND protected_version.status <> 'DRAFT'
+  )`,
 };
 
 export async function listWorkflowTemplatePage(page: number, pageSize: number) {

@@ -1,5 +1,13 @@
 "use client";
 
+import { useState } from "react";
+import { toast } from "@/shared/ui/Toast";
+import { DraggableDialog } from "@/shared/ui/DraggableDialog";
+import { FormDefinitionDialogForm } from "./staff/FormDefinitionDialogForm";
+import {
+  duplicateFormField,
+  formFieldIdentity,
+} from "../domain/FormFieldOrdering";
 import { useFormEditorController } from "./useFormEditorController";
 import { FormEditorMutationError } from "@/modules/forms/ui/FormEditorLifecycleActions";
 import { FormEditorBody } from "@/modules/forms/ui/builder/FormEditorBody";
@@ -17,6 +25,7 @@ function FormEditorTopContent({
   id,
   isDraft,
   isPublished,
+  onEdit,
 }: {
   canPublish: boolean;
   canRetire: boolean;
@@ -26,6 +35,7 @@ function FormEditorTopContent({
   id: string;
   isDraft: boolean;
   isPublished: boolean;
+  onEdit: () => void;
 }) {
   const error =
     controller.publish.error?.message ??
@@ -42,6 +52,7 @@ function FormEditorTopContent({
         isDraft={isDraft}
         isPublished={isPublished}
         onClone={controller.editPublishedVersion}
+        onEdit={onEdit}
         onPreview={() => controller.setPreviewOpen(true)}
         onPublish={() =>
           controller.publish.mutate({
@@ -59,6 +70,7 @@ function FormEditorTopContent({
         }
         publishPending={controller.publish.isPending}
         retirePending={controller.retire.isPending}
+        updatePending={controller.update.isPending}
       />
       <FormEditorMutationError message={error} />
     </>
@@ -78,6 +90,7 @@ function LoadedFormEditorWorkspace({
   controller: FormEditorController;
   id: string;
 }) {
+  const [metadataOpen, setMetadataOpen] = useState(false);
   const editor = controller.editor;
   if (!editor) return null;
   const isDraft = editor.version.status === "DRAFT";
@@ -94,6 +107,7 @@ function LoadedFormEditorWorkspace({
         id={id}
         isDraft={isDraft}
         isPublished={isPublished}
+        onEdit={() => setMetadataOpen(true)}
       />
       <FormEditorBody
         canEdit={canEdit}
@@ -110,6 +124,12 @@ function LoadedFormEditorWorkspace({
         onCloseDialog={() => controller.setDialogOpen(false)}
         onConfirmDelete={controller.removeField}
         onDelete={controller.setFieldToRemove}
+        onDuplicate={(field) =>
+          controller.reorderFields(
+            duplicateFormField(editor.fields, formFieldIdentity(field)),
+            (error) => toast.error(error.message),
+          )
+        }
         onEdit={controller.openExistingField}
         onSave={controller.saveField}
         onCancelSectionDelete={() => controller.setSectionToRemove(undefined)}
@@ -131,6 +151,19 @@ function LoadedFormEditorWorkspace({
         isOpen={controller.previewOpen}
         onClose={() => controller.setPreviewOpen(false)}
       />
+      <DraggableDialog
+        isOpen={metadataOpen && canEdit}
+        onClose={() => setMetadataOpen(false)}
+        title="Edit form"
+      >
+        <FormDefinitionDialogForm
+          editor={editor}
+          key={`${editor.version.id}-${editor.version.rowVersion}`}
+          mode="edit"
+          mutation={controller.update}
+          onCompleted={() => setMetadataOpen(false)}
+        />
+      </DraggableDialog>
     </div>
   );
 }

@@ -1,16 +1,15 @@
+import { WorkflowStagesHeader } from "@/components/admin/workflows/WorkflowStageFlowParts";
+import { WorkflowStageDetails } from "@/modules/workflows/ui/definitions/WorkflowStageDetails";
+import { WorkflowStageList } from "@/modules/workflows/ui/definitions/WorkflowStageList";
+import { WorkflowVisualGraph } from "@/modules/workflows/ui/definitions/WorkflowVisualGraph";
+import { ResizableSidebarLayout } from "@/shared/ui/ResizableSidebarLayout";
+import { useMemo, type ReactNode } from "react";
+import type { WorkflowTransitionInput } from "../../domain/definitions/WorkflowTypes";
+import { WorkflowFlowToolbar } from "../WorkflowFlowToolbar";
 import { useWorkflowSearch } from "./search/useWorkflowSearch";
 import { WorkflowSearch } from "./search/WorkflowSearch";
 import { WorkflowSearchContext } from "./search/WorkflowSearchTarget";
-import { useMemo, type ReactNode } from "react";
-import { ResizableSidebarLayout } from "@/shared/ui/ResizableSidebarLayout";
-import { WorkflowStageDetails } from "@/modules/workflows/ui/definitions/WorkflowStageDetails";
-import { WorkflowStagesHeader } from "@/components/admin/workflows/WorkflowStageFlowParts";
-import { WorkflowFlowToolbar } from "../WorkflowFlowToolbar";
-import { WorkflowStageList } from "@/modules/workflows/ui/definitions/WorkflowStageList";
-import { WorkflowVisualGraph } from "@/modules/workflows/ui/definitions/WorkflowVisualGraph";
-import { WorkflowValidationAlert } from "@/modules/workflows/ui/definitions/WorkflowValidationAlert";
 import { workflowStageAttention } from "./WorkflowStageAttention";
-import type { WorkflowTransitionInput } from "../../domain/definitions/WorkflowTypes";
 import type { WorkflowStageFlowViewModel } from "./WorkflowStageFlow";
 
 export function WorkflowStageFlowView({
@@ -86,11 +85,6 @@ export function WorkflowStageFlowView({
           disabled={isEditingLocked}
           onAddStage={() => setStageDialog("create")}
         />
-        {deletionValidation ? (
-          <div className="mt-5">
-            <WorkflowValidationAlert validation={deletionValidation} />
-          </div>
-        ) : null}
         <div className="mt-7 overflow-hidden rounded-2xl border border-brand-navy/15">
           <WorkflowFlowToolbar
             isExpanded={showVisualFlow}

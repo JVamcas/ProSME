@@ -21,7 +21,7 @@ import {
 } from "../../domain/definitions/WorkflowTemplate";
 import { createWorkflowDefinition } from "../../infrastructure/WorkflowTemplateWriteRepository";
 import { updateWorkflowDefinitionDetails } from "../../infrastructure/WorkflowDetailsRepository";
-import { deleteWorkflowDefinition } from "../../infrastructure/WorkflowDetailsRepository";
+import { deleteWorkflowDefinition } from "../../infrastructure/WorkflowTemplateDeletionRepository";
 import {
   changeWorkflowTemplateLifecycle,
   findLifecycleReplay,
@@ -105,6 +105,7 @@ function toListItem(
     id: record.id,
     ...record.metadata,
     isLatest: record.isLatest,
+    draftOnly: record.draftOnly,
     currentVersion: {
       id: record.currentVersionId,
       number: record.currentVersionNumber,
@@ -212,7 +213,7 @@ export async function deleteWorkflowTemplate(
 ) {
   const actor = requirePermission(
     user,
-    permissionCodes.workflowDefinitionUpdate,
+    permissionCodes.workflowDefinitionDraftDeleteAll,
   );
   const deleted = await deleteWorkflowDefinition({
     actorId: actor.id,
@@ -223,7 +224,7 @@ export async function deleteWorkflowTemplate(
   });
   if (!deleted) {
     throw new WorkflowConflictError(
-      "Only a draft workflow template can be deleted.",
+      "Only an unreferenced template whose versions are all drafts can be deleted. Refresh and retry if it changed.",
     );
   }
   return { id: definitionId };

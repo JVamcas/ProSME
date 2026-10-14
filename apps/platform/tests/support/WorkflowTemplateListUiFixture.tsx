@@ -38,6 +38,7 @@ export function templateItem(
     description: "Standard grant workflow",
     id: templateId,
     isLatest: true,
+    draftOnly: status === "DRAFT",
     name: "Standard grant",
     updatedAt: "2026-09-19T09:00:00.000Z",
   };
@@ -46,14 +47,23 @@ export function templateItem(
 export async function renderWorkspace(
   status: WorkflowTemplateStatus = "DRAFT",
   number = 2,
-  props = { canCreate: true, canPublish: true, canUpdate: true },
+  props = {
+    canCreate: true,
+    canDelete: true,
+    canPublish: true,
+    canUpdate: true,
+  },
   versions?: WorkflowTemplateListItem[],
 ) {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false, staleTime: Infinity } },
   });
-  const parent = templateItem(status, number);
-  const items = versions ?? [parent];
+  const base = templateItem(status, number);
+  const items = versions ?? [base];
+  const parent = {
+    ...base,
+    draftOnly: items.every((item) => item.currentVersion.status === "DRAFT"),
+  };
   const page = { page: 1, pageSize: 10, totalPages: 1 };
   client.setQueryData([...workflowQueryKeys.templates, 1, 10], {
     ...page,

@@ -138,17 +138,20 @@ export function useFormEditorController(id: string, versionId?: string) {
     [editor, update],
   );
   const reorderFields = useCallback(
-    (fields: FormField[]) => {
+    (fields: FormField[], onError?: (error: Error) => void) => {
       if (!editor) return;
-      update.mutate({
-        versionId: editor.version.id,
-        expectedRowVersion: editor.version.rowVersion,
-        displayMode: editor.version.displayMode,
-        fields,
-        instructions: editor.version.instructions,
-        sections: editor.sections,
-        submitLabel: editor.version.submitLabel,
-      });
+      update.mutate(
+        {
+          versionId: editor.version.id,
+          expectedRowVersion: editor.version.rowVersion,
+          displayMode: editor.version.displayMode,
+          fields,
+          instructions: editor.version.instructions,
+          sections: editor.sections,
+          submitLabel: editor.version.submitLabel,
+        },
+        { onError },
+      );
     },
     [editor, update],
   );

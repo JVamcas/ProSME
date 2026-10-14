@@ -52,6 +52,7 @@ async function list(input: FormListInput): Promise<FormDefinitionPage> {
     page: String(input.page),
     pageSize: String(input.pageSize),
   });
+  if (input.search) query.set("search", input.search);
   const envelope = await requestJson<FormListEnvelope>(
     `/api/admin/forms?${query.toString()}`,
     {

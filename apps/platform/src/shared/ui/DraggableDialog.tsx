@@ -13,6 +13,7 @@ import {
 import { createPortal } from "react-dom";
 
 import { cn } from "@/lib/utils";
+import { GeneralButton } from "./Button";
 
 export type DialogSize = "sm" | "md" | "lg" | "xl" | "2xl";
 
@@ -120,15 +121,17 @@ function DraggableDialogPanel({
           >
             {title}
           </h2>
-          <button
+          <GeneralButton
             aria-label="Close dialog"
             className="grid size-9 place-items-center rounded-full text-brand-navy transition hover:bg-brand-cream hover:text-brand-navy"
             onClick={onClose}
             ref={closeRef}
+            size="icon"
             type="button"
+            variant="ghost"
           >
             <X className="size-5" />
-          </button>
+          </GeneralButton>
         </header>
         <div
           className={cn(
@@ -161,6 +164,8 @@ function useDialogLifecycle(
     closeRef.current?.focus();
 
     function handleKeyDown(event: KeyboardEvent) {
+      const dialogs = document.querySelectorAll('[role="dialog"]');
+      if (dialogs.item(dialogs.length - 1) !== panelRef.current) return;
       if (event.key === "Escape") handleClose();
       if (event.key !== "Tab" || !panelRef.current) return;
       const focusable = panelRef.current.querySelectorAll<HTMLElement>(
