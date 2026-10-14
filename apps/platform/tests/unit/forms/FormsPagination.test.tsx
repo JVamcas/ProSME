@@ -7,10 +7,21 @@ import { formListSchema } from "@/modules/forms/api/FormSchemas";
 describe("forms pagination", () => {
   it("applies safe request defaults and limits", () => {
     expect(formListSchema.parse({})).toEqual({ page: 1, pageSize: 10 });
-    expect(formListSchema.safeParse({ page: 0, pageSize: 10 }).success)
-      .toBe(false);
-    expect(formListSchema.safeParse({ page: 1, pageSize: 101 }).success)
-      .toBe(false);
+    expect(formListSchema.safeParse({ page: 0, pageSize: 10 }).success).toBe(
+      false,
+    );
+    expect(formListSchema.safeParse({ page: 1, pageSize: 101 }).success).toBe(
+      false,
+    );
+  });
+
+  it("trims search terms and rejects oversized queries", () => {
+    expect(formListSchema.parse({ search: "  Review  " }).search).toBe(
+      "Review",
+    );
+    expect(formListSchema.safeParse({ search: "a".repeat(201) }).success).toBe(
+      false,
+    );
   });
 
   it("renders the range, page count and page-size selector", () => {

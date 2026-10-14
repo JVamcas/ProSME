@@ -114,7 +114,9 @@ export const workflowStageDocumentRequirements = pgTable(
       .notNull(),
     maximumSizeMb: integer("maximum_size_mb").notNull(),
     maxPages: integer("max_pages"),
-    acceptedExtensions: jsonb("accepted_extensions").$type<import("@/modules/forms/domain/FormDocumentTypes").FormDocumentExtension[]>(),
+    acceptedExtensions: jsonb("accepted_extensions").$type<
+      import("@/modules/forms/domain/FormDocumentTypes").FormDocumentExtension[]
+    >(),
     expiryDays: integer("expiry_days"),
     requestOnStageActivation: boolean("request_on_stage_activation")
       .notNull()
@@ -127,6 +129,16 @@ export const workflowStageDocumentRequirements = pgTable(
     check(
       "app_stage_documents_max_pages_check",
       sql`${table.maxPages} IS NULL OR ${table.maxPages} > 0`,
+    ),
+    check(
+      "app_stage_documents_file_types_check",
+      sql`jsonb_typeof(${table.acceptedFileTypes}) = 'array'
+        AND jsonb_array_length(${table.acceptedFileTypes}) > 0
+        AND ${table.acceptedFileTypes} <@ '["PDF", "JPG", "PNG", "DOCX", "JPEG", "XLS", "XLSX", "TXT", "CSV"]'::jsonb`,
+    ),
+    check(
+      "app_stage_documents_uploader_check",
+      sql`${table.uploader} IN ('ANY', 'APPLICANT', 'ASSIGNED_REVIEWER', 'STAFF')`,
     ),
     check(
       "app_stage_documents_stable_key_check",

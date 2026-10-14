@@ -1,30 +1,14 @@
+import { deleteWorkflowVersionGraphs } from "./WorkflowGraphDeletionRepository";
 import "server-only";
 
-import { and, desc, eq, inArray, max } from "drizzle-orm";
+import { and, desc, eq, max } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
 import {
-  stageTaskActionBindings,
-  stageTaskDefinitions,
-  stageTaskFormBindings,
   workflowDefinitionVersions,
   workflowDefinitions,
-  workflowActionDefinitions,
-  workflowStageDefinitions,
-  workflowTransitionDefinitions,
 } from "./workflow.schema";
 import { workflowAuditEntries } from "./workflow-audit.schema";
-import {
-  workflowStageJoinPredecessors,
-  workflowTransitionTargets,
-} from "./workflow-parallel.schema";
-import {
-  workflowStageChecklistDefinitions,
-  workflowStageCommentFields,
-  workflowStageDocumentRequirements,
-  workflowStageScoringConfigurations,
-  workflowStageScoringCriteria,
-} from "./workflow-stage-requirements.schema";
 import type { WorkflowGraphInput } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 import { insertWorkflowGraph } from "./WorkflowGraphWriteRepository";
 
@@ -119,67 +103,7 @@ export async function replaceWorkflowDraft(input: {
       )
       .returning({ id: workflowDefinitionVersions.id });
     if (!updated) return null;
-    const stages = await transaction
-      .select({ id: workflowStageDefinitions.id })
-      .from(workflowStageDefinitions)
-      .where(eq(workflowStageDefinitions.versionId, input.versionId));
-    const stageIds = stages.map((stage) => stage.id);
-    const taskRows = stageIds.length
-      ? await transaction
-          .select({ id: stageTaskDefinitions.id })
-          .from(stageTaskDefinitions)
-          .where(inArray(stageTaskDefinitions.stageId, stageIds))
-      : [];
-    const taskIds = taskRows.map((task) => task.id);
-    if (stageIds.length) {
-      await transaction
-        .delete(stageTaskActionBindings)
-        .where(inArray(stageTaskActionBindings.stageId, stageIds));
-      await transaction
-        .delete(workflowTransitionTargets)
-        .where(inArray(workflowTransitionTargets.targetStageId, stageIds));
-      await transaction
-        .delete(workflowStageJoinPredecessors)
-        .where(inArray(workflowStageJoinPredecessors.stageId, stageIds));
-    }
-    await transaction
-      .delete(workflowTransitionDefinitions)
-      .where(eq(workflowTransitionDefinitions.versionId, input.versionId));
-    if (taskIds.length)
-      await transaction
-        .delete(stageTaskFormBindings)
-        .where(inArray(stageTaskFormBindings.taskDefinitionId, taskIds));
-    if (stageIds.length)
-      await transaction
-        .delete(workflowStageCommentFields)
-        .where(inArray(workflowStageCommentFields.stageId, stageIds));
-    if (stageIds.length)
-      await transaction
-        .delete(workflowStageScoringCriteria)
-        .where(inArray(workflowStageScoringCriteria.stageId, stageIds));
-    if (stageIds.length)
-      await transaction
-        .delete(workflowStageScoringConfigurations)
-        .where(inArray(workflowStageScoringConfigurations.stageId, stageIds));
-    if (stageIds.length)
-      await transaction
-        .delete(workflowStageChecklistDefinitions)
-        .where(inArray(workflowStageChecklistDefinitions.stageId, stageIds));
-    if (stageIds.length)
-      await transaction
-        .delete(workflowStageDocumentRequirements)
-        .where(inArray(workflowStageDocumentRequirements.stageId, stageIds));
-    if (stageIds.length)
-      await transaction
-        .delete(workflowActionDefinitions)
-        .where(inArray(workflowActionDefinitions.stageId, stageIds));
-    if (stageIds.length)
-      await transaction
-        .delete(stageTaskDefinitions)
-        .where(inArray(stageTaskDefinitions.stageId, stageIds));
-    await transaction
-      .delete(workflowStageDefinitions)
-      .where(eq(workflowStageDefinitions.versionId, input.versionId));
+    await deleteWorkflowVersionGraphs(transaction, [input.versionId]);
     await insertWorkflowGraph(transaction, input.versionId, input.graph);
     await audit(transaction, {
       action: "WORKFLOW_DRAFT_UPDATED",

@@ -14,6 +14,7 @@ import {
   selectItems,
 } from "@/modules/profiles/ProfileOptions";
 import type { adminApplicationFormSchema } from "../../api/AdminApplicationSchemas";
+import { FormDateInput } from "@/shared/ui/FormDateInput";
 
 type FilterInput = z.input<typeof adminApplicationFormSchema>;
 
@@ -126,16 +127,12 @@ export function ApplicationFilterFields({
         className="grid w-full max-w-lg gap-4 sm:col-span-2 sm:grid-cols-2"
         role="group"
       >
-        <FormInput
-          id="application-submitted-from"
+        <FormDateInput
           label="Submission start date"
-          type="date"
           {...register("submittedFrom")}
         />
-        <FormInput
-          id="application-submitted-to"
+        <FormDateInput
           label="Submission end date"
-          type="date"
           {...register("submittedTo")}
         />
       </div>

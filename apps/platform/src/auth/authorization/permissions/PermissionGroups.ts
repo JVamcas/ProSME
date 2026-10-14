@@ -216,6 +216,7 @@ export const permissionGroups: readonly PermissionGroup[] = [
       permissionCodes.workflowDefinitionRead,
       permissionCodes.workflowDefinitionCreate,
       permissionCodes.workflowDefinitionUpdate,
+      permissionCodes.workflowDefinitionDraftDeleteAll,
       permissionCodes.workflowDefinitionSubmit,
       permissionCodes.workflowDefinitionReturn,
       permissionCodes.workflowDefinitionApprove,

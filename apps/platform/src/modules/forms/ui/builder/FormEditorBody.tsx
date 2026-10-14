@@ -31,6 +31,7 @@ export function FormEditorBody({
   onConfirmDelete,
   onConfirmSectionDelete,
   onDelete,
+  onDuplicate,
   onDeleteSection,
   onEdit,
   onEditSection,
@@ -61,6 +62,7 @@ export function FormEditorBody({
   onConfirmDelete: () => void;
   onConfirmSectionDelete: () => void;
   onDelete: (field: FormField) => void;
+  onDuplicate: (field: FormField) => void;
   onDeleteSection: (section: FormSection) => void;
   onEdit: (field: FormField) => void;
   onEditSection: (section: FormSection) => void;
@@ -105,6 +107,7 @@ export function FormEditorBody({
         onAddSection={onAddSection}
         onDelete={onDeleteSection}
         onDeleteField={onDelete}
+        onDuplicateField={onDuplicate}
         onEdit={onEditSection}
         onEditField={onEdit}
         onConfigureRules={setRuleField}

@@ -1,6 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { formListSchema } from "@/modules/forms/api/FormSchemas";
 import { DraggableDialog } from "@/shared/ui/DraggableDialog";
 import {
   useCloneForm,
@@ -11,12 +14,13 @@ import {
   useUpdateForm,
 } from "@/modules/forms/FormHooks";
 import type { FormDefinitionSummary } from "@/modules/forms/FormTypes";
+import type { FormListInput } from "@/modules/forms/api/FormTransportTypes";
 import { FormPreviewDialog } from "@/modules/forms/ui/renderer/FormPreviewDialog";
+import { FormsSearchForm } from "./FormsSearchForm";
 import { FormDefinitionDialogForm } from "./FormDefinitionDialogForm";
-import {
-  FormsTable,
-  type FormTablePendingAction,
-} from "./FormsTable";
+import { FormsTable, type FormTablePendingAction } from "./FormsTable";
+
+const searchSchema = formListSchema.pick({ search: true });
 
 export function FormsWorkspace({
   canCreate,
@@ -32,9 +36,14 @@ export function FormsWorkspace({
   const [creating, setCreating] = useState(false);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [search, setSearch] = useState("");
+  const searchForm = useForm({
+    defaultValues: { search: "" },
+    resolver: zodResolver(searchSchema),
+  });
   const [previewing, setPreviewing] = useState<FormDefinitionSummary>();
   const [selected, setSelected] = useState<FormDefinitionSummary>();
-  const query = useForms({ page, pageSize });
+  const query = useForms({ page, pageSize, search: search || undefined });
   const clone = useCloneForm();
   const create = useCreateForm();
   const editor = useFormEditor(selected?.id ?? "");
@@ -62,15 +71,30 @@ export function FormsWorkspace({
       definitionId: clone.variables.definitionId,
     };
   }
-  const actionError = preview.error?.message
-    ?? publish.error?.message
-    ?? retire.error?.message
-    ?? clone.error?.message;
+  const actionError =
+    preview.error?.message ??
+    publish.error?.message ??
+    retire.error?.message ??
+    clone.error?.message;
+  const applySearch = (values: Pick<FormListInput, "search">) => {
+    setSearch(values.search ?? "");
+    setPage(1);
+  };
+  const clearSearch = () => {
+    searchForm.reset({ search: "" });
+    setSearch("");
+    setPage(1);
+  };
+  let emptyMessage = "No forms have been configured.";
+  if (query.isPending) {
+    emptyMessage = "Loading forms…";
+  } else if (query.error) {
+    emptyMessage = query.error.message;
+  } else if (search) {
+    emptyMessage = "No forms match your search.";
+  }
 
-  function runLifecycle(
-    action: typeof publish,
-    form: FormDefinitionSummary,
-  ) {
+  function runLifecycle(action: typeof publish, form: FormDefinitionSummary) {
     if (!form.latestVersionId || form.latestVersionRowVersion === null) return;
     setPreviewing(undefined);
     clone.reset();
@@ -90,11 +114,7 @@ export function FormsWorkspace({
         canPublish={canPublish}
         canRetire={canRetire}
         canUpdate={canUpdate}
-        emptyMessage={
-          query.isPending
-            ? "Loading forms…"
-            : query.error?.message ?? "No forms have been configured."
-        }
+        emptyMessage={emptyMessage}
         errorMessage={actionError}
         items={query.data?.items ?? []}
         loading={query.isFetching}
@@ -103,12 +123,13 @@ export function FormsWorkspace({
           setPreviewing(undefined);
           publish.reset();
           retire.reset();
-          clone.mutate({
-            definitionId: form.id,
-            sourceVersionId: form.latestVersionId,
-          }, {
-            onSuccess: () => setSelected(form),
-          });
+          clone.mutate(
+            {
+              definitionId: form.id,
+              sourceVersionId: form.latestVersionId,
+            },
+            { onSuccess: () => setSelected(form) },
+          );
         }}
         onCreate={() => setCreating(true)}
         onEdit={setSelected}
@@ -128,6 +149,13 @@ export function FormsWorkspace({
         page={query.data?.page ?? page}
         pageSize={query.data?.pageSize ?? pageSize}
         pendingAction={pendingAction}
+        searchForm={
+          <FormsSearchForm
+            form={searchForm}
+            onClear={clearSearch}
+            onSearch={applySearch}
+          />
+        }
         total={query.data?.total ?? 0}
         totalPages={query.data?.totalPages ?? 0}
       />

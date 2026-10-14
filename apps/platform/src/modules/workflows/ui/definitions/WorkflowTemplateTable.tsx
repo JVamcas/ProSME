@@ -59,6 +59,17 @@ function columns(props: Props): DataTableColumn<WorkflowTemplateListItem>[] {
               disabled: !props.canUpdate,
               onAction: () => props.onEditDefinition(row.original),
             },
+            {
+              id: "delete",
+              label:
+                props.deletingId === row.original.id ? "Deleting…" : "Delete",
+              disabled:
+                !props.canDelete ||
+                row.original.draftOnly !== true ||
+                Boolean(props.deletingId),
+              destructive: true,
+              onAction: () => props.onDelete(row.original),
+            },
           ]}
         />
       ),

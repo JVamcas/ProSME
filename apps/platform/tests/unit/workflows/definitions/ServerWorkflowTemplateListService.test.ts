@@ -82,6 +82,7 @@ describe("workflow template admin list service", () => {
           },
           updatedAt: new Date("2026-09-19T08:00:00.000Z"),
           isLatest: true,
+          draftOnly: false,
         },
         {
           currentVersionId: "44444444-4444-4444-8444-444444444444",
@@ -96,6 +97,7 @@ describe("workflow template admin list service", () => {
           },
           updatedAt: new Date("2026-09-19T09:00:00.000Z"),
           isLatest: false,
+          draftOnly: true,
         },
       ],
       total: 12,

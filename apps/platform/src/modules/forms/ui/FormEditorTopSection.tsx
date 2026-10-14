@@ -14,11 +14,13 @@ export function FormEditorTopSection({
   isDraft,
   isPublished,
   onClone,
+  onEdit,
   onPreview,
   onPublish,
   onRetire,
   publishPending,
   retirePending,
+  updatePending,
 }: {
   canPublish: boolean;
   canRetire: boolean;
@@ -28,11 +30,13 @@ export function FormEditorTopSection({
   isDraft: boolean;
   isPublished: boolean;
   onClone: () => void;
+  onEdit: () => void;
   onPreview: () => void;
   onPublish: () => void;
   onRetire: () => void;
   publishPending: boolean;
   retirePending: boolean;
+  updatePending: boolean;
 }) {
   return (
     <PageHeader
@@ -40,7 +44,7 @@ export function FormEditorTopSection({
       description={editor.definition.description}
       eyebrow={"Settings / Forms"}
       actions={
-        <div className="flex flex-row gap-2">
+        <div className="flex items-center gap-2">
           <FormEditorLifecycleActions
             canPublish={canPublish}
             canRetire={canRetire}
@@ -49,11 +53,13 @@ export function FormEditorTopSection({
             isDraft={isDraft}
             isPublished={isPublished}
             onClone={onClone}
+            onEdit={onEdit}
             onPreview={onPreview}
             onPublish={onPublish}
             onRetire={onRetire}
             publishPending={publishPending}
             retirePending={retirePending}
+            updatePending={updatePending}
           />
           <StatusBadge status={editor.version.status} />
         </div>

@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { permissionCodes } from "@/auth/authorization/permissions";
 import { getAuthenticatedPageUser } from "@/platform/auth/ServerAuthNavigation";
 import { can } from "@/auth/authorization/policy";
-import { FormsWorkspace } from "@/components/admin/forms/FormsWorkspace";
+import { FormsWorkspace } from "@/modules/forms/ui/staff/FormsWorkspace";
 import { Form } from "lucide-react";
 import { PageShell } from "@/shared/ui/PageShell";
 

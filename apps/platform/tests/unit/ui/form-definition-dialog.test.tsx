@@ -3,14 +3,18 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { FormsWorkspace } from "@/components/admin/forms/FormsWorkspace";
+import { FormsWorkspace } from "@/modules/forms/ui/staff/FormsWorkspace";
 import { formQueryKeys } from "@/modules/forms/FormHooks";
+import { clientFormsService } from "@/modules/forms/ClientFormsService";
+import type { FormEditorView } from "@/modules/forms/FormTypes";
 
-(globalThis as typeof globalThis & {
-  IS_REACT_ACT_ENVIRONMENT: boolean;
-}).IS_REACT_ACT_ENVIRONMENT = true;
+(
+  globalThis as typeof globalThis & {
+    IS_REACT_ACT_ENVIRONMENT: boolean;
+  }
+).IS_REACT_ACT_ENVIRONMENT = true;
 
 const definitionId = "79e20de0-3558-4d63-90a4-8c9f5125df07";
 
@@ -105,9 +109,11 @@ function formAction(label: string) {
 
 async function openFormActions(container: HTMLElement) {
   await act(async () => {
-    container.querySelector<HTMLButtonElement>(
-      '[aria-label="Actions for Finance Review"]',
-    )?.click();
+    container
+      .querySelector<HTMLButtonElement>(
+        '[aria-label="Actions for Finance Review"]',
+      )
+      ?.click();
   });
 }
 
@@ -116,6 +122,71 @@ afterEach(() => {
 });
 
 describe("form definition dialog", () => {
+  it("generates a stable code automatically when creating a form", async () => {
+    const client = queryClient();
+    const view = client.getQueryData<FormEditorView>(
+      formQueryKeys.detail(definitionId),
+    )!;
+    const create = vi
+      .spyOn(clientFormsService, "create")
+      .mockResolvedValue(view);
+    const list = vi
+      .spyOn(clientFormsService, "list")
+      .mockResolvedValue({
+        items: [],
+        page: 1,
+        pageSize: 10,
+        total: 0,
+        totalPages: 0,
+      });
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+    try {
+      await act(async () =>
+        root.render(
+          <QueryClientProvider client={client}>
+            <FormsWorkspace canCreate canPublish canRetire canUpdate />
+          </QueryClientProvider>,
+        ),
+      );
+      await act(async () => {
+        Array.from(container.querySelectorAll("button"))
+          .find((button) => button.textContent === "Create form")!
+          .click();
+      });
+      const dialog = document.body.querySelector('[role="dialog"]')!;
+      expect(dialog.querySelector('input[name="code"]')).toBeNull();
+      const input =
+        dialog.querySelector<HTMLInputElement>('input[name="name"]')!;
+      const setValue = Object.getOwnPropertyDescriptor(
+        HTMLInputElement.prototype,
+        "value",
+      )!.set!;
+      await act(async () => {
+        setValue.call(input, "New review");
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+        dialog
+          .querySelector("form")!
+          .dispatchEvent(
+            new Event("submit", { bubbles: true, cancelable: true }),
+          );
+      });
+      expect(create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          code: expect.stringMatching(/^K_[A-F0-9]{32}$/),
+          name: "New review",
+        }),
+      );
+    } finally {
+      await act(async () => root.unmount());
+      client.clear();
+      create.mockRestore();
+      list.mockRestore();
+      container.remove();
+    }
+  });
+
   it("expands a form row to show its versions table", async () => {
     const container = document.createElement("div");
     document.body.append(container);
@@ -131,21 +202,22 @@ describe("form definition dialog", () => {
     expect(container.textContent).not.toContain("Version 2");
 
     await act(async () => {
-      container.querySelector<HTMLButtonElement>(
-        '[aria-label="Expand row"]',
-      )?.click();
+      container
+        .querySelector<HTMLButtonElement>('[aria-label="Expand row"]')
+        ?.click();
     });
 
     expect(container.textContent).toContain("v2");
     expect(container.textContent).toContain("v1");
     expect(container.textContent).toContain("Retired");
-    expect(container.querySelector('[aria-label="Finance Review versions"]'))
-      .not.toBeNull();
+    expect(
+      container.querySelector('[aria-label="Finance Review versions"]'),
+    ).not.toBeNull();
 
     await act(async () => {
-      container.querySelector<HTMLButtonElement>(
-        '[aria-label="Collapse row"]',
-      )?.click();
+      container
+        .querySelector<HTMLButtonElement>('[aria-label="Collapse row"]')
+        ?.click();
     });
 
     expect(container.textContent).not.toContain("Version 2");
@@ -177,7 +249,7 @@ describe("form definition dialog", () => {
         ?.click();
     });
 
-    expect(document.body.textContent).toContain("Form code");
+    expect(document.body.textContent).not.toContain("Form code");
     expect(document.body.textContent).toContain("Form name");
     expect(document.body.textContent).toContain("Purpose");
     expect(document.body.textContent).toContain("Description");
@@ -185,7 +257,7 @@ describe("form definition dialog", () => {
     expect(document.body.textContent).not.toContain("Instructions");
     expect(
       document.body.querySelectorAll('label span[aria-hidden="true"]'),
-    ).toHaveLength(3);
+    ).toHaveLength(2);
     await act(async () => root.unmount());
   });
 
@@ -205,7 +277,7 @@ describe("form definition dialog", () => {
     await act(async () => formAction("Edit")?.click());
 
     expect(document.body.textContent).toContain("Edit form");
-    expect(document.body.textContent).toContain("Form code");
+    expect(document.body.textContent).not.toContain("Form code");
     expect(document.body.textContent).toContain("Form name");
     expect(document.body.textContent).toContain("Purpose");
     expect(document.body.textContent).toContain("Description");

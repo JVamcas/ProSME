@@ -1457,6 +1457,20 @@
       "when": 1801785600053,
       "tag": "0207_document_upload_settings",
       "breakpoints": true
+    },
+    {
+      "idx": 208,
+      "version": "7",
+      "when": 1801785600054,
+      "tag": "0208_workflow_document_projection_constraints",
+      "breakpoints": true
+    },
+    {
+      "idx": 209,
+      "version": "7",
+      "when": 1801785600055,
+      "tag": "0209_workflow_template_draft_delete_permission",
+      "breakpoints": true
     }
   ]
 }

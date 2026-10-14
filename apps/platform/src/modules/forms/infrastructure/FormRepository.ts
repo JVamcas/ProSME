@@ -18,11 +18,35 @@ import type {
 } from "@/modules/forms/FormTypes";
 import type { FormListInput } from "@/modules/forms/api/FormTransportTypes";
 
+const latestFormVersionJoin = sql`
+  LEFT JOIN LATERAL (
+    SELECT version_number, row_version, status, id, metadata
+    FROM app_form_versions
+    WHERE form_definition_id = definition.id
+    ORDER BY version_number DESC
+    LIMIT 1
+  ) latest ON TRUE
+`;
+
+function formListSearchFilter(search?: string) {
+  const term = search?.trim();
+  if (!term) return sql``;
+  const pattern = `%${term.replace(/[\\%_]/g, "\\$&")}%`;
+  return sql`
+    WHERE (
+      coalesce(latest.metadata->>'name', definition.name) ILIKE ${pattern}
+      OR coalesce(latest.metadata->>'code', definition.code) ILIKE ${pattern}
+      OR coalesce(latest.metadata->>'description', definition.description) ILIKE ${pattern}
+    )
+  `;
+}
+
 export async function listForms(
   input: FormListInput,
 ): Promise<FormDefinitionPage> {
   const database = getDatabase();
   const offset = (input.page - 1) * input.pageSize;
+  const searchFilter = formListSearchFilter(input.search);
   const [result, countResult] = await Promise.all([
     database.execute(sql`
     SELECT definition.id,
@@ -40,13 +64,7 @@ export async function listForms(
       COALESCE(usage_counts.used_by_count, 0)::integer AS "usedByCount",
       definition.updated_at AS "updatedAt"
     FROM app_form_definitions definition
-    LEFT JOIN LATERAL (
-      SELECT version_number, row_version, status, id, metadata
-      FROM app_form_versions
-      WHERE form_definition_id = definition.id
-      ORDER BY version_number DESC
-      LIMIT 1
-    ) latest ON TRUE
+    ${latestFormVersionJoin}
     LEFT JOIN LATERAL (
       SELECT count(*) AS field_count
       FROM app_form_fields field
@@ -64,13 +82,16 @@ export async function listForms(
         ON referenced_version.id = binding.form_version_id
       WHERE referenced_version.form_definition_id = definition.id
     ) usage_counts ON TRUE
-    ORDER BY definition.name ASC, definition.id ASC
+    ${searchFilter}
+    ORDER BY name ASC, definition.id ASC
     LIMIT ${input.pageSize}
     OFFSET ${offset}
   `),
     database.execute(sql`
       SELECT count(*)::integer AS total
-      FROM app_form_definitions
+      FROM app_form_definitions definition
+      ${latestFormVersionJoin}
+      ${searchFilter}
     `),
   ]);
   const total = Number(countResult.rows[0]?.total ?? 0);

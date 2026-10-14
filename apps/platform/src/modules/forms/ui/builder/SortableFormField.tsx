@@ -5,7 +5,11 @@ import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, ListChecks } from "lucide-react";
 
 import { GeneralButton } from "@/shared/ui/Button";
-import { DeleteButton, EditButton } from "@/components/ui/action-buttons";
+import {
+  CloneButton,
+  DeleteButton,
+  EditButton,
+} from "@/components/ui/action-buttons";
 import { cn } from "@/lib/utils";
 import { formFieldIdentity } from "@/modules/forms/domain/FormFieldOrdering";
 import type { FormField } from "@/modules/forms/FormTypes";
@@ -29,12 +33,14 @@ export function SortableFormField({
   canEdit,
   field,
   onDelete,
+  onDuplicate,
   onEdit,
   onConfigureRules,
 }: {
   canEdit: boolean;
   field: FormField;
   onDelete: (field: FormField) => void;
+  onDuplicate: (field: FormField) => void;
   onEdit: (field: FormField) => void;
   onConfigureRules: (field: FormField) => void;
 }) {
@@ -100,6 +106,11 @@ export function SortableFormField({
               <ListChecks className="size-4" />
             </GeneralButton>
             <EditButton disabled={!canEdit} onClick={() => onEdit(field)} />
+            <CloneButton
+              disabled={!canEdit}
+              onClick={() => onDuplicate(field)}
+              title={`Duplicate ${field.label}`}
+            />
             <DeleteButton disabled={!canEdit} onClick={() => onDelete(field)} />
           </div>
         </div>

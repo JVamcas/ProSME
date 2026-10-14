@@ -39,6 +39,7 @@ function SectionFields({
   fields,
   onAddField,
   onDeleteField,
+  onDuplicateField,
   onEditField,
   onConfigureRules,
   sectionId,
@@ -48,6 +49,7 @@ function SectionFields({
   fields: FormField[];
   onAddField: (sectionId: string) => void;
   onDeleteField: (field: FormField) => void;
+  onDuplicateField: (field: FormField) => void;
   onEditField: (field: FormField) => void;
   onConfigureRules: (field: FormField) => void;
   sectionId: string;
@@ -79,6 +81,7 @@ function SectionFields({
                 field={field}
                 key={formFieldIdentity(field)}
                 onDelete={onDeleteField}
+                onDuplicate={onDuplicateField}
                 onEdit={onEditField}
                 onConfigureRules={onConfigureRules}
               />
@@ -113,6 +116,7 @@ function SortableSection({
   onAddField,
   onDelete,
   onDeleteField,
+  onDuplicateField,
   onEdit,
   onEditField,
   onConfigureRules,
@@ -123,6 +127,7 @@ function SortableSection({
   onAddField: (sectionId: string) => void;
   onDelete: (section: FormSection) => void;
   onDeleteField: (field: FormField) => void;
+  onDuplicateField: (field: FormField) => void;
   onEdit: (section: FormSection) => void;
   onEditField: (field: FormField) => void;
   onConfigureRules: (field: FormField) => void;
@@ -192,6 +197,7 @@ function SortableSection({
           fields={fields}
           onAddField={onAddField}
           onDeleteField={onDeleteField}
+          onDuplicateField={onDuplicateField}
           onEditField={onEditField}
           onConfigureRules={onConfigureRules}
           sectionId={section.id}
@@ -234,6 +240,7 @@ export function FormSectionBuilder({
   onAddSection,
   onDelete,
   onDeleteField,
+  onDuplicateField,
   onEdit,
   onEditField,
   onConfigureRules,
@@ -247,6 +254,7 @@ export function FormSectionBuilder({
   onAddSection: () => void;
   onDelete: (section: FormSection) => void;
   onDeleteField: (field: FormField) => void;
+  onDuplicateField: (field: FormField) => void;
   onEdit: (section: FormSection) => void;
   onEditField: (field: FormField) => void;
   onConfigureRules: (field: FormField) => void;
@@ -325,6 +333,7 @@ export function FormSectionBuilder({
                   onAddField={onAddField}
                   onDelete={onDelete}
                   onDeleteField={onDeleteField}
+                  onDuplicateField={onDuplicateField}
                   onEdit={onEdit}
                   onEditField={onEditField}
                   onConfigureRules={onConfigureRules}

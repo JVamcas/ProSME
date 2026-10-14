@@ -39,6 +39,7 @@ export type WorkflowTemplateVersion = {
 export type WorkflowTemplateListItem = WorkflowTemplateDetails & {
   id: string;
   isLatest: boolean;
+  draftOnly?: boolean;
   currentVersion: {
     id: string;
     number: number;

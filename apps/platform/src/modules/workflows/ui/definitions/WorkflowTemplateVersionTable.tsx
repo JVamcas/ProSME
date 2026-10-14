@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
 import { useWorkflowTemplateVersions } from "../../WorkflowHooks";
 
@@ -17,6 +16,7 @@ import { ArrowLink } from "@/components/ui/links";
 
 export type WorkflowTemplateVersionActions = {
   canCreate: boolean;
+  canDelete: boolean;
   canPublish: boolean;
   canUpdate: boolean;
   cloningVersionId?: string;
@@ -45,7 +45,7 @@ function actionCell(
 ) {
   const isDraft = template.currentVersion.status === "DRAFT";
   const canDelete =
-    template.isLatest && isDraft && template.currentVersion.number === 1;
+    template.isLatest && isDraft && template.draftOnly === true;
   const items: ActionMenuItem[] = [
     {
       id: "create-draft",
@@ -82,7 +82,7 @@ function actionCell(
   items.push({
     id: "delete",
     label: options.deletingId === template.id ? "Deleting…" : "Delete",
-    disabled: !options.canUpdate || !canDelete || Boolean(options.deletingId),
+    disabled: !options.canDelete || !canDelete || Boolean(options.deletingId),
     destructive: true,
     onAction: () => options.onDelete(template),
   });

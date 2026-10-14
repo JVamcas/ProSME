@@ -14,6 +14,35 @@ import {
 } from "../../../support/WorkflowTemplateListUiFixture";
 
 describe("grouped workflow template admin list", () => {
+  it("offers parent deletion for multiple drafts and protects templates with non-draft history", async () => {
+    const draftOnly = await renderWorkspace("DRAFT", 2, undefined, [
+      templateItem("DRAFT", 2),
+      { ...templateItem("DRAFT", 1), isLatest: false },
+    ]);
+    await chooseAction(
+      draftOnly.container,
+      "Delete",
+      "Actions for template Standard grant",
+    );
+    expect(
+      document.body.querySelector('[role="dialog"]')?.textContent,
+    ).toContain("Delete Standard grant and all its draft versions?");
+    await act(async () => {
+      document.body
+        .querySelector<HTMLButtonElement>('[aria-label="Close dialog"]')
+        ?.click();
+    });
+    const protectedTemplate = await renderWorkspace("DRAFT", 2, undefined, [
+      templateItem("DRAFT", 2),
+      { ...templateItem("PUBLISHED", 1), isLatest: false },
+    ]);
+    await openActions(
+      protectedTemplate.container,
+      "Actions for template Standard grant",
+    );
+    expect(menuItem("Delete")?.getAttribute("aria-disabled")).toBe("true");
+  });
+
   it("shows one collapsible parent and loads exact versions only when expanded", async () => {
     const { container } = await renderWorkspace("PUBLISHED", 2, undefined, [
       templateItem("PUBLISHED"),
@@ -66,6 +95,7 @@ describe("grouped workflow template admin list", () => {
     expect(document.body.querySelectorAll("input[required]")).toHaveLength(1);
     const readOnly = await renderWorkspace("PUBLISHED", 2, {
       canCreate: false,
+      canDelete: false,
       canUpdate: false,
       canPublish: false,
     });
@@ -105,7 +135,9 @@ describe("grouped workflow template admin list", () => {
     await chooseAction(container, "Delete", "Actions for Standard grant v1");
     expect(
       document.body.querySelector('[role="dialog"]')?.textContent,
-    ).toContain("Delete Standard grant? This cannot be undone.");
+    ).toContain(
+      "Delete Standard grant and all its draft versions? This cannot be undone.",
+    );
   });
 
   it("publishes the selected eligible version through a separate confirmation", async () => {
@@ -120,6 +152,7 @@ describe("grouped workflow template admin list", () => {
   it("disables version writes for readers and prevents creating another draft from a draft", async () => {
     const { container } = await renderWorkspace("DRAFT", 2, {
       canCreate: false,
+      canDelete: false,
       canPublish: false,
       canUpdate: false,
     });

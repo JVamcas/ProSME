@@ -38,8 +38,9 @@ beforeEach(() => {
 
 describe("ServerFormsService pagination", () => {
   it("checks permission before listing forms", async () => {
-    await expect(getForms(staff([]), { page: 1, pageSize: 10 }))
-      .rejects.toBeInstanceOf(PermissionDeniedError);
+    await expect(
+      getForms(staff([]), { page: 1, pageSize: 10, search: "Review" }),
+    ).rejects.toBeInstanceOf(PermissionDeniedError);
     expect(listForms).not.toHaveBeenCalled();
   });
 
@@ -55,8 +56,13 @@ describe("ServerFormsService pagination", () => {
     await getForms(staff([permissionCodes.workflowFormRead]), {
       page: 2,
       pageSize: 25,
+      search: "Review",
     });
 
-    expect(listForms).toHaveBeenCalledWith({ page: 2, pageSize: 25 });
+    expect(listForms).toHaveBeenCalledWith({
+      page: 2,
+      pageSize: 25,
+      search: "Review",
+    });
   });
 });

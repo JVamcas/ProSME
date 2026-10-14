@@ -4,8 +4,8 @@ Date: 2026-10-13 (Africa/Johannesburg).
 
 ## Behavior
 
-Converted workflow stages expose Tasks, Forms, and Actions. The Forms tab links
-straight to each task's exact form version. Existing legacy versions retain their
+Converted workflow stages expose Tasks and Actions. Each task's Attached form link
+opens its exact form version. Existing legacy versions retain their
 original editors and runtime behavior. New review tasks use form sections.
 
 Forms support `SCORE` and `SCORING_AGGREGATE`. An aggregate references score keys
@@ -134,3 +134,65 @@ Final type checking, architecture boundaries, form architecture, and component
 reuse checks passed. Full lint reported no errors and 17 existing warnings;
 focused lint for the final changes passed. The file-size gate still flags the
 two unchanged tests listed above under its older 300-line limit.
+
+## Controlled GCP conversion — 2026-10-14
+
+Executed at the user's request against project `msmepro`, application VM
+`prosme-vm`, deployment `/opt/prosme-dev`. This section supersedes the earlier
+local-only status for this operation; it is not publication or browser acceptance.
+
+The deployed migration image was pinned to
+`sha256:11e8ca06c0233f329e08822dc3aa7247530fae01e91e34a5c353cae127f9b1be`.
+The host conversion entrypoint and repository implementation matched the local
+file hashes. The Dockerfile had omitted the entrypoint from its explicit COPY
+list. That omission is fixed in source; this operation used disposable containers
+with the entrypoint supplied separately, without rebuilding the running app.
+
+The initial dry run identified exactly two sources and 12 task forms per source.
+The first apply attempt rolled back because the existing document constraint
+rejected `JPEG`, which form document projection already supported. Database counts
+confirmed zero conversion records, four workflow versions and 21 form versions
+after that rollback.
+
+Migration `0208_workflow_document_projection_constraints.sql` aligns document type
+and uploader constraints with the supported domain choices. Its PostgreSQL test
+ran against a temporary table with `search_path = pg_temp` and rolled back. It
+verified legacy preservation, all supported choices, invalid-value rejection and
+repeat execution. The correction was then applied with the standard Drizzle
+migrator after checking the exact 0207 ledger baseline. The recorded 0208 ledger
+timestamp is `1801785600054`.
+
+The conversion was pinned to the source IDs below, with an immediate dry-run
+recheck, a five-second database lock timeout and a two-minute statement timeout.
+
+| Workflow | Source | Converted draft |
+| --- | --- | --- |
+| SME Fund Standard Application Workflow | v3, `8f139b3f-4607-4762-b72d-e28c27b8ffe7` | v4, `bc7ccb81-78bf-4111-b601-37d97cb05f90` |
+| Copy of SME Fund Standard Application Workflow | v1, `526278ce-7817-4bd9-b9ea-a6aafe98e475` | v2, `10fa83ef-3452-4771-a0aa-15c09efb2165` |
+
+Verified results:
+
+- Two workflow drafts and 24 task-form drafts created; 18 extend existing forms.
+- All original row fingerprints across the 54 checked workflow, form, runtime,
+  evidence and assignment tables remained present unchanged.
+- All 118 original form fields matched their copies, excluding new record IDs
+  and version/section foreign keys. All 26 original sections matched, excluding
+  new IDs and their intentional position within the combined task form.
+- The editor's legacy-tab predicate is false for every converted stage. Form-backed
+  document policy projections remain for evidence/RFI behavior.
+- Both per-source repeat executions skipped with zero new forms, and the source
+  discovery query returned no remaining candidates.
+- All 24 new forms and both new workflows remain DRAFT. No publication or funding
+  call switch was performed. Older versions retain their legacy editors.
+- App and scheduler containers remained healthy; neither was restarted.
+
+Local validation: 19 focused tests passed; the isolated PostgreSQL migration test
+passed; architecture boundaries, form architecture, component reuse and type
+checking passed. Type checking required a 2560 MB Node heap after a 1536 MB attempt
+exhausted its heap. Full lint had zero errors and 17 existing warnings; focused
+lint passed after the schema/test change. No production build or browser check
+was performed. Docker packaging is source-reviewed, not rebuilt-image verified.
+
+Review the converted form/workflow drafts before publication and binding. The
+running environment has migration 0208; retain this migration and its journal
+entry in the next deployment so source and database history remain aligned.

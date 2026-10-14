@@ -1,15 +1,16 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { FormProvider, useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 import type { z } from "zod";
 
 import { GeneralButton } from "@/components/ui/button";
+import { StepProgress } from "@/shared/ui/StepProgress";
 import { DraggableDialog } from "@/shared/ui/DraggableDialog";
 import { formFieldSchema } from "@/modules/forms/api/FormSchemas";
-import { uniqueStableKeyFromLabel } from "@/modules/workflows/domain/WorkflowStableKey";
+import { generateWorkflowStableKey } from "@/modules/workflows/domain/WorkflowStableKey";
 import { type FormField, type FormSection } from "@/modules/forms/FormTypes";
 
 import { documentFieldConfiguration } from "../../domain/FormDocumentConfiguration";
@@ -21,7 +22,7 @@ function defaultField(sectionId: string, order: number): FieldDialogValues {
   return {
     columnSpan: 1,
     helpText: "",
-    key: "",
+    key: generateWorkflowStableKey(),
     label: "",
     maximum: undefined,
     maxLength: undefined,
@@ -54,7 +55,6 @@ function FormFieldDialogContent({
   sectionColumnSpan: FormSection["columnSpan"];
   sectionId: string;
 }) {
-  const resolveField = zodResolver(formFieldSchema);
   const form = useForm<
     z.input<typeof formFieldSchema>,
     unknown,
@@ -68,22 +68,19 @@ function FormFieldDialogContent({
             : {}),
         }
       : defaultField(sectionId, nextOrder),
-    resolver: (values, context, options) =>
-      resolveField(
-        {
-          ...values,
-          key:
-            field?.key ??
-            uniqueStableKeyFromLabel(
-              values.label,
-              fields.map((item) => item.key),
-              "FIELD",
-            ),
-        },
-        context,
-        options,
-      ),
+    resolver: zodResolver(formFieldSchema),
   });
+  const [step, setStep] = useState<"details" | "configuration">("details");
+  async function changeStep(next: "details" | "configuration") {
+    if (
+      next === "details" ||
+      (await form.trigger(["label", "type", "columnSpan"], {
+        shouldFocus: true,
+      }))
+    ) {
+      setStep(next);
+    }
+  }
   const type = useWatch({ control: form.control, name: "type" });
 
   useEffect(() => {
@@ -134,24 +131,33 @@ function FormFieldDialogContent({
     }
   }, [form, type]);
 
-  const submit = form.handleSubmit(async (values) => {
-    try {
-      await onSave({
-        ...values,
-        workflowDocument: values.workflowDocument
-          ? {
-              ...values.workflowDocument,
-              stableKey: field?.workflowDocument?.stableKey ?? values.key,
-            }
-          : values.workflowDocument,
-      });
-      onClose();
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Unable to save the field.",
+  const submit = form.handleSubmit(
+    async (values) => {
+      try {
+        await onSave({
+          ...values,
+          workflowDocument: values.workflowDocument
+            ? {
+                ...values.workflowDocument,
+                stableKey: field?.workflowDocument?.stableKey ?? values.key,
+              }
+            : values.workflowDocument,
+        });
+        onClose();
+      } catch (error) {
+        toast.error(
+          error instanceof Error ? error.message : "Unable to save the field.",
+        );
+      }
+    },
+    (errors) => {
+      setStep(
+        errors.label || errors.type || errors.columnSpan
+          ? "details"
+          : "configuration",
       );
-    }
-  });
+    },
+  );
 
   return (
     <DraggableDialog
@@ -161,14 +167,53 @@ function FormFieldDialogContent({
       size="2xl"
     >
       <FormProvider {...form}>
-        <form className="grid gap-4" onSubmit={submit}>
+        <form
+          className="grid gap-4"
+          noValidate
+          onSubmit={(event) => {
+            if (step === "details") {
+              event.preventDefault();
+              void changeStep("configuration");
+            } else {
+              void submit(event);
+            }
+          }}
+        >
+          <StepProgress
+            ariaLabel="Field setup progress"
+            steps={[
+              { id: "details", label: "Details" },
+              { id: "configuration", label: "Configuration" },
+            ]}
+            currentStepId={step}
+            completedStepIds={step === "configuration" ? ["details"] : []}
+            disabled={form.formState.isSubmitting}
+            onStepChange={changeStep}
+          />
           <FormFieldDialogFields
+            step={step}
             fields={fields}
             sectionColumnSpan={sectionColumnSpan}
           />
-          <div className="flex justify-end">
+          <div className="flex justify-between">
+            {step === "configuration" ? (
+              <GeneralButton
+                type="button"
+                variant="outline"
+                disabled={form.formState.isSubmitting}
+                onClick={() => setStep("details")}
+              >
+                Back
+              </GeneralButton>
+            ) : (
+              <span />
+            )}
             <GeneralButton disabled={form.formState.isSubmitting} type="submit">
-              {form.formState.isSubmitting ? "Saving…" : "Save field"}
+              {step === "details"
+                ? "Next"
+                : form.formState.isSubmitting
+                  ? "Saving…"
+                  : "Save field"}
             </GeneralButton>
           </div>
         </form>

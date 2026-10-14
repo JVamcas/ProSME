@@ -57,7 +57,7 @@ export function WorkflowTemplateConfirmations({
         isPending={deleteTemplate.isPending}
         message={
           deleteCandidate
-            ? `Delete ${deleteCandidate.name}? This cannot be undone.`
+            ? `Delete ${deleteCandidate.name} and all its draft versions? This cannot be undone.`
             : ""
         }
         onClose={() => setDeleteCandidate(undefined)}

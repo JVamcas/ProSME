@@ -17,6 +17,7 @@ import type { ConditionGroup } from "@/modules/conditions/domain/ConditionGroup"
 import { formSectionSchema } from "@/modules/forms/api/FormSchemas";
 import type { FormField, FormSection } from "@/modules/forms/FormTypes";
 import { FormConditionRuleEditor } from "./FormConditionRuleEditor";
+import { generateWorkflowStableKey } from "@/modules/workflows/domain/WorkflowStableKey";
 
 export function FormSectionDialog({
   isOpen,
@@ -59,7 +60,7 @@ function FormSectionDialogContent({
     defaultValues: section ?? {
       columnSpan: 3,
       description: "",
-      key: "",
+      key: generateWorkflowStableKey(),
       order: nextOrder,
       showContainer: true,
       title: "",
@@ -86,12 +87,6 @@ function FormSectionDialogContent({
     >
       <FormProvider {...form}>
         <form className="space-y-4" onSubmit={submit}>
-          <FormInput
-            label="Section key"
-            name="key"
-            placeholder="BUSINESS_DETAILS"
-            required
-          />
           <FormInput label="Title" name="title" required />
           <FormSelect
             items={[

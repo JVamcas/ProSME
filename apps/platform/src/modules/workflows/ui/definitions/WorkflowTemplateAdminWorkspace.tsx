@@ -21,12 +21,14 @@ import { WorkflowTemplateTable } from "./WorkflowTemplateTable";
 
 type Props = {
   canCreate: boolean;
+  canDelete: boolean;
   canPublish: boolean;
   canUpdate: boolean;
 };
 
 export function WorkflowTemplateAdminWorkspace({
   canCreate,
+  canDelete,
   canPublish,
   canUpdate,
 }: Props) {
@@ -93,6 +95,7 @@ export function WorkflowTemplateAdminWorkspace({
       ) : null}
       <WorkflowTemplateTable
         canCreate={canCreate}
+        canDelete={canDelete}
         canPublish={canPublish}
         canUpdate={canUpdate}
         cloningVersionId={

@@ -6,7 +6,6 @@ import type { z } from "zod";
 import type { formFieldSchema } from "../../api/FormSchemas";
 import type { FormField } from "../../FormTypes";
 import { FormInput, FormSelect } from "@/components/ui/form-fields";
-import { GeneralButton } from "@/components/ui/button";
 
 type Values = z.input<typeof formFieldSchema>;
 
@@ -20,6 +19,8 @@ export function ScoringAggregateSettings({
     control: form.control,
     name: "scoringAggregate.sources",
   });
+  const selectedSources =
+    useWatch({ control: form.control, name: "scoringAggregate.sources" }) ?? [];
   const method = useWatch({
     control: form.control,
     name: "scoringAggregate.method",
@@ -73,44 +74,48 @@ export function ScoringAggregateSettings({
         min={0}
         max={6}
       />
-      {sources.fields.map((source, index) => (
-        <div key={source.id} className="grid gap-3 sm:grid-cols-3">
-          <FormSelect
-            label="Score field"
-            name={`scoringAggregate.sources.${index}.fieldKey`}
-            items={scores.map((field) => ({
-              label: field.label,
-              value: field.key,
-            }))}
-            required
-          />
-          {weighted ? (
+      <FormSelect
+        id="aggregate-score-sources"
+        label="Score fields"
+        multiple
+        required
+        value={selectedSources.map((source) => source.fieldKey)}
+        items={scores.map((field) => ({
+          label: field.label,
+          value: field.key,
+        }))}
+        placeholder="Select score fields"
+        error={
+          form.formState.errors.scoringAggregate?.sources?.message ??
+          form.formState.errors.scoringAggregate?.sources?.root?.message
+        }
+        onMultipleChange={(keys) => {
+          const existing = form.getValues("scoringAggregate.sources") ?? [];
+          sources.replace(
+            keys.map(
+              (fieldKey) =>
+                existing.find((source) => source.fieldKey === fieldKey) ?? {
+                  fieldKey,
+                  weight: 1,
+                },
+            ),
+          );
+          void form.trigger("scoringAggregate.sources");
+        }}
+      />
+      {weighted
+        ? sources.fields.map((source, index) => (
             <FormInput
-              label="Weight"
+              key={source.id}
+              label={`Weight: ${scores.find((field) => field.key === source.fieldKey)?.label ?? source.fieldKey}`}
               name={`scoringAggregate.sources.${index}.weight`}
               type="number"
               min={0.000001}
               step="any"
               required
             />
-          ) : null}
-          <GeneralButton
-            type="button"
-            variant="outline"
-            onClick={() => sources.remove(index)}
-          >
-            Remove source
-          </GeneralButton>
-        </div>
-      ))}
-      <GeneralButton
-        type="button"
-        variant="outline"
-        disabled={!scores.length}
-        onClick={() => sources.append({ fieldKey: scores[0].key, weight: 1 })}
-      >
-        Add score source
-      </GeneralButton>
+          ))
+        : null}
       {!scores.length ? <p>Add Score fields to this form first.</p> : null}
       <p className="text-sm text-brand-navy/65">
         The result is calculated automatically and cannot be edited.

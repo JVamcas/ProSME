@@ -54,6 +54,39 @@ async function saveField(field?: FormField, type?: "CHECKBOX") {
     ]) {
       expect(document.body.textContent).not.toContain(title);
     }
+    if (type) {
+      await act(async () => {
+        const select =
+          document.querySelector<HTMLSelectElement>('[name="type"]')!;
+        expect(
+          Array.from(select.options).some(
+            (option) => option.textContent === "Checkbox",
+          ),
+        ).toBe(true);
+        select.value = type;
+        select.dispatchEvent(new Event("change", { bubbles: true }));
+      });
+    }
+    const input = document.querySelector<
+      HTMLInputElement | HTMLTextAreaElement
+    >('[name="label"]')!;
+    await act(async () => {
+      const setValue = Object.getOwnPropertyDescriptor(
+        type === "CHECKBOX"
+          ? HTMLTextAreaElement.prototype
+          : HTMLInputElement.prototype,
+        "value",
+      )!.set!;
+      setValue.call(input, field ? "Renamed business name" : "Registered name");
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    await act(async () => {
+      Array.from(document.querySelectorAll("button"))
+        .find((button) => button.textContent === "Next")!
+        .click();
+    });
+    expect(saved).not.toHaveBeenCalled();
     if (field?.type === "DOCUMENT") {
       const uploader = document.querySelector<HTMLSelectElement>(
         '[name="uploadedBy"]',
@@ -82,33 +115,6 @@ async function saveField(field?: FormField, type?: "CHECKBOX") {
         document.querySelector('[name="maximumFileSizeMb"]'),
       ).not.toBeNull();
     }
-    if (type) {
-      await act(async () => {
-        const select =
-          document.querySelector<HTMLSelectElement>('[name="type"]')!;
-        expect(
-          Array.from(select.options).some(
-            (option) => option.textContent === "Checkbox",
-          ),
-        ).toBe(true);
-        select.value = type;
-        select.dispatchEvent(new Event("change", { bubbles: true }));
-      });
-    }
-    const input = document.querySelector<
-      HTMLInputElement | HTMLTextAreaElement
-    >('[name="label"]')!;
-    await act(async () => {
-      const setValue = Object.getOwnPropertyDescriptor(
-        type === "CHECKBOX"
-          ? HTMLTextAreaElement.prototype
-          : HTMLInputElement.prototype,
-        "value",
-      )!.set!;
-      setValue.call(input, field ? "Renamed business name" : "Registered name");
-      input.dispatchEvent(new Event("input", { bubbles: true }));
-      input.dispatchEvent(new Event("change", { bubbles: true }));
-    });
     const form = document.querySelector<HTMLFormElement>(
       '[role="dialog"] form',
     )!;
@@ -143,7 +149,7 @@ describe("automatic form field keys", () => {
   it("can configure a checkbox through the field type selector", async () => {
     const field = await saveField(undefined, "CHECKBOX");
     expect(field.type).toBe("CHECKBOX");
-    expect(field.key).toBe("REGISTERED_NAME_2");
+    expect(field.key).toMatch(/^K_[A-F0-9]{32}$/);
   });
   it("preserves selected document formats without a page limit", async () => {
     const field = await saveField({
@@ -154,9 +160,9 @@ describe("automatic form field keys", () => {
     expect(field.acceptedExtensions).toEqual([".xls", ".xlsx", ".csv"]);
   });
 
-  it("generates a unique key from the label when adding a field", async () => {
+  it("generates a UUID key when adding a field", async () => {
     const field = await saveField();
-    expect(field.key).toBe("REGISTERED_NAME_2");
+    expect(field.key).toMatch(/^K_[A-F0-9]{32}$/);
     expect(field.label).toBe("Registered name");
   });
 

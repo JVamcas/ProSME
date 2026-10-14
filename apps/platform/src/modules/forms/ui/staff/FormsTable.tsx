@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { DataTable, type DataTableColumn } from "@/shared/ui/DataTable";
 import { GeneralButton } from "@/components/ui/button";
 import { Pagination } from "@/components/ui/pagination";
@@ -35,9 +36,10 @@ function FormTableActions({
   form: FormDefinitionSummary;
   options: FormTableOptions;
 }) {
-  const pending = options.pendingAction?.definitionId === form.id
-    ? options.pendingAction.action
-    : undefined;
+  const pending =
+    options.pendingAction?.definitionId === form.id
+      ? options.pendingAction.action
+      : undefined;
   const hasVersion = Boolean(
     form.latestVersionId && form.latestVersionRowVersion !== null,
   );
@@ -47,9 +49,7 @@ function FormTableActions({
       id: "edit",
       label: "Edit",
       disabled:
-        !options.canUpdate
-        || form.latestStatus !== "DRAFT"
-        || actionPending,
+        !options.canUpdate || form.latestStatus !== "DRAFT" || actionPending,
       onAction: () => options.onEdit(form),
     },
     {
@@ -62,20 +62,20 @@ function FormTableActions({
       id: "publish",
       label: pending === "publish" ? "Publishing…" : "Publish",
       disabled:
-        !options.canPublish
-        || form.latestStatus !== "DRAFT"
-        || !hasVersion
-        || actionPending,
+        !options.canPublish ||
+        form.latestStatus !== "DRAFT" ||
+        !hasVersion ||
+        actionPending,
       onAction: () => options.onPublish(form),
     },
     {
       id: "retire",
       label: pending === "retire" ? "Retiring…" : "Retire",
       disabled:
-        !options.canRetire
-        || form.latestStatus !== "PUBLISHED"
-        || !hasVersion
-        || actionPending,
+        !options.canRetire ||
+        form.latestStatus !== "PUBLISHED" ||
+        !hasVersion ||
+        actionPending,
       destructive: true,
       onAction: () => options.onRetire(form),
     },
@@ -83,10 +83,10 @@ function FormTableActions({
       id: "clone",
       label: pending === "clone" ? "Cloning…" : "Clone",
       disabled:
-        !options.canUpdate
-        || form.latestStatus === "DRAFT"
-        || !hasVersion
-        || actionPending,
+        !options.canUpdate ||
+        form.latestStatus === "DRAFT" ||
+        !hasVersion ||
+        actionPending,
       onAction: () => options.onClone(form),
     },
   ];
@@ -120,9 +120,9 @@ function formColumns(
     {
       accessorKey: "purpose",
       header: "Purpose",
-      cell: ({ row }) => formPurposeOptions.find(
-        (item) => item.value === row.original.purpose,
-      )?.label ?? row.original.purpose,
+      cell: ({ row }) =>
+        formPurposeOptions.find((item) => item.value === row.original.purpose)
+          ?.label ?? row.original.purpose,
     },
     {
       accessorKey: "latestVersion",
@@ -133,9 +133,10 @@ function formColumns(
       accessorKey: "latestStatus",
       header: "Status",
 
-      cell: ({ row }) => row.original.latestStatus ? (
-        <StatusBadge status={row.original.latestStatus} />
-      ) : null,
+      cell: ({ row }) =>
+        row.original.latestStatus ? (
+          <StatusBadge status={row.original.latestStatus} />
+        ) : null,
     },
     {
       accessorKey: "updatedAt",
@@ -172,6 +173,7 @@ export function FormsTable({
   page,
   pageSize,
   pendingAction,
+  searchForm,
   total,
   totalPages,
 }: {
@@ -194,6 +196,7 @@ export function FormsTable({
   page: number;
   pageSize: number;
   pendingAction?: FormTablePendingAction;
+  searchForm: ReactNode;
   total: number;
   totalPages: number;
 }) {
@@ -212,11 +215,9 @@ export function FormsTable({
       })}
       data={items}
       emptyMessage={emptyMessage}
-      renderExpandedRow={(form) => (
-        <FormVersionsTable definitionId={form.id} />
-      )}
+      renderExpandedRow={(form) => <FormVersionsTable definitionId={form.id} />}
       rowKey={(form) => form.id}
-      footer={(
+      footer={
         <div className="space-y-3">
           {errorMessage ? (
             <p className="text-sm text-red-700" role="alert">
@@ -234,8 +235,9 @@ export function FormsTable({
             total={total}
           />
         </div>
-      )}
+      }
       toolbar={{
+        filters: searchForm,
         actions: (
           <GeneralButton disabled={!canCreate} onClick={onCreate} type="button">
             Create form
