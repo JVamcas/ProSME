@@ -12,6 +12,7 @@ import {
   workflowActionFormDefaults,
   toWorkflowActionDefinition,
 } from "@/modules/workflows/ui/definitions/WorkflowActionFormMapping";
+import { actionNotificationFixture } from "../../../support/WorkflowActionNotificationsFixture";
 import { referenceWorkflow } from "../../../support/ReferenceWorkflowFixture";
 
 (
@@ -22,7 +23,10 @@ import { referenceWorkflow } from "../../../support/ReferenceWorkflowFixture";
 
 afterEach(() => vi.restoreAllMocks());
 
-async function mount(rejectionOutcome?: "TERMINAL" | "TRANSITION") {
+async function mount(
+  rejectionOutcome?: "TERMINAL" | "TRANSITION",
+  withNotifications = false,
+) {
   const editor: WorkflowEditorView = {
     allowedActions: [],
     definition: {
@@ -53,6 +57,7 @@ async function mount(rejectionOutcome?: "TERMINAL" | "TRANSITION") {
       })
     : undefined;
   if (action) {
+    if (withNotifications) action.notifications = [actionNotificationFixture];
     editor.graph.stages[0].actions.push(action);
     editor.graph.stages[0].tasks[0].actionKeys.push(action.stableKey);
     editor.graph.transitions.push({
@@ -138,8 +143,7 @@ describe("workflow action dialog", () => {
       await clickButton("Continue");
       expect(
         document.querySelector('[aria-label="Action notifications"]'),
-      ).not.toBeNull();
-      await clickButton("Continue");
+      ).toBeNull();
       expect(
         document.querySelector('[aria-label="Review action"]')?.textContent,
       ).toContain("ADVANCE_2");
@@ -168,7 +172,6 @@ describe("workflow action dialog", () => {
       await changeLabel("Approve review!");
       await clickButton("Continue");
       await clickButton("Continue");
-      await clickButton("Continue");
       const review = document.querySelector<HTMLButtonElement>(
         'button[aria-label="Review, not complete"]',
       )!;
@@ -190,15 +193,13 @@ describe("workflow action dialog", () => {
       await clickButton("Back");
       await clickButton("Back");
       await clickButton("Back");
-      await clickButton("Back");
       await changeLabel("Advance");
       await clickButton("Continue");
       await clickButton("Continue");
       await clickButton("Continue");
       expect(
         document.querySelector('[aria-label="Action notifications"]'),
-      ).not.toBeNull();
-      await clickButton("Continue");
+      ).toBeNull();
       expect(
         document.querySelector('[aria-label="Review action"]')?.textContent,
       ).toContain("ADVANCE_2");
@@ -210,7 +211,7 @@ describe("workflow action dialog", () => {
   it.each(["TERMINAL", "TRANSITION"] as const)(
     "configures %s rejection consequences in Routing",
     async (outcome) => {
-      const view = await mount(outcome);
+      const view = await mount(outcome, true);
       try {
         expect(
           document.querySelector('input[name="reasonRequired"]'),
@@ -236,9 +237,9 @@ describe("workflow action dialog", () => {
           document.querySelector('select[name="rejectionPublicStatus"]'),
         ).toBeNull();
         await clickButton("Continue");
-        await clickButton("Continue");
         await clickButton("Save action");
         const saved = view.update.mock.calls[0][1].action;
+        expect(saved.notifications).toEqual([actionNotificationFixture]);
         expect(saved?.configuration).toMatchObject({
           outcome: { type: outcome },
         });
@@ -279,7 +280,6 @@ describe("workflow action dialog", () => {
       expect(
         document.querySelector('input[name="rejectionPublicLabel"]'),
       ).toBeNull();
-      await clickButton("Continue");
       await clickButton("Continue");
       await clickButton("Save action");
       const saved = view.update.mock.calls[0][1].action;

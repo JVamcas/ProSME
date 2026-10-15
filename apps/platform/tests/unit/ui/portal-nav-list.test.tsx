@@ -23,24 +23,28 @@ afterEach(() => {
 
 describe("portal navigation list", () => {
   it("keeps nested routes closed by default and toggles them from the parent", async () => {
-    const administration = operationsPortalRoutes.find(
-      (route) => route.id === "admin-settings",
+    const administration = operationsPortalRoutes.filter(
+      (route) => route.section === "administration",
     );
     const container = document.createElement("div");
     document.body.append(container);
     const root = createRoot(container);
 
     await act(async () => {
-      root.render(<PortalNavList dark routes={[administration!]} />);
+      root.render(<PortalNavList dark routes={administration} />);
     });
 
-    const toggle = container.querySelector<HTMLButtonElement>("button");
+    const toggle = container.querySelector<HTMLButtonElement>(
+      'button[aria-controls^="admin-notification-channels-children"]',
+    );
     const childListId = toggle?.getAttribute("aria-controls");
 
     expect(toggle?.getAttribute("aria-expanded")).toBe("false");
-    expect(childListId).toContain("admin-settings-children");
+    expect(childListId).toContain("admin-notification-channels-children");
     expect(document.getElementById(childListId!)).toBeNull();
-    expect(container.textContent).not.toContain("Workflow Templates");
+    expect(container.textContent).toContain("Workflow Templates");
+    expect(container.textContent).not.toContain("Channels");
+    expect(container.textContent).not.toContain("Settings");
 
     await act(async () => {
       toggle?.click();
@@ -48,7 +52,7 @@ describe("portal navigation list", () => {
 
     expect(toggle?.getAttribute("aria-expanded")).toBe("true");
     expect(document.getElementById(childListId!)).not.toBeNull();
-    expect(container.textContent).toContain("Workflow Templates");
+    expect(container.textContent).toContain("Channels");
 
     await act(async () => {
       toggle?.click();
@@ -60,17 +64,17 @@ describe("portal navigation list", () => {
     await act(async () => root.unmount());
   });
 
-  it("renders and expands routes recursively for an active third-level route", async () => {
+  it("renders and expands routes recursively for an active notification child route", async () => {
     navigationMock.pathname = "/admin/notifications/channels";
-    const administration = operationsPortalRoutes.find(
-      (route) => route.id === "admin-settings",
+    const administration = operationsPortalRoutes.filter(
+      (route) => route.section === "administration",
     );
     const container = document.createElement("div");
     document.body.append(container);
     const root = createRoot(container);
 
     await act(async () => {
-      root.render(<PortalNavList dark routes={[administration!]} />);
+      root.render(<PortalNavList dark routes={administration} />);
     });
 
     const expandedToggles = Array.from(

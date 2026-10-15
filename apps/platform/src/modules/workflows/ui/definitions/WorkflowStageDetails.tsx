@@ -186,7 +186,7 @@ export function WorkflowStageDetails({
         <StageTabContent>
           <WorkflowStageActionTable
             canEdit={canEdit}
-            graph={editor.graph}
+            editor={editor}
             onAdd={onAddAction}
             onDelete={onDeleteAction}
             onEdit={onEditAction}

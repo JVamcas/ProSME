@@ -1,6 +1,9 @@
 import { z } from "zod";
 
-import type { NotificationTemplateScope, NotificationTemplateState } from "../domain/NotificationTemplate";
+import type {
+  NotificationTemplateScope,
+  NotificationTemplateState,
+} from "../domain/NotificationTemplate";
 
 export const notificationChannelCodeSchema = z
   .string()
@@ -8,18 +11,31 @@ export const notificationChannelCodeSchema = z
   .min(1)
   .max(100)
   .regex(/^[A-Z][A-Z0-9_]*$/);
+export const notificationTemplateTargetQuerySchema = z
+  .object({
+    search: z.string().trim().max(200).optional(),
+  })
+  .strict();
+export type NotificationTemplateTargetQuery = z.infer<
+  typeof notificationTemplateTargetQuerySchema
+>;
+
 export const notificationTemplateTargetIdSchema = z.uuid();
 export const notificationTemplateVersionIdSchema = z.uuid();
-export const notificationTemplateImportFieldsSchema = z.object({
-  plainTextTemplate: z.string().max(262_144).optional(),
-  subjectTemplate: z.string().trim().min(1).max(500),
-}).strict();
+export const notificationTemplateImportFieldsSchema = z
+  .object({
+    plainTextTemplate: z.string().max(262_144).optional(),
+    subjectTemplate: z.string().trim().min(1).max(500),
+  })
+  .strict();
 
-export const notificationChannelUpdateSchema = z.object({
-  expectedUpdatedAt: z.iso.datetime({ offset: true }),
-  isEnabled: z.boolean(),
-  sortOrder: z.number().int().min(0).max(10_000),
-}).strict();
+export const notificationChannelUpdateSchema = z
+  .object({
+    expectedUpdatedAt: z.iso.datetime({ offset: true }),
+    isEnabled: z.boolean(),
+    sortOrder: z.number().int().min(0).max(10_000),
+  })
+  .strict();
 
 export type NotificationChannelUpdate = z.infer<
   typeof notificationChannelUpdateSchema
@@ -80,12 +96,19 @@ export type NotificationTemplateImportResult = {
   version: NotificationTemplateVersionSummary;
 };
 
-export const notificationTemplateEditSchema = z.object({
-  subjectTemplate: z.string().trim().min(1).max(500).refine(
-    (value) => !/[\r\n]/.test(value),
-    "The subject cannot contain newlines.",
-  ),
-}).strict();
+export const notificationTemplateEditSchema = z
+  .object({
+    subjectTemplate: z
+      .string()
+      .trim()
+      .min(1)
+      .max(500)
+      .refine(
+        (value) => !/[\r\n]/.test(value),
+        "The subject cannot contain newlines.",
+      ),
+  })
+  .strict();
 
 export type NotificationTemplateEdit = z.infer<
   typeof notificationTemplateEditSchema

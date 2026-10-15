@@ -4,6 +4,7 @@ import { PortalErrorState } from "@/shared/ui/portal/PortalErrorState";
 import { ApplicationSectionSkeleton } from "@/modules/applications/ui/ApplicationDetailSkeleton";
 import type { WorkflowProgressView } from "../../api/WorkflowProgressTypes";
 import { WorkflowProgressPanel } from "../WorkflowProgressPanel";
+import { WorkflowStageFunnelProgress } from "./WorkflowStageFunnelProgress";
 import { useWorkflowProgress } from "./useWorkflowProgress";
 
 export function WorkflowProgressQueryPanel({
@@ -11,11 +12,13 @@ export function WorkflowProgressQueryPanel({
   enabled = true,
   taskId,
   initialData,
+  funnelAccess,
 }: {
   applicationId: string;
   enabled?: boolean;
   taskId?: string;
   initialData?: WorkflowProgressView | null;
+  funnelAccess?: { canInspect: boolean; canExport: boolean };
 }) {
   const query = useWorkflowProgress(
     applicationId,
@@ -40,5 +43,15 @@ export function WorkflowProgressQueryPanel({
     return <ApplicationSectionSkeleton title="workflow progress" />;
   }
 
+  if (query.data && funnelAccess) {
+    return (
+      <WorkflowStageFunnelProgress
+        applicationId={applicationId}
+        progress={query.data}
+        canInspect={funnelAccess.canInspect}
+        canExport={funnelAccess.canExport}
+      />
+    );
+  }
   return <WorkflowProgressPanel progress={query.data} />;
 }

@@ -6,7 +6,6 @@ import type {
   WorkflowStageInput,
 } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 import type { WorkflowTransitionDefinition } from "@/modules/workflows/domain/transitions/WorkflowTransitionDefinition";
-import { WorkflowActionNotificationsStep } from "./WorkflowActionNotificationsStep";
 import { WorkflowTerminalApplicantStatus } from "./WorkflowTerminalApplicantStatus";
 import { workflowRouteDestination } from "./WorkflowActionEditorRoutes";
 import { workflowActionTypeItems } from "./WorkflowActionFormSchema";
@@ -95,7 +94,6 @@ export function WorkflowActionReviewStep({
           </p>
         )}
       </div>
-      <WorkflowActionNotificationsStep editor={editor} stage={stage} readonly />
     </section>
   );
 }

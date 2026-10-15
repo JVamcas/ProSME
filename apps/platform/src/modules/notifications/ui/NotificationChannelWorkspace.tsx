@@ -1,5 +1,12 @@
 "use client";
 
+import { zodResolver } from "@hookform/resolvers/zod";
+import { FormProvider, useForm } from "react-hook-form";
+import { FormInput } from "@/components/ui/form-fields";
+import {
+  notificationTemplateTargetQuerySchema,
+  type NotificationTemplateTargetQuery,
+} from "../api/NotificationTemplateSchemas";
 import { ChevronDown, ChevronRight, FileStack } from "lucide-react";
 import { useMemo, useState } from "react";
 
@@ -47,15 +54,15 @@ function TargetHeader({
         </div>
         <div className="space-y-1">
           <h3
-            className={compact
-              ? "text-lg font-bold text-brand-navy"
-              : "text-2xl font-bold tracking-tight text-brand-navy"}
+            className={
+              compact
+                ? "text-lg font-bold text-brand-navy"
+                : "text-2xl font-bold tracking-tight text-brand-navy"
+            }
           >
             {target.label}
           </h3>
-          <p className="text-sm text-brand-navy/70">
-            {targetSubtitle(target)}
-          </p>
+          <p className="text-sm text-brand-navy/70">{targetSubtitle(target)}</p>
           {target.description ? (
             <p className="max-w-3xl text-sm leading-6 text-brand-navy/65">
               {target.description}
@@ -65,7 +72,9 @@ function TargetHeader({
       </div>
       <div className="flex shrink-0 flex-col items-start gap-3 lg:items-end">
         <div className="flex flex-wrap items-center gap-2">
-          <Badge variant={target.publishedVersionNumber ? "success" : "outline"}>
+          <Badge
+            variant={target.publishedVersionNumber ? "success" : "outline"}
+          >
             {target.publishedVersionNumber
               ? `Published: v${target.publishedVersionNumber}`
               : "No Published Version"}
@@ -106,7 +115,8 @@ function CatalogTargetCard({
         <TargetHeader channelCode={channelCode} target={target} />
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-sm text-brand-navy/65">
-            {eventTargets.length} event template target{eventTargets.length === 1 ? "" : "s"}
+            {eventTargets.length} event template target
+            {eventTargets.length === 1 ? "" : "s"}
           </p>
           <GeneralButton
             aria-expanded={expanded}
@@ -125,17 +135,20 @@ function CatalogTargetCard({
       </div>
       {expanded ? (
         <div className="divide-y divide-brand-navy/10">
-          {eventTargets.length ? eventTargets.map((eventTarget) => (
-            <div className="p-5 sm:p-6" key={eventTarget.id}>
-              <TargetHeader
-                channelCode={channelCode}
-                compact
-                target={eventTarget}
-              />
-            </div>
-          )) : (
+          {eventTargets.length ? (
+            eventTargets.map((eventTarget) => (
+              <div className="p-5 sm:p-6" key={eventTarget.id}>
+                <TargetHeader
+                  channelCode={channelCode}
+                  compact
+                  target={eventTarget}
+                />
+              </div>
+            ))
+          ) : (
             <p className="p-5 text-sm text-brand-navy/60">
-              No event-specific template targets are configured for this catalog.
+              No event-specific template targets are configured for this
+              catalog.
             </p>
           )}
         </div>
@@ -149,7 +162,12 @@ export function NotificationChannelWorkspace({
 }: {
   channelCode: string;
 }) {
-  const query = useNotificationChannel(channelCode);
+  const [search, setSearch] = useState("");
+  const form = useForm<NotificationTemplateTargetQuery>({
+    defaultValues: { search: "" },
+    resolver: zodResolver(notificationTemplateTargetQuerySchema),
+  });
+  const query = useNotificationChannel(channelCode, search);
   const groupedTargets = useMemo(() => {
     const targets = query.data?.targets ?? [];
     const eventTargets = targets.filter((target) => target.scope === "EVENT");
@@ -160,38 +178,78 @@ export function NotificationChannelWorkspace({
     };
   }, [query.data?.targets]);
 
-  if (query.isPending) {
-    return <PortalLoadingState description="Just a moment..." title="" />;
-  }
-  if (query.error) {
-    return (
-      <PortalErrorState
-        description={query.error.message}
-        title={query.error.name}
-      />
-    );
-  }
-
   return (
     <div className="space-y-5">
-      {groupedTargets.globalTarget ? (
-        <article className="rounded-t-[1.75rem] border border-brand-navy/10 bg-brand-white p-5 sm:p-6">
-          <TargetHeader
-            channelCode={channelCode}
-            target={groupedTargets.globalTarget}
-          />
-        </article>
-      ) : null}
-      {groupedTargets.catalogTargets.map((catalogTarget) => (
-        <CatalogTargetCard
-          channelCode={channelCode}
-          eventTargets={groupedTargets.eventTargets.filter(
-            (eventTarget) => eventTarget.catalogKey === catalogTarget.catalogKey,
+      <FormProvider {...form}>
+        <form
+          className="flex flex-col gap-3 rounded-xl border border-brand-navy/10 bg-brand-white p-4 sm:flex-row sm:items-end"
+          onSubmit={form.handleSubmit((values) =>
+            setSearch(values.search ?? ""),
           )}
-          key={catalogTarget.id}
-          target={catalogTarget}
+        >
+          <FormInput
+            containerClassName="flex-1"
+            label="Search catalogs"
+            maxLength={200}
+            name="search"
+            placeholder="Catalog name, key or description"
+            type="search"
+          />
+          <GeneralButton disabled={query.isFetching} type="submit">
+            Search
+          </GeneralButton>
+          <GeneralButton
+            onClick={() => {
+              form.reset({ search: "" });
+              setSearch("");
+            }}
+            type="button"
+            variant="outline"
+          >
+            Clear
+          </GeneralButton>
+        </form>
+      </FormProvider>
+      {query.isPending ? (
+        <PortalLoadingState description="Just a moment..." title="" />
+      ) : query.error ? (
+        <PortalErrorState
+          description={query.error.message}
+          title={query.error.name}
         />
-      ))}
+      ) : (
+        <div aria-busy={query.isFetching} className="space-y-5">
+          {groupedTargets.globalTarget ? (
+            <article className="rounded-t-[1.75rem] border border-brand-navy/10 bg-brand-white p-5 sm:p-6">
+              <TargetHeader
+                channelCode={channelCode}
+                target={groupedTargets.globalTarget}
+              />
+            </article>
+          ) : null}
+          {groupedTargets.catalogTargets.map((catalogTarget) => (
+            <CatalogTargetCard
+              channelCode={channelCode}
+              eventTargets={groupedTargets.eventTargets.filter(
+                (eventTarget) =>
+                  eventTarget.catalogKey === catalogTarget.catalogKey,
+              )}
+              key={catalogTarget.id}
+              target={catalogTarget}
+            />
+          ))}
+          {!groupedTargets.catalogTargets.length ? (
+            <p
+              className="rounded-xl border border-dashed border-brand-navy/20 p-5 text-sm text-brand-navy/65"
+              role="status"
+            >
+              {search
+                ? "No catalogs match your search."
+                : "No catalog template targets are configured."}
+            </p>
+          ) : null}
+        </div>
+      )}
     </div>
   );
 }

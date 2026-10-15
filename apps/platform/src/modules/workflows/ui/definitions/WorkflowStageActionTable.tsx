@@ -2,14 +2,16 @@
 import { WorkflowSearchTarget } from "./search/WorkflowSearchTarget";
 
 import { Plus } from "lucide-react";
+import { useState } from "react";
 
-import { GeneralButton } from "@/components/ui/button";
+import { GeneralButton } from "@/shared/ui/Button";
 import { DataTable, type DataTableColumn } from "@/shared/ui/DataTable";
 import type { WorkflowActionDefinition } from "@/modules/workflows/domain/actions/WorkflowActionDefinition";
 import { ActionMenu } from "@/shared/ui/ActionMenu";
 import { WorkflowStageTabHeader } from "./WorkflowStageTabHeader";
 import type {
   WorkflowGraphInput,
+  WorkflowEditorView,
   WorkflowStageInput,
 } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 import {
@@ -18,10 +20,11 @@ import {
 } from "./WorkflowActionEditorRoutes";
 import { workflowActionTypeItems } from "./WorkflowActionFormSchema";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { WorkflowActionNotificationsDrawer } from "./WorkflowActionNotificationsDrawer";
 
 type Props = {
   canEdit: boolean;
-  graph: WorkflowGraphInput;
+  editor: WorkflowEditorView;
   onAdd: () => void;
   onDelete: (action: WorkflowActionDefinition) => void;
   onEdit: (action: WorkflowActionDefinition) => void;
@@ -42,6 +45,7 @@ function actionColumns(
   onDelete: (action: WorkflowActionDefinition) => void,
   onEdit: (action: WorkflowActionDefinition) => void,
   taskNamesByActionKey: ReadonlyMap<string, string[]>,
+  onNotifications: (action: WorkflowActionDefinition) => void,
 ): DataTableColumn<WorkflowActionDefinition>[] {
   return [
     {
@@ -91,6 +95,27 @@ function actionColumns(
       },
     },
     {
+      id: "notifications",
+      header: "Notifications",
+      accessorFn: (action) => action.notifications?.length ?? 0,
+      cell: ({ row }) => {
+        const count = row.original.notifications?.length ?? 0;
+        return count > 0 ? (
+          <GeneralButton
+            aria-label={`View notifications for ${row.original.label}`}
+            className="rounded-md p-0 text-sm text-brand-navy underline underline-offset-4"
+            onClick={() => onNotifications(row.original)}
+            size={null}
+            variant={null}
+          >
+            View ({count})
+          </GeneralButton>
+        ) : (
+          <span className="text-brand-navy/50">None</span>
+        );
+      },
+    },
+    {
       id: "controls",
       header: "Actions",
       enableSorting: false,
@@ -103,6 +128,11 @@ function actionColumns(
                 label: "Edit",
                 disabled: !canEdit,
                 onAction: () => onEdit(row.original),
+              },
+              {
+                id: "notifications",
+                label: "Notifications",
+                onAction: () => onNotifications(row.original),
               },
               {
                 id: "delete",
@@ -122,12 +152,18 @@ function actionColumns(
 
 export function WorkflowStageActionTable({
   canEdit,
-  graph,
+  editor,
   onAdd,
   onDelete,
   onEdit,
   stage,
 }: Props) {
+  const [notificationActionKey, setNotificationActionKey] = useState<
+    string | null
+  >(null);
+  const notificationAction = stage.actions.find(
+    (action) => action.stableKey === notificationActionKey,
+  );
   const visibleActions = stage.actions.filter(
     (action) => action.actionType !== "WITHDRAW",
   );
@@ -161,16 +197,27 @@ export function WorkflowStageActionTable({
       <DataTable
         columns={actionColumns(
           canEdit,
-          graph,
+          editor.graph,
           stage,
           onDelete,
           onEdit,
           taskNamesByActionKey,
+          (action) => setNotificationActionKey(action.stableKey),
         )}
         data={visibleActions}
         emptyMessage="No actions have been added to this stage."
         minWidth={1080}
       />
+      {notificationAction ? (
+        <WorkflowActionNotificationsDrawer
+          key={`${editor.version.id}:${notificationAction.stableKey}`}
+          action={notificationAction}
+          editor={editor}
+          stage={stage}
+          canEdit={canEdit}
+          onClose={() => setNotificationActionKey(null)}
+        />
+      ) : null}
     </section>
   );
 }

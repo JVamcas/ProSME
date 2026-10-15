@@ -1,7 +1,7 @@
 "use client";
 
 import { FormProvider } from "react-hook-form";
-import { GeneralButton } from "@/components/ui/button";
+import { GeneralButton } from "@/shared/ui/Button";
 import { DraggableDialog } from "@/shared/ui/DraggableDialog";
 import { StepProgress } from "@/shared/ui/StepProgress";
 import type { WorkflowActionDefinition } from "@/modules/workflows/domain/actions/WorkflowActionDefinition";
@@ -9,7 +9,6 @@ import type {
   WorkflowEditorView,
   WorkflowStageInput,
 } from "@/modules/workflows/domain/definitions/WorkflowTypes";
-import { WorkflowActionNotificationsStep } from "./WorkflowActionNotificationsStep";
 import { WorkflowActionBehaviourStep } from "./WorkflowActionBehaviourStep";
 import { WorkflowActionDetailsStep } from "./WorkflowActionDetailsStep";
 import { WorkflowActionReviewStep } from "./WorkflowActionReviewStep";
@@ -124,9 +123,6 @@ export function WorkflowActionDialog(props: Props) {
                 routes={routes}
                 stage={stage}
               />
-            ) : null}
-            {currentStep === "notifications" ? (
-              <WorkflowActionNotificationsStep editor={editor} stage={stage} />
             ) : null}
             {currentStep === "review" && actionPreview ? (
               <WorkflowActionReviewStep
