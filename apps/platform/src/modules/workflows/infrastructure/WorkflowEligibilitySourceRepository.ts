@@ -38,6 +38,7 @@ const formConditionTypes = {
   SINGLE_SELECT: "TEXT",
   TEXT: "TEXT",
   TEXTAREA: "TEXT",
+  COMMENT: "TEXT",
   YES_NO: "BOOLEAN",
 } as const satisfies Partial<Record<string, ConditionFieldType>>;
 

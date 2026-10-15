@@ -1,4 +1,5 @@
 import "server-only";
+import { workflowPublicationPreparation } from "./ServerWorkflowCascadePublicationService";
 
 import { permissionCodes } from "@/auth/authorization/permissions";
 import { requirePermission } from "@/auth/authorization/policy";
@@ -26,7 +27,10 @@ export async function cloneWorkflow(
   sourceVersionId: string,
   correlationId: string,
 ) {
-  const actor = requirePermission(user, permissionCodes.workflowDefinitionUpdate);
+  const actor = requirePermission(
+    user,
+    permissionCodes.workflowDefinitionUpdate,
+  );
   const source = await loadWorkflowEditor(sourceVersionId);
   if (source.definition.id !== definitionId) throw new WorkflowNotFoundError();
   const versionId = await cloneWorkflowVersion({
@@ -53,14 +57,16 @@ async function lifecycleReplay(key: string, action: string, versionId: string) {
 function publicationValidationMessage(errors: WorkflowValidationIssue[]) {
   const shownErrors = errors
     .slice(0, 3)
-    .map((error, index) =>
-      `${index + 1}. ${error.message}${error.path ? ` (${error.path})` : ""}`
+    .map(
+      (error, index) =>
+        `${index + 1}. ${error.message}${error.path ? ` (${error.path})` : ""}`,
     )
     .join(" ");
   const remaining = errors.length - 3;
-  const remainingMessage = remaining > 0
-    ? ` ${remaining} more validation ${remaining === 1 ? "error" : "errors"} must also be resolved.`
-    : "";
+  const remainingMessage =
+    remaining > 0
+      ? ` ${remaining} more validation ${remaining === 1 ? "error" : "errors"} must also be resolved.`
+      : "";
   return `Workflow cannot be published because it has ${errors.length} validation ${errors.length === 1 ? "error" : "errors"}: ${shownErrors}${remainingMessage} Open the workflow editor and resolve these issues before publishing.`;
 }
 
@@ -72,7 +78,10 @@ export async function publishWorkflow(
   idempotencyKey: string | null,
   correlationId: string,
 ) {
-  const actor = requirePermission(user, permissionCodes.workflowDefinitionPublish);
+  const actor = requirePermission(
+    user,
+    permissionCodes.workflowDefinitionPublish,
+  );
   const key = requireWorkflowIdempotencyKey(idempotencyKey);
   const current = await loadWorkflowEditor(versionId);
   if (current.definition.id !== definitionId) throw new WorkflowNotFoundError();
@@ -93,6 +102,7 @@ export async function publishWorkflow(
       publicationValidationMessage(editor.validation.errors),
     );
   const published = await publishWorkflowVersion({
+    preparePublication: workflowPublicationPreparation(actor, versionId),
     actorId: actor.id,
     correlationId,
     expectedRowVersion,
@@ -111,7 +121,10 @@ export async function retireWorkflow(
   idempotencyKey: string | null,
   correlationId: string,
 ) {
-  const actor = requirePermission(user, permissionCodes.workflowDefinitionRetire);
+  const actor = requirePermission(
+    user,
+    permissionCodes.workflowDefinitionRetire,
+  );
   const key = requireWorkflowIdempotencyKey(idempotencyKey);
   const editor = await workflowEditorView(versionId);
   if (editor.definition.id !== definitionId) throw new WorkflowNotFoundError();

@@ -58,6 +58,8 @@ beforeEach(() => {
         stageName: "Eligibility",
         iterationNumber: 2,
         averageScore: 82.5,
+        scoreMaximum: 100,
+        scoreUnit: "PERCENTAGE",
         comments: "Latest recommendation",
       },
     ],

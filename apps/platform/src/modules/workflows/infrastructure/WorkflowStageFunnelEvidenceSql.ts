@@ -1,5 +1,6 @@
 import "server-only";
 import { sql } from "drizzle-orm";
+import { workflowStageFunnelScores } from "./WorkflowStageFunnelScoreSql";
 
 // Operates only on the bounded page_runs CTE. Draft and superseded reviews are
 // excluded. A reviewing actor cannot use reporting to bypass peer release.
@@ -37,74 +38,12 @@ export function workflowStageFunnelEvidence(actorId: string) {
               AND own_task.workflow_task_definition_id = definition.id
               AND own_task.assigned_user_id = ${actorId}::uuid)
         )
-    ), form_scores AS (
-      SELECT task.id, aggregate_field->>'key' AS aggregate_key,
-        sum(
-          CASE WHEN aggregate_field->'scoringAggregate'->>'normalization' = 'PERCENTAGE'
-            THEN (task.form_values->>(source->>'fieldKey'))::numeric
-              / NULLIF((field->>'maximum')::numeric, 0) * 100
-            ELSE (task.form_values->>(source->>'fieldKey'))::numeric END
-          * CASE WHEN aggregate_field->'scoringAggregate'->>'method' IN ('WEIGHTED_SUM','WEIGHTED_AVERAGE')
-            THEN (source->>'weight')::numeric ELSE 1 END
-        ) / NULLIF(sum(
-          CASE WHEN aggregate_field->'scoringAggregate'->>'normalization' = 'PERCENTAGE'
-            THEN 100 ELSE (field->>'maximum')::numeric END
-          * CASE WHEN aggregate_field->'scoringAggregate'->>'method' IN ('WEIGHTED_SUM','WEIGHTED_AVERAGE')
-            THEN (source->>'weight')::numeric ELSE 1 END
-        ), 0) * 100 AS percentage
-      FROM evidence_tasks task
-      CROSS JOIN LATERAL jsonb_array_elements(COALESCE(task.form_snapshot->'fields', '[]')) aggregate_field
-      CROSS JOIN LATERAL jsonb_array_elements(aggregate_field->'scoringAggregate'->'sources') source
-      JOIN LATERAL jsonb_array_elements(task.form_snapshot->'fields') field
-        ON field->>'key' = source->>'fieldKey' AND field->>'type' = 'SCORE'
-      WHERE aggregate_field->>'type' = 'SCORING_AGGREGATE'
-        AND jsonb_typeof(task.form_values->(source->>'fieldKey')) = 'number'
-      GROUP BY task.id, aggregate_field
-      HAVING aggregate_field->'scoringAggregate'->>'missing' <> 'REQUIRE_ALL'
-        OR count(*) = jsonb_array_length(aggregate_field->'scoringAggregate'->'sources')
-    ), legacy_scores AS (
-      SELECT task.id,
-        sum((score->>'score')::numeric * CASE
-          WHEN config.aggregation IN ('WEIGHTED_AVERAGE','WEIGHTED_SUM') THEN criterion.weight ELSE 1 END)
-        / NULLIF(sum(criterion.scale_maximum * CASE
-          WHEN config.aggregation IN ('WEIGHTED_AVERAGE','WEIGHTED_SUM') THEN criterion.weight ELSE 1 END), 0)
-        * 100 AS percentage
-      FROM evidence_tasks task
-      JOIN app_workflow_stage_scoring_configurations config
-        ON config.task_definition_id = task.workflow_task_definition_id
-      JOIN app_workflow_stage_scoring_criteria criterion
-        ON criterion.task_definition_id = config.task_definition_id
-      JOIN LATERAL jsonb_array_elements(COALESCE(task.result->'scores', '[]')) score
-        ON score->>'criterion' = criterion.stable_key
-      WHERE task.form_snapshot IS NULL AND jsonb_typeof(score->'score') = 'number'
-      GROUP BY task.id
-    ), standalone_form_scores AS (
-      SELECT task.id,
-        avg((task.form_values->>(field->>'key'))::numeric
-          / NULLIF((field->>'maximum')::numeric, 0) * 100) AS percentage
-      FROM evidence_tasks task
-      CROSS JOIN LATERAL jsonb_array_elements(COALESCE(task.form_snapshot->'fields', '[]')) field
-      WHERE field->>'type' = 'SCORE'
-        AND jsonb_typeof(task.form_values->(field->>'key')) = 'number'
-        AND NOT EXISTS (
-          SELECT 1 FROM jsonb_array_elements(task.form_snapshot->'fields') aggregate_field
-          WHERE aggregate_field->>'type' = 'SCORING_AGGREGATE'
-        )
-      GROUP BY task.id
-    ), task_scores AS (
-      SELECT id, avg(percentage) AS percentage FROM form_scores GROUP BY id
-      UNION ALL SELECT id, percentage FROM legacy_scores
-      UNION ALL SELECT id, percentage FROM standalone_form_scores
-    ), stage_scores AS (
-      SELECT task.stage_instance_id, round(avg(score.percentage)::numeric, 2) AS average_score
-      FROM evidence_tasks task JOIN task_scores score ON score.id = task.id
-      GROUP BY task.stage_instance_id
-    ), comment_values AS (
+    ), ${workflowStageFunnelScores()}, comment_values AS (
       SELECT task.stage_instance_id, task.name AS task_name,
         field->>'label' AS label, task.form_values->>(field->>'key') AS value
       FROM evidence_tasks task
       CROSS JOIN LATERAL jsonb_array_elements(COALESCE(task.form_snapshot->'fields', '[]')) field
-      WHERE field->>'type' = 'TEXTAREA'
+      WHERE field->>'type' = 'COMMENT'
         AND jsonb_typeof(task.form_values->(field->>'key')) = 'string'
       UNION ALL
       SELECT task.stage_instance_id, task.name, COALESCE(field.label, 'Comment'), item->>'value'

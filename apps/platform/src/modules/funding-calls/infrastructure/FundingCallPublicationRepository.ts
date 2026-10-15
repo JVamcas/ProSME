@@ -3,9 +3,9 @@ import { publishCallIntegrationBindings } from "@/modules/eligibility/infrastruc
 
 import { and, eq } from "drizzle-orm";
 
-import { getDatabase } from "@/db/client";
-import { transactionalOutbox } from "@/db/schema";
-import { captureFundingCallNotification } from "./FundingCallNotificationRepository";
+import { getDatabase, type DatabaseTransaction } from "@/db/client";
+import { ResourceConflictError } from "@/lib/resource-errors";
+import { capturePublicationEffects } from "./FundingCallPublicationEffectsRepository";
 import type { FundingCall } from "../domain/FundingCall";
 import { resolveFundingCallTransition } from "../domain/FundingCallLifecycle";
 import { captureFundingCallPublication } from "../domain/FundingCallPublication";
@@ -27,6 +27,10 @@ import {
 } from "./FundingCallRichText";
 
 export type PublishFundingCallInput = {
+  prepareDependencies?: (
+    transaction: DatabaseTransaction,
+    call: FundingCall,
+  ) => Promise<void>;
   actorId: string;
   correlationId: string;
   expectedRowVersion: number;
@@ -130,11 +134,12 @@ export async function publishApprovedFundingCall(
         .limit(1);
       if (!approval) return { kind: "conflict" };
     }
-    const bindingsAvailable = await readPublicationBindings(
-      transaction,
-      current,
-    );
-    if (!bindingsAvailable) return { kind: "conflict" };
+    if (
+      !input.prepareDependencies &&
+      !(await readPublicationBindings(transaction, current))
+    ) {
+      return { kind: "conflict" };
+    }
     const transition = resolveFundingCallTransition(
       current,
       "PUBLISH",
@@ -162,6 +167,16 @@ export async function publishApprovedFundingCall(
       })
       .returning({ id: fundingCallLifecycleHistory.id });
     if (!history) return { kind: "idempotency_conflict" };
+
+    await input.prepareDependencies?.(transaction, current);
+    if (
+      input.prepareDependencies &&
+      !(await readPublicationBindings(transaction, current))
+    ) {
+      throw new ResourceConflictError(
+        "An attached version is unavailable for publication.",
+      );
+    }
 
     const { publicDocuments, revisionNumber } =
       await readPublicationDocumentsAndSequence(
@@ -222,39 +237,12 @@ export async function publishApprovedFundingCall(
         .where(eq(fundingCallDraftVersions.id, draft.id));
     }
 
-    const eventPayload = {
-      fundingCallId: input.fundingCallId,
-      publicationRevisionId: revision.id,
-      publishedAt: input.now.toISOString(),
-      status: targetStatus,
-    };
-    await transaction.insert(transactionalOutbox).values([
-      {
-        aggregateId: revision.id,
-        correlationId: input.correlationId,
-        eventCode: "FUNDING_CALL_PUBLIC_CACHE_INVALIDATION_REQUESTED",
-        payload: eventPayload,
-        schemaVersion: 1,
-      },
-      {
-        aggregateId: revision.id,
-        correlationId: input.correlationId,
-        eventCode: "FUNDING_CALL_PUBLICATION_NOTIFICATION_REQUESTED",
-        payload: eventPayload,
-        schemaVersion: 1,
-      },
-    ]);
-    await captureFundingCallNotification(transaction, {
-      correlationId: input.correlationId,
-      eventKey: "funding-call.published",
-      fundingCallId: current.id,
-      fundingCallReference: current.reference,
-      fundingCallTitle: current.title,
-      occurredAt: input.now,
-      rowVersion: nextRowVersion,
-      sourceIdempotencyKey: input.idempotencyKey,
+    await capturePublicationEffects(transaction, {
+      input,
+      current,
+      revisionId: revision.id,
+      nextRowVersion,
       sourceStatus: effective.status,
-      stakeholderUserIds: [current.createdBy],
       targetStatus,
     });
     return { call: toFundingCall(updated), kind: "published" };

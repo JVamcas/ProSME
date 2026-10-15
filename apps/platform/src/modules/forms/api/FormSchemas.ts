@@ -192,11 +192,12 @@ export const formFieldSchema = formFieldSchemaBase.superRefine(
     if (
       field.type !== "TEXT" &&
       field.type !== "TEXTAREA" &&
+      field.type !== "COMMENT" &&
       (field.minLength !== undefined || field.maxLength !== undefined)
     ) {
       context.addIssue({
         code: "custom",
-        message: "Only Text and Textarea fields may have length limits.",
+        message: "Only Text, Textarea and Comment fields may have length limits.",
         path: ["minLength"],
       });
     }

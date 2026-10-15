@@ -1,7 +1,7 @@
 import "server-only";
 
 import { asc, eq } from "drizzle-orm";
-import { getDatabase } from "@/db/client";
+import { getDatabase, type DatabaseTransaction } from "@/db/client";
 import { workflowGraphSelection as selection } from "./WorkflowGraphProjection";
 import {
   stageTaskActionBindings,
@@ -18,8 +18,10 @@ import {
   workflowTransitionTargets,
 } from "./workflow-parallel.schema";
 
-export async function readWorkflowGraphRows(versionId: string) {
-  const database = getDatabase();
+export async function readWorkflowGraphRows(
+  versionId: string,
+  database: Pick<DatabaseTransaction, "select"> = getDatabase(),
+) {
   // Each query returns one row per entity or binding, scoped to one version.
   // Independent collections must never be joined to each other.
   const [

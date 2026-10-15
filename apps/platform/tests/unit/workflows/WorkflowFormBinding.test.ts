@@ -12,12 +12,8 @@ vi.mock("@/modules/workflows/infrastructure/WorkflowGraphRepository", () => ({
 }));
 
 import { findWorkflowGraph } from "@/modules/workflows/infrastructure/WorkflowGraphRepository";
-import {
-  findConfigurationReferences,
-} from "@/modules/workflows/infrastructure/WorkflowRepository";
-import {
-  workflowEditorView,
-} from "@/modules/workflows/application/definitions/ServerWorkflowSupport";
+import { findConfigurationReferences } from "@/modules/workflows/infrastructure/WorkflowRepository";
+import { workflowEditorView } from "@/modules/workflows/application/definitions/ServerWorkflowSupport";
 import { actor, record } from "./WorkflowServiceFixtures";
 
 const formVersionId = "45555555-5555-4555-8555-555555555555";
@@ -37,18 +33,20 @@ function recordWithFormBinding() {
   const graph = structuredClone(record.graph);
   graph.stages[0].tasks[0].config = { formPurpose: "APPLICATION_REVIEW" };
   graph.stages[0].tasks[0].formBinding = {
-    contextFields: [{
-      key: "application.requested_amount",
-      label: "Requested amount",
-      type: "NUMBER",
-    }],
+    contextFields: [
+      {
+        key: "application.requested_amount",
+        label: "Requested amount",
+        type: "NUMBER",
+      },
+    ],
     formVersionId,
   };
   return { ...record, graph };
 }
 
 describe("workflow task form bindings", () => {
-  it("rejects a binding unless the exact form version is published", async () => {
+  it("accepts an exact draft form version for cascading publication", async () => {
     vi.mocked(findWorkflowGraph).mockResolvedValue(recordWithFormBinding());
     vi.mocked(findConfigurationReferences).mockResolvedValue({
       formFields: new Map(),
@@ -60,7 +58,7 @@ describe("workflow task form bindings", () => {
 
     const editor = await workflowEditorView(record.version.id);
 
-    expect(editor.validation.errors).toEqual(
+    expect(editor.validation.errors).not.toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           code: "INVALID_FORM_VERSION",
@@ -77,9 +75,11 @@ describe("workflow task form bindings", () => {
 
     const editor = await workflowEditorView(record.version.id);
 
-    expect(editor.validation.errors).toEqual(expect.arrayContaining([
-      expect.objectContaining({ code: "UNSUPPORTED_TASK_FORM_PURPOSE" }),
-    ]));
+    expect(editor.validation.errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: "UNSUPPORTED_TASK_FORM_PURPOSE" }),
+      ]),
+    );
   });
 
   it("rejects a published form with the wrong purpose", async () => {
@@ -94,9 +94,11 @@ describe("workflow task form bindings", () => {
 
     const editor = await workflowEditorView(record.version.id);
 
-    expect(editor.validation.errors).toEqual(expect.arrayContaining([
-      expect.objectContaining({ code: "FORM_PURPOSE_MISMATCH" }),
-    ]));
+    expect(editor.validation.errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: "FORM_PURPOSE_MISMATCH" }),
+      ]),
+    );
   });
 
   it("ignores an old template binding for an eligibility task", async () => {

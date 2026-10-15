@@ -1,4 +1,6 @@
 import "server-only";
+import { workflowPublicationPreparation } from "@/modules/workflows/application/definitions/ServerWorkflowCascadePublicationService";
+import { publishAttachedWorkflowVersion } from "@/modules/workflows/infrastructure/WorkflowCascadePublicationRepository";
 
 import { permissionCodes } from "@/auth/authorization/permissions";
 import { requirePermission } from "@/auth/authorization/policy";
@@ -33,8 +35,8 @@ export async function publishFundingCall(
   const call = await readFundingCallById(id);
   if (!call) throw new ResourceNotFoundError("funding call");
   if (
-    call.status !== "APPROVED"
-    || call.rowVersion !== input.expectedRowVersion
+    call.status !== "APPROVED" ||
+    call.rowVersion !== input.expectedRowVersion
   ) {
     throw new ResourceConflictError(
       call.status === "APPROVED"
@@ -52,6 +54,27 @@ export async function publishFundingCall(
     );
   }
   const result = await publishApprovedFundingCall({
+    prepareDependencies: async (transaction, current) => {
+      if (!current.workflowTemplateVersionId || !current.formVersionId) {
+        throw new RequestValidationError(
+          "Select an application form and workflow version.",
+        );
+      }
+      await publishAttachedWorkflowVersion(transaction, {
+        actorId: actor.id,
+        correlationId,
+        idempotencyKey: `funding-call:${idempotencyKey}:workflow:${current.workflowTemplateVersionId}`,
+        versionId: current.workflowTemplateVersionId,
+        authorize: () => {
+          requirePermission(actor, permissionCodes.workflowDefinitionPublish);
+        },
+        preparePublication: workflowPublicationPreparation(
+          actor,
+          current.workflowTemplateVersionId,
+          [current.formVersionId],
+        ),
+      });
+    },
     actorId: actor.id,
     correlationId,
     expectedRowVersion: input.expectedRowVersion,

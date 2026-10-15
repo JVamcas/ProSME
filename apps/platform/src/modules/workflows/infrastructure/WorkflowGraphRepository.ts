@@ -1,4 +1,4 @@
-import { getDatabase } from "@/db/client";
+import { getDatabase, type DatabaseTransaction } from "@/db/client";
 import { withFormDocumentRequirements } from "./WorkflowFormDocumentRepository";
 import "server-only";
 
@@ -98,10 +98,13 @@ function assembleGraph(rows: GraphRows) {
   };
 }
 
-export async function findWorkflowGraph(versionId: string) {
+export async function findWorkflowGraph(
+  versionId: string,
+  database: Pick<DatabaseTransaction, "select"> = getDatabase(),
+) {
   const [rows, requirements] = await Promise.all([
-    readWorkflowGraphRows(versionId),
-    loadWorkflowStageRequirements(versionId),
+    readWorkflowGraphRows(versionId, database),
+    loadWorkflowStageRequirements(versionId, database),
   ]);
   if (!rows.header) return null;
   const graph = assembleGraph(rows);
@@ -110,7 +113,7 @@ export async function findWorkflowGraph(versionId: string) {
     definition: { ...rows.header.definition, ...rows.header.version.metadata },
     graph:
       rows.header.version.status === "DRAFT"
-        ? await withFormDocumentRequirements(getDatabase(), graph)
+        ? await withFormDocumentRequirements(database, graph)
         : graph,
     version: rows.header.version,
   };

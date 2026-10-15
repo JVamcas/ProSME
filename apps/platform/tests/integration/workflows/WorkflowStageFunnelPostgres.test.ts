@@ -74,7 +74,9 @@ describe.skipIf(!url)("funding call stage funnel on PostgreSQL", () => {
     ]);
     expect(result.items[0]).toMatchObject({
       iterationNumber: 2,
-      averageScore: 70,
+      averageScore: 7,
+      scoreMaximum: 10,
+      scoreUnit: "POINTS",
       applicantName: "Submitted applicant",
       businessName: "Submitted business",
       registrationNumber: "SNAPSHOT",
@@ -84,14 +86,19 @@ describe.skipIf(!url)("funding call stage funnel on PostgreSQL", () => {
     expect(result.items[0].comments).not.toContain("Comment 1");
   });
 
-  it("calculates scores from exact submitted form fields without trusting client aggregate values", async () => {
+  it("reads the saved server-calculated aggregate on its original scale", async () => {
     const result = await readWorkflowStageApplications(
       funnelId(80),
       funnelId(950),
       query,
     );
     const form = result.items.find((item) => item.reference === "APP-6");
-    expect(form?.averageScore).toBe(35);
+    expect(form).toMatchObject({
+      averageScore: 3.5,
+      scoreMaximum: 10,
+      scoreUnit: "POINTS",
+    });
+    expect(form?.comments).not.toContain("Ordinary textarea answer");
     expect(form?.comments).toContain("Form recommendation");
     expect(form?.comments).not.toContain("Comment 6");
   });
@@ -103,7 +110,7 @@ describe.skipIf(!url)("funding call stage funnel on PostgreSQL", () => {
       query,
     );
     const peer = own.items.find((item) => item.reference === "APP-7");
-    expect(peer?.averageScore).toBe(40);
+    expect(peer?.averageScore).toBe(2);
     expect(peer?.comments).not.toContain("Sealed peer comment");
     const observer = await readWorkflowStageApplications(
       funnelId(80),
@@ -112,7 +119,7 @@ describe.skipIf(!url)("funding call stage funnel on PostgreSQL", () => {
     );
     expect(
       observer.items.find((item) => item.reference === "APP-7")?.averageScore,
-    ).toBe(70);
+    ).toBe(3.5);
   });
 
   it("paginates after deduplicating and retains the total for empty pages", async () => {
@@ -142,7 +149,8 @@ describe.skipIf(!url)("funding call stage funnel on PostgreSQL", () => {
     );
     const csv = file.body.toString("utf8");
     expect(file.contentType).toContain("text/csv");
-    expect(csv).toContain('"Average score (%)"');
+    expect(csv).toContain('"Average score"');
+    expect(csv).toContain('"3.50 / 10"');
     expect(csv).toContain("Latest recommendation");
     expect(csv).not.toContain("Sealed peer comment");
     expect(csv).not.toContain('"APP-4"');
@@ -194,7 +202,7 @@ describe.skipIf(!url)("funding call stage funnel on PostgreSQL", () => {
         query,
       );
       const released = result.items.find((item) => item.reference === "APP-7");
-      expect(released?.averageScore).toBe(70);
+      expect(released?.averageScore).toBe(3.5);
       expect(released?.comments).toContain("Sealed peer comment");
     } finally {
       await client!.query("ROLLBACK");

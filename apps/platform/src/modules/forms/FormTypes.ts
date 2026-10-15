@@ -37,6 +37,7 @@ export {
 export const formFieldTypes = [
   "TEXT",
   "TEXTAREA",
+  "COMMENT",
   "RICH_TEXT",
   "NUMBER",
   "SCORE",

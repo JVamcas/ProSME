@@ -109,7 +109,7 @@ describe("workflow tab conversion", () => {
     ).toMatchObject({ type: "CHECKBOX", required: true });
     expect(
       result.fields.find((field) => field.key === "SCORE_COMMENT_QUALITY"),
-    ).toMatchObject({ required: true });
+    ).toMatchObject({ type: "COMMENT", required: true });
     expect(
       result.fields.find((field) => field.type === "DOCUMENT")
         ?.workflowDocument,

@@ -4,20 +4,24 @@ vi.mock("server-only", () => ({}));
 vi.mock("@/modules/funding-calls/infrastructure/FundingCallRepository", () => ({
   readFundingCallById: vi.fn(),
 }));
-vi.mock("@/modules/funding-calls/infrastructure/FundingCallPublicationRepository", () => ({
-  publishApprovedFundingCall: vi.fn(),
-  readFundingCallPublicationReplay: vi.fn(),
-}));
-vi.mock("@/modules/funding-calls/application/ServerFundingCallReadinessService", () => ({
-  validateFundingCallReadiness: vi.fn(),
-}));
+vi.mock(
+  "@/modules/funding-calls/infrastructure/FundingCallPublicationRepository",
+  () => ({
+    publishApprovedFundingCall: vi.fn(),
+    readFundingCallPublicationReplay: vi.fn(),
+  }),
+);
+vi.mock(
+  "@/modules/funding-calls/application/ServerFundingCallReadinessService",
+  () => ({
+    validateFundingCallReadiness: vi.fn(),
+  }),
+);
 
 import { permissionCodes } from "@/auth/authorization/permissions";
 import { PermissionDeniedError } from "@/auth/authorization/policy";
 import type { AuthenticatedUser } from "@/auth/types";
-import {
-  publishFundingCall,
-} from "@/modules/funding-calls/application/ServerFundingCallPublicationService";
+import { publishFundingCall } from "@/modules/funding-calls/application/ServerFundingCallPublicationService";
 import { validateFundingCallReadiness } from "@/modules/funding-calls/application/ServerFundingCallReadinessService";
 import {
   publishApprovedFundingCall,
@@ -92,13 +96,15 @@ beforeEach(() => {
 
 describe("funding call publication", () => {
   it("denies publication without the publish permission", async () => {
-    await expect(publishFundingCall(
-      { ...publisher(), capabilities: new Set() },
-      callId,
-      { expectedRowVersion: 1 },
-      "publish-key",
-      "correlation-id",
-    )).rejects.toBeInstanceOf(PermissionDeniedError);
+    await expect(
+      publishFundingCall(
+        { ...publisher(), capabilities: new Set() },
+        callId,
+        { expectedRowVersion: 1 },
+        "publish-key",
+        "correlation-id",
+      ),
+    ).rejects.toBeInstanceOf(PermissionDeniedError);
 
     expect(publishApprovedFundingCall).not.toHaveBeenCalled();
   });
@@ -132,6 +138,7 @@ describe("funding call publication", () => {
       fundingCallId: callId,
       idempotencyKey: "publish-key",
       now: expect.any(Date),
+      prepareDependencies: expect.any(Function),
     });
     expect(result.status).toBe("SCHEDULED");
   });
@@ -140,23 +147,27 @@ describe("funding call publication", () => {
     vi.mocked(validateFundingCallReadiness).mockResolvedValue({
       checkedAt: "2026-09-22T00:00:00.000Z",
       fundingCallId: callId,
-      issues: [{
-        code: "FORM_VERSION_NOT_PUBLISHED",
-        location: "formVersionId",
-        message: "The selected application form version is not published.",
-        owner: { id: formVersionId, kind: "FORM_VERSION" },
-      }],
+      issues: [
+        {
+          code: "FORM_VERSION_NOT_PUBLISHED",
+          location: "formVersionId",
+          message: "The selected application form version is not published.",
+          owner: { id: formVersionId, kind: "FORM_VERSION" },
+        },
+      ],
       ready: false,
       rowVersion: 1,
     });
 
-    await expect(publishFundingCall(
-      publisher(),
-      callId,
-      { expectedRowVersion: 1 },
-      "publish-key",
-      "correlation-id",
-    )).rejects.toThrow("FORM_VERSION_NOT_PUBLISHED");
+    await expect(
+      publishFundingCall(
+        publisher(),
+        callId,
+        { expectedRowVersion: 1 },
+        "publish-key",
+        "correlation-id",
+      ),
+    ).rejects.toThrow("FORM_VERSION_NOT_PUBLISHED");
 
     expect(publishApprovedFundingCall).not.toHaveBeenCalled();
   });
@@ -188,13 +199,15 @@ describe("funding call publication", () => {
       status: "DRAFT",
     });
 
-    await expect(publishFundingCall(
-      publisher(),
-      callId,
-      { expectedRowVersion: 1 },
-      "draft-publish-key",
-      "correlation-id",
-    )).rejects.toThrow("Only approved funding calls can be published.");
+    await expect(
+      publishFundingCall(
+        publisher(),
+        callId,
+        { expectedRowVersion: 1 },
+        "draft-publish-key",
+        "correlation-id",
+      ),
+    ).rejects.toThrow("Only approved funding calls can be published.");
 
     expect(validateFundingCallReadiness).not.toHaveBeenCalled();
     expect(publishApprovedFundingCall).not.toHaveBeenCalled();

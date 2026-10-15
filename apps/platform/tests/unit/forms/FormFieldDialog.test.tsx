@@ -23,7 +23,7 @@ const existing: FormField = {
   visibilityCondition: null,
 };
 
-async function saveField(field?: FormField, type?: "CHECKBOX") {
+async function saveField(field?: FormField, type?: "CHECKBOX" | "COMMENT") {
   const saved = vi.fn().mockResolvedValue(undefined);
   const closed = vi.fn();
   const container = document.createElement("div");
@@ -212,4 +212,9 @@ it("edits legacy documents with the standard limits and keeps the document link"
   expect(saved.acceptedExtensions).toEqual([".pdf"]);
   expect(saved.maximumFileSizeMb).toBe(6);
   expect(saved.workflowDocument?.stableKey).toBe("LINKED_EVIDENCE");
+});
+
+it("offers and saves an explicit Comment field", async () => {
+  const field = await saveField(undefined, "COMMENT");
+  expect(field.type).toBe("COMMENT");
 });

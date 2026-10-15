@@ -1,4 +1,5 @@
 import "server-only";
+import type { DatabaseTransaction } from "@/platform/database/client";
 
 import { findWorkflowGraph } from "@/modules/workflows/infrastructure/WorkflowGraphRepository";
 import {
@@ -21,6 +22,7 @@ import {
 import { workflowTaskFormPurposes } from "@/modules/workflows/domain/definitions/WorkflowTaskDefinition";
 import { validateWorkflowGraph } from "@/modules/workflows/WorkflowValidation";
 import { validateWorkflowConditions } from "@/modules/workflows/engine/WorkflowConditionValidation";
+import { validateWorkflowScoring } from "../../engine/WorkflowScoringValidation";
 
 export class WorkflowNotFoundError extends ResourceNotFoundError {
   constructor() {
@@ -52,24 +54,27 @@ async function validateReferences(
   graph: WorkflowGraphInput,
   validation: WorkflowValidation,
   references: Awaited<ReturnType<typeof findConfigurationReferences>>,
+  allowDraftForms = false,
 ) {
   graph.stages.forEach((stage, index) => {
     if (stage.coiGated && !stage.coiFormVersionId) {
       validation.errors.push({
         code: "COI_FORM_VERSION_REQUIRED",
-        message: "Select an exact published COI form version for this stage.",
+        message: "Select an exact COI form version for this stage.",
         path: `stages.${index}.coiFormVersionId`,
       });
     }
     if (
       stage.coiFormVersionId &&
-      (references.forms.get(stage.coiFormVersionId) !== "PUBLISHED" ||
+      (!formIsPublishable(
+        references.forms.get(stage.coiFormVersionId),
+        allowDraftForms,
+      ) ||
         references.formPurposes.get(stage.coiFormVersionId) !== "COI")
     ) {
       validation.errors.push({
         code: "INVALID_COI_FORM_VERSION",
-        message:
-          "The selected COI form must be an exact published COI version.",
+        message: "The selected COI form must be an exact COI version.",
         path: `stages.${index}.coiFormVersionId`,
       });
     }
@@ -133,13 +138,15 @@ async function validateReferences(
           : task.formBinding;
       if (
         configuredFormBinding &&
-        references.forms.get(configuredFormBinding.formVersionId) !==
-          "PUBLISHED"
+        !formIsPublishable(
+          references.forms.get(configuredFormBinding.formVersionId),
+          allowDraftForms,
+        )
       ) {
         validation.errors.push({
           code: "INVALID_FORM_VERSION",
           message:
-            "New workflow tasks must reference a published form version.",
+            "New workflow tasks must reference a draft or published form version.",
           path: `stages.${index}.tasks.${taskIndex}.formBinding.formVersionId`,
         });
       }
@@ -189,16 +196,31 @@ async function validateReferences(
   });
   validation.errors.push(
     ...validateWorkflowConditions(graph, references.formFields),
+    ...validateWorkflowScoring(graph, references.formFields),
   );
   validation.valid = validation.errors.length === 0;
   return validation;
 }
 
-export async function validateWorkflowConfiguration(graph: WorkflowGraphInput) {
+function formIsPublishable(
+  status: string | undefined,
+  allowDraftForms: boolean,
+) {
+  return status === "PUBLISHED" || (allowDraftForms && status === "DRAFT");
+}
+
+export async function validateWorkflowConfiguration(
+  graph: WorkflowGraphInput,
+  allowDraftForms = true,
+  database?: Pick<DatabaseTransaction, "select">,
+) {
   return validateReferences(
     graph,
     validateWorkflowGraph(graph),
-    await findConfigurationReferences(graph),
+    await (database
+      ? findConfigurationReferences(graph, database)
+      : findConfigurationReferences(graph)),
+    allowDraftForms,
   );
 }
 

@@ -1,4 +1,5 @@
 import "server-only";
+import { formatWorkflowStageScore } from "../domain/WorkflowStageScoreDisplay";
 import { readFile } from "node:fs/promises";
 import {
   createReportExport,
@@ -27,7 +28,7 @@ export async function writeWorkflowStageFunnelExport(
     "Funding call",
     "Stage",
     "Latest run",
-    "Average score (%)",
+    "Average score",
     "Comments",
   ];
   const writer = await createReportExport(
@@ -59,7 +60,7 @@ export async function writeWorkflowStageFunnelExport(
             item.fundingCallTitle,
             item.stageName,
             item.iterationNumber,
-            item.averageScore,
+            formatWorkflowStageScore(item),
             item.comments,
           ]),
           signal,

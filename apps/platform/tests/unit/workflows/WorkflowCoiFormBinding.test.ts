@@ -31,15 +31,17 @@ describe("workflow COI form binding", () => {
     const graph = {
       ...referenceWorkflow,
       stages: referenceWorkflow.stages.map((stage, index) =>
-        index === 2 ? { ...stage, coiFormVersionId: null } : stage
+        index === 2 ? { ...stage, coiFormVersionId: null } : stage,
       ),
     };
     const validation = await validateWorkflowConfiguration(graph);
 
-    expect(validation.errors).toContainEqual(expect.objectContaining({
-      code: "COI_FORM_VERSION_REQUIRED",
-      path: "stages.2.coiFormVersionId",
-    }));
+    expect(validation.errors).toContainEqual(
+      expect.objectContaining({
+        code: "COI_FORM_VERSION_REQUIRED",
+        path: "stages.2.coiFormVersionId",
+      }),
+    );
   });
 
   it("accepts only a published version whose purpose is COI", async () => {
@@ -53,16 +55,20 @@ describe("workflow COI form binding", () => {
 
     const validation = await validateWorkflowConfiguration(referenceWorkflow);
 
-    expect(validation.errors).not.toContainEqual(expect.objectContaining({
-      code: "COI_FORM_VERSION_REQUIRED",
-    }));
-    expect(validation.errors).not.toContainEqual(expect.objectContaining({
-      code: "INVALID_COI_FORM_VERSION",
-    }));
+    expect(validation.errors).not.toContainEqual(
+      expect.objectContaining({
+        code: "COI_FORM_VERSION_REQUIRED",
+      }),
+    );
+    expect(validation.errors).not.toContainEqual(
+      expect.objectContaining({
+        code: "INVALID_COI_FORM_VERSION",
+      }),
+    );
     expect(findConfigurationReferences).toHaveBeenCalledWith(referenceWorkflow);
   });
 
-  it("rejects a draft COI form version", async () => {
+  it("accepts a draft COI form version for cascading publication", async () => {
     vi.mocked(findConfigurationReferences).mockResolvedValue({
       formFields: new Map(),
       formPurposes: new Map([[coiFormVersionId, "COI"]]),
@@ -73,9 +79,11 @@ describe("workflow COI form binding", () => {
 
     const validation = await validateWorkflowConfiguration(referenceWorkflow);
 
-    expect(validation.errors).toContainEqual(expect.objectContaining({
-      code: "INVALID_COI_FORM_VERSION",
-      path: "stages.2.coiFormVersionId",
-    }));
+    expect(validation.errors).not.toContainEqual(
+      expect.objectContaining({
+        code: "INVALID_COI_FORM_VERSION",
+        path: "stages.2.coiFormVersionId",
+      }),
+    );
   });
 });

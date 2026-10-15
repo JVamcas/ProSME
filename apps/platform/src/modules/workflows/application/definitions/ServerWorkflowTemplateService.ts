@@ -1,4 +1,5 @@
 import "server-only";
+import { workflowPublicationPreparation } from "./ServerWorkflowCascadePublicationService";
 
 import { z } from "zod";
 import { permissionCodes } from "@/auth/authorization/permissions/PermissionCodes";
@@ -270,6 +271,14 @@ export async function changeWorkflowTemplateStatus(
       actorId: actor.id,
       correlationId: z.string().uuid().parse(correlationId),
       reason,
+      ...(parsed.command === "PUBLISH"
+        ? {
+            preparePublication: workflowPublicationPreparation(
+              actor,
+              parsed.versionId,
+            ),
+          }
+        : {}),
     },
     parsed.command,
   );

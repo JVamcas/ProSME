@@ -2,7 +2,7 @@ import "server-only";
 
 import { and, asc, desc, eq, inArray } from "drizzle-orm";
 
-import { getDatabase } from "@/db/client";
+import { getDatabase, type DatabaseTransaction } from "@/db/client";
 import {
   formDefinitions,
   formFields as formFieldRecords,
@@ -149,6 +149,7 @@ export async function findDraftByDefinition(
 
 export async function findConfigurationReferences(
   graph: WorkflowGraphInput,
+  database?: Pick<DatabaseTransaction, "select">,
 ): Promise<{
   formFields: Map<string, WorkflowConditionFormField[]>;
   roles: Set<string>;
@@ -160,19 +161,19 @@ export async function findConfigurationReferences(
   const [foundUsers, foundRoles, foundForms, fieldsByVersion] =
     await Promise.all([
       references.userIds.length
-        ? getDatabase()
+        ? (database ?? getDatabase())
             .select({ id: users.id, status: users.status })
             .from(users)
             .where(inArray(users.id, references.userIds))
         : [],
       references.roleIds.length
-        ? getDatabase()
+        ? (database ?? getDatabase())
             .select({ id: roles.id })
             .from(roles)
             .where(inArray(roles.id, references.roleIds))
         : [],
       references.formVersionIds.length
-        ? getDatabase()
+        ? (database ?? getDatabase())
             .select({
               id: formVersions.id,
               status: formVersions.status,
@@ -185,7 +186,7 @@ export async function findConfigurationReferences(
             )
             .where(inArray(formVersions.id, references.formVersionIds))
         : [],
-      findWorkflowConditionFormFields(graph),
+      findWorkflowConditionFormFields(graph, database),
     ]);
   return {
     formFields: fieldsByVersion,
@@ -198,12 +199,13 @@ export async function findConfigurationReferences(
 
 export async function findWorkflowConditionFormFields(
   graph: WorkflowGraphInput,
+  database?: Pick<DatabaseTransaction, "select">,
 ) {
   const versionIds = collectTaskFormVersionIds(graph);
   if (!versionIds.length) {
     return new Map<string, WorkflowConditionFormField[]>();
   }
-  const records = await getDatabase()
+  const records = await (database ?? getDatabase())
     .select({
       key: formFieldRecords.key,
       label: formFieldRecords.label,

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { formatWorkflowStageScore } from "../../domain/WorkflowStageScoreDisplay";
 import { formatLocalDateTime24 } from "@/lib/dateUtils";
 import type { DataTableColumn } from "@/shared/ui/DataTable";
 import type { WorkflowStageApplication } from "../../api/WorkflowStageFunnelTypes";
@@ -64,10 +65,7 @@ export const workflowStageApplicationColumns: DataTableColumn<WorkflowStageAppli
       enableSorting: false,
       accessorKey: "averageScore",
       header: "Avg. score",
-      cell: ({ row }) =>
-        row.original.averageScore === null
-          ? "—"
-          : `${row.original.averageScore.toFixed(2)}%`,
+      cell: ({ row }) => formatWorkflowStageScore(row.original),
     },
     {
       enableSorting: false,

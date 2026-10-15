@@ -185,6 +185,7 @@ describe("workflow template storage service", () => {
       expect.objectContaining({
         actorId: actor.id,
         expectedRowVersion: 1,
+        ...(command === "PUBLISH" && { preparePublication: expect.any(Function) }),
         versionId,
       }),
       command,

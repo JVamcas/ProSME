@@ -38,6 +38,8 @@ export type WorkflowStageApplication = {
   stageName: string;
   iterationNumber: number;
   averageScore: number | null;
+  scoreMaximum: number | null;
+  scoreUnit: "POINTS" | "PERCENTAGE" | null;
   comments: string | null;
 };
 

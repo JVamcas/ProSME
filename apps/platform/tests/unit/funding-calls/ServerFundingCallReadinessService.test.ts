@@ -202,7 +202,7 @@ describe("funding call publication readiness", () => {
     );
   });
 
-  it("blocks publication when the bound workflow version is still draft", async () => {
+  it("accepts a draft workflow for cascading publication", async () => {
     vi.mocked(readWorkflowReadinessProjection).mockResolvedValue({
       active: true,
       graph: { stages: [workflowStage], transitions: [] },
@@ -213,8 +213,8 @@ describe("funding call publication readiness", () => {
 
     const result = await validateFundingCallReadiness(call, now);
 
-    expect(result.ready).toBe(false);
-    expect(result.issues).toContainEqual(expect.objectContaining({
+    expect(result.ready).toBe(true);
+    expect(result.issues).not.toContainEqual(expect.objectContaining({
       code: "WORKFLOW_VERSION_NOT_PUBLISHED",
       location: "workflowTemplateVersionId",
       owner: { id: workflowId, kind: "WORKFLOW_VERSION" },
