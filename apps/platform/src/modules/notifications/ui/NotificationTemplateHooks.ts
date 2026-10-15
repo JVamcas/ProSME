@@ -1,6 +1,11 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 
 import {
   clientNotificationTemplateService,
@@ -15,12 +20,19 @@ import type {
 export const notificationTemplateQueryKeys = {
   all: ["admin", "notifications"] as const,
   channels: ["admin", "notifications", "channels"] as const,
-  channel: (channelCode: string) => [
-    "admin", "notifications", "channels", channelCode,
-  ] as const,
-  target: (channelCode: string, targetId: string) => [
-    "admin", "notifications", "channels", channelCode, "templates", targetId,
-  ] as const,
+  channel: (channelCode: string) =>
+    ["admin", "notifications", "channels", channelCode] as const,
+  channelSearch: (channelCode: string, search: string) =>
+    ["admin", "notifications", "channels", channelCode, { search }] as const,
+  target: (channelCode: string, targetId: string) =>
+    [
+      "admin",
+      "notifications",
+      "channels",
+      channelCode,
+      "templates",
+      targetId,
+    ] as const,
 };
 
 export function useNotificationChannels() {
@@ -30,11 +42,18 @@ export function useNotificationChannels() {
   });
 }
 
-export function useNotificationChannel(channelCode: string) {
+export function useNotificationChannel(channelCode: string, search = "") {
+  const term = search.trim();
   return useQuery({
     enabled: Boolean(channelCode),
-    queryFn: () => clientNotificationTemplateService.getChannel(channelCode),
-    queryKey: notificationTemplateQueryKeys.channel(channelCode),
+    placeholderData: keepPreviousData,
+    queryFn: () =>
+      clientNotificationTemplateService.getChannel(channelCode, {
+        search: term,
+      }),
+    queryKey: term
+      ? notificationTemplateQueryKeys.channelSearch(channelCode, term)
+      : notificationTemplateQueryKeys.channel(channelCode),
   });
 }
 
@@ -46,9 +65,8 @@ export function useUpdateNotificationChannel(channelCode: string) {
     onSuccess: (channel) => {
       queryClient.setQueryData(
         notificationTemplateQueryKeys.channels,
-        (current: NotificationChannelSummary[] | undefined) => current?.map((item) =>
-          item.code === channel.code ? channel : item,
-        ),
+        (current: NotificationChannelSummary[] | undefined) =>
+          current?.map((item) => (item.code === channel.code ? channel : item)),
       );
       void queryClient.invalidateQueries({
         queryKey: notificationTemplateQueryKeys.channel(channelCode),
@@ -65,10 +83,8 @@ export function useNotificationTemplateTarget(
   return useQuery({
     enabled: Boolean(channelCode && targetId),
     initialData,
-    queryFn: () => clientNotificationTemplateService.getTarget(
-      channelCode,
-      targetId,
-    ),
+    queryFn: () =>
+      clientNotificationTemplateService.getTarget(channelCode, targetId),
     queryKey: notificationTemplateQueryKeys.target(channelCode, targetId),
   });
 }

@@ -91,7 +91,10 @@ export async function listNotificationChannels() {
       eq(notificationTemplateTargets.channelId, notificationChannels.id),
     )
     .groupBy(notificationChannels.id)
-    .orderBy(asc(notificationChannels.sortOrder), asc(notificationChannels.code));
+    .orderBy(
+      asc(notificationChannels.sortOrder),
+      asc(notificationChannels.code),
+    );
 }
 
 export async function findNotificationChannel(code: string) {
@@ -117,75 +120,6 @@ export async function findNotificationChannel(code: string) {
   return channel;
 }
 
-export async function listNotificationTemplateTargets(channelCode: string) {
-  return getDatabase()
-    .select({
-      catalogKey: sql<string | null>`coalesce(
-        ${notificationCatalogs.catalogKey},
-        ${eventCatalogs.catalogKey}
-      )`,
-      catalogName: sql<string | null>`coalesce(
-        ${notificationCatalogs.displayName},
-        ${eventCatalogs.displayName}
-      )`,
-      description: sql<string | null>`coalesce(
-        ${notificationEvents.description},
-        ${notificationCatalogs.description}
-      )`,
-      defaultSubjectTemplate: notificationTemplateTargets.defaultSubjectTemplate,
-      displayName: notificationEvents.displayName,
-      eventKey: notificationEvents.eventKey,
-      id: notificationTemplateTargets.id,
-      isEnabled: notificationTemplateTargets.isEnabled,
-      lastVersionCreatedAt: max(notificationTemplateVersions.createdAt),
-      publishedVersionNumber: sql<number | null>`max(case
-        when ${notificationTemplateVersions.status} = 'PUBLISHED'
-        then ${notificationTemplateVersions.versionNumber} end)`,
-      scope: notificationTemplateTargets.scope,
-      targetUpdatedAt: notificationTemplateTargets.updatedAt,
-      versionCount: count(notificationTemplateVersions.id).mapWith(Number),
-    })
-    .from(notificationTemplateTargets)
-    .innerJoin(
-      notificationChannels,
-      eq(notificationChannels.id, notificationTemplateTargets.channelId),
-    )
-    .leftJoin(
-      notificationCatalogs,
-      eq(notificationCatalogs.id, notificationTemplateTargets.catalogId),
-    )
-    .leftJoin(
-      notificationEvents,
-      eq(notificationEvents.id, notificationTemplateTargets.eventId),
-    )
-    .leftJoin(
-      eventCatalogs,
-      eq(eventCatalogs.id, notificationEvents.catalogId),
-    )
-    .leftJoin(
-      notificationTemplateVersions,
-      eq(notificationTemplateVersions.templateTargetId, notificationTemplateTargets.id),
-    )
-    .where(eq(notificationChannels.code, channelCode))
-    .groupBy(
-      notificationTemplateTargets.id,
-      notificationCatalogs.catalogKey,
-      notificationCatalogs.displayName,
-      notificationCatalogs.description,
-      eventCatalogs.catalogKey,
-      eventCatalogs.displayName,
-      notificationEvents.eventKey,
-      notificationEvents.displayName,
-      notificationEvents.description,
-    )
-    .orderBy(
-      sql`case ${notificationTemplateTargets.scope}
-        when 'GLOBAL' then 1 when 'CATALOG' then 2 else 3 end`,
-      asc(sql`coalesce(${notificationCatalogs.catalogKey}, ${eventCatalogs.catalogKey})`),
-      asc(notificationEvents.eventKey),
-    );
-}
-
 export async function findNotificationTemplateTarget(
   channelCode: string,
   targetId: string,
@@ -205,7 +139,8 @@ export async function findNotificationTemplateTarget(
         ${notificationEvents.description},
         ${notificationCatalogs.description}
       )`,
-      defaultSubjectTemplate: notificationTemplateTargets.defaultSubjectTemplate,
+      defaultSubjectTemplate:
+        notificationTemplateTargets.defaultSubjectTemplate,
       displayName: notificationEvents.displayName,
       eventKey: notificationEvents.eventKey,
       id: notificationTemplateTargets.id,
@@ -226,14 +161,13 @@ export async function findNotificationTemplateTarget(
       notificationEvents,
       eq(notificationEvents.id, notificationTemplateTargets.eventId),
     )
-    .leftJoin(
-      eventCatalogs,
-      eq(eventCatalogs.id, notificationEvents.catalogId),
+    .leftJoin(eventCatalogs, eq(eventCatalogs.id, notificationEvents.catalogId))
+    .where(
+      and(
+        eq(notificationChannels.code, channelCode),
+        eq(notificationTemplateTargets.id, targetId),
+      ),
     )
-    .where(and(
-      eq(notificationChannels.code, channelCode),
-      eq(notificationTemplateTargets.id, targetId),
-    ))
     .limit(1);
   return target;
 }
@@ -260,7 +194,9 @@ export async function createNotificationTemplateDraft(
       .limit(1);
     if (!target) return undefined;
     const [latest] = await transaction
-      .select({ versionNumber: max(notificationTemplateVersions.versionNumber) })
+      .select({
+        versionNumber: max(notificationTemplateVersions.versionNumber),
+      })
       .from(notificationTemplateVersions)
       .where(eq(notificationTemplateVersions.templateTargetId, input.targetId));
     const [version] = await transaction
@@ -293,10 +229,12 @@ export async function findNotificationTemplateVersion(
   const [version] = await getDatabase()
     .select(versionProjection)
     .from(notificationTemplateVersions)
-    .where(and(
-      eq(notificationTemplateVersions.id, versionId),
-      eq(notificationTemplateVersions.templateTargetId, targetId),
-    ))
+    .where(
+      and(
+        eq(notificationTemplateVersions.id, versionId),
+        eq(notificationTemplateVersions.templateTargetId, targetId),
+      ),
+    )
     .limit(1);
   return version;
 }
@@ -314,20 +252,24 @@ export async function publishNotificationTemplateVersion(input: {
     const [version] = await transaction
       .select({ status: notificationTemplateVersions.status })
       .from(notificationTemplateVersions)
-      .where(and(
-        eq(notificationTemplateVersions.id, input.versionId),
-        eq(notificationTemplateVersions.templateTargetId, input.targetId),
-      ))
+      .where(
+        and(
+          eq(notificationTemplateVersions.id, input.versionId),
+          eq(notificationTemplateVersions.templateTargetId, input.targetId),
+        ),
+      )
       .limit(1);
     if (!version) return undefined;
     if (version.status !== "DRAFT") return null;
     await transaction
       .update(notificationTemplateVersions)
       .set({ status: "RETIRED" })
-      .where(and(
-        eq(notificationTemplateVersions.templateTargetId, input.targetId),
-        eq(notificationTemplateVersions.status, "PUBLISHED"),
-      ));
+      .where(
+        and(
+          eq(notificationTemplateVersions.templateTargetId, input.targetId),
+          eq(notificationTemplateVersions.status, "PUBLISHED"),
+        ),
+      );
     const [published] = await transaction
       .update(notificationTemplateVersions)
       .set({
@@ -370,7 +312,10 @@ export async function resolvePublishedNotificationTemplate(
           ),
           and(
             eq(notificationTemplateTargets.scope, "CATALOG"),
-            eq(notificationTemplateTargets.catalogId, notificationEvents.catalogId),
+            eq(
+              notificationTemplateTargets.catalogId,
+              notificationEvents.catalogId,
+            ),
           ),
           eq(notificationTemplateTargets.scope, "GLOBAL"),
         ),
@@ -379,16 +324,23 @@ export async function resolvePublishedNotificationTemplate(
     .innerJoin(
       notificationTemplateVersions,
       and(
-        eq(notificationTemplateVersions.templateTargetId, notificationTemplateTargets.id),
+        eq(
+          notificationTemplateVersions.templateTargetId,
+          notificationTemplateTargets.id,
+        ),
         eq(notificationTemplateVersions.status, "PUBLISHED"),
       ),
     )
-    .where(and(
-      eq(notificationEvents.eventKey, eventKey),
-      eq(notificationChannels.isEnabled, true),
-    ))
-    .orderBy(sql`case ${notificationTemplateTargets.scope}
-      when 'EVENT' then 1 when 'CATALOG' then 2 else 3 end`)
+    .where(
+      and(
+        eq(notificationEvents.eventKey, eventKey),
+        eq(notificationChannels.isEnabled, true),
+      ),
+    )
+    .orderBy(
+      sql`case ${notificationTemplateTargets.scope}
+      when 'EVENT' then 1 when 'CATALOG' then 2 else 3 end`,
+    )
     .limit(1);
   return resolved;
 }

@@ -2,6 +2,7 @@
 
 import { requestData } from "@/lib/client-http";
 import type {
+  NotificationTemplateTargetQuery,
   NotificationTemplateEdit,
   NotificationChannelDetail,
   NotificationChannelSummary,
@@ -32,16 +33,21 @@ function listChannels() {
   );
 }
 
-function getChannel(channelCode: string) {
-  return requestData<NotificationChannelDetail>(channelPath(channelCode), {
+function getChannel(
+  channelCode: string,
+  input: NotificationTemplateTargetQuery = {},
+) {
+  const params = new URLSearchParams();
+  if (input.search?.trim()) params.set("search", input.search.trim());
+  const path = params.size
+    ? `${channelPath(channelCode)}?${params}`
+    : channelPath(channelCode);
+  return requestData<NotificationChannelDetail>(path, {
     cache: "no-store",
   });
 }
 
-function updateChannel(
-  channelCode: string,
-  input: NotificationChannelUpdate,
-) {
+function updateChannel(channelCode: string, input: NotificationChannelUpdate) {
   return requestData<NotificationChannelSummary>(channelPath(channelCode), {
     body: JSON.stringify(input),
     headers: { "Content-Type": "application/json" },

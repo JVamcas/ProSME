@@ -6,6 +6,7 @@ import {
   ResourceNotFoundError,
 } from "@/lib/resource-errors";
 import type {
+  NotificationTemplateTargetQuery,
   NotificationTemplateEdit,
   NotificationChannelDetail,
   NotificationChannelSummary,
@@ -15,6 +16,7 @@ import type {
   NotificationTemplateVersionSummary,
 } from "../api/NotificationTemplateSchemas";
 import {
+  notificationTemplateTargetQuerySchema,
   notificationTemplateEditSchema,
   notificationChannelUpdateSchema,
 } from "../api/NotificationTemplateSchemas";
@@ -36,11 +38,11 @@ import {
   findNotificationTemplateTarget,
   findNotificationTemplateVersion,
   listNotificationChannels,
-  listNotificationTemplateTargets,
   listNotificationTemplateVersions,
   publishNotificationTemplateVersion,
   resolvePublishedNotificationTemplate,
 } from "../infrastructure/NotificationTemplateRepository";
+import { listNotificationTemplateTargets } from "../infrastructure/NotificationTemplateTargetReadRepository";
 import { updateNotificationChannelRecord } from "../infrastructure/NotificationAdministrationRepository";
 import { authorizeNotificationOperation } from "./NotificationAuthorization";
 import {
@@ -192,11 +194,15 @@ export async function getNotificationChannels(
 export async function getNotificationChannel(
   user: AuthenticatedUser | null,
   channelCode: string,
+  input: NotificationTemplateTargetQuery = {},
 ): Promise<NotificationChannelDetail> {
   authorizeNotificationOperation(user, "READ_CONFIGURATION");
-  const channel = await findNotificationChannel(channelCode);
+  const query = notificationTemplateTargetQuerySchema.parse(input);
+  const [channel, targets] = await Promise.all([
+    findNotificationChannel(channelCode),
+    listNotificationTemplateTargets(channelCode, query.search),
+  ]);
   if (!channel) throw new ResourceNotFoundError("notification channel");
-  const targets = await listNotificationTemplateTargets(channelCode);
   return {
     channel: channelSummary(channel),
     targets: targets.map(targetSummary),

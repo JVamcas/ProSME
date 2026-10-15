@@ -5,6 +5,7 @@ import {
   portalRouteSuccess,
 } from "@/lib/api/PortalApiResponse";
 import {
+  notificationTemplateTargetQuerySchema,
   notificationChannelCodeSchema,
   notificationChannelUpdateSchema,
 } from "@/modules/notifications/api/NotificationTemplateSchemas";
@@ -24,6 +25,9 @@ export async function GET(
       await getNotificationChannel(
         await resolveUserFromHeaders(request.headers),
         notificationChannelCodeSchema.parse(channelCode),
+        notificationTemplateTargetQuerySchema.parse(
+          Object.fromEntries(new URL(request.url).searchParams),
+        ),
       ),
       correlationId,
     );

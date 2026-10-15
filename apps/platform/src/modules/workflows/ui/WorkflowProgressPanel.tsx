@@ -1,8 +1,10 @@
 "use client";
 
 import { Check, Circle, Clock3 } from "lucide-react";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 
+import { GeneralButton } from "@/shared/ui/Button";
+import { cn } from "@/lib/utils";
 import { formatLocalDateTime24 } from "@/lib/dateUtils";
 import type {
   WorkflowProgressStage,
@@ -16,8 +18,12 @@ import { StatusBadge } from "@/components/ui/status-badge";
 
 import {
   workflowProgressStatusLabels as statusLabels,
+  workflowProgressStatusTextColors as statusTextColors,
   workflowProgressStageStatusLabel as stageStatusLabel,
 } from "./WorkflowProgressPresentation";
+
+import { WorkflowStageNavigation } from "./runtime/WorkflowStageNavigation";
+import type { WorkflowStageFunnelControls } from "./runtime/WorkflowStageFunnelControls";
 
 const statusBorders: Record<WorkflowProgressStage["status"], string> = {
   ACTIVE: "border-brand-blue",
@@ -26,15 +32,6 @@ const statusBorders: Record<WorkflowProgressStage["status"], string> = {
   COMPLETED: "border-brand-green",
   NOT_STARTED: "border-slate-400",
   RETURNED: "border-brand-orange",
-};
-
-const statusTextColors: Record<WorkflowProgressStage["status"], string> = {
-  ACTIVE: "text-brand-blue",
-  BLOCKED: "text-brand-navy/60",
-  CANCELLED: "text-brand-navy/60",
-  COMPLETED: "text-brand-green",
-  NOT_STARTED: "text-slate-500",
-  RETURNED: "text-brand-orange",
 };
 
 function stageKey(stage: WorkflowProgressStage) {
@@ -81,14 +78,16 @@ function PreviousStageRuns({
       <ul className="mt-2 space-y-2">
         {stages.map((stage) => (
           <li key={stageKey(stage)}>
-            <button
+            <GeneralButton
               className="text-sm text-brand-orange hover:underline"
               onClick={() => onSelect(stageKey(stage))}
+              size={null}
+              variant={null}
               type="button"
             >
               {stage.name} · Run {stage.iterationNumber} ·{" "}
               {stageStatusLabel(stage)}
-            </button>
+            </GeneralButton>
           </li>
         ))}
       </ul>
@@ -96,7 +95,15 @@ function PreviousStageRuns({
   );
 }
 
-function StageFlow({ progress }: { progress: WorkflowProgressView }) {
+function StageFlow({
+  progress,
+  funnel,
+  stageApplications,
+}: {
+  progress: WorkflowProgressView;
+  funnel?: WorkflowStageFunnelControls;
+  stageApplications?: ReactNode;
+}) {
   const [showVisualFlow, setShowVisualFlow] = useState(false);
   const [layoutRevision, setLayoutRevision] = useState(0);
   const latestRuns = latestStageRuns(progress.stages);
@@ -163,6 +170,7 @@ function StageFlow({ progress }: { progress: WorkflowProgressView }) {
             <WorkflowVisualGraph
               key={layoutRevision}
               onSelect={(key) => {
+                funnel?.onSelectDetails();
                 const run = latestRuns.get(key);
                 if (run) setSelectedKey(stageKey(run));
               }}
@@ -188,70 +196,40 @@ function StageFlow({ progress }: { progress: WorkflowProgressView }) {
           ) : null}
         </div>
       ) : null}
-      <div className="mt-5 grid min-w-0 grid-cols-1 gap-4 xl:grid-cols-[300px_minmax(0,1fr)]">
-        <nav
-          aria-label="Workflow stages"
-          className="rounded-xl border border-brand-navy/10 p-3"
-        >
-          <p className="px-2 py-2 text-sm font-semibold text-brand-navy">
-            Stages
-          </p>
-          <ol className="space-y-1">
-            {currentStages.map((stage) => {
-              const isSelected = stage.stableKey === selected.stableKey;
-              return (
-                <li key={stageKey(stage)}>
-                  <button
-                    aria-current={isSelected ? "step" : undefined}
-                    className={
-                      isSelected
-                        ? "flex w-full items-center gap-3 rounded-lg bg-brand-orange/10 p-3 text-left text-brand-navy ring-1 ring-brand-orange/30"
-                        : "flex w-full items-center gap-3 rounded-lg p-3 text-left text-brand-navy hover:bg-brand-navy/5"
-                    }
-                    onClick={() => setSelectedKey(stageKey(stage))}
-                    type="button"
-                  >
-                    <span className="grid size-8 shrink-0 place-items-center rounded-full bg-brand-navy/10 text-xs font-bold">
-                      {stage.status === "COMPLETED" ? (
-                        <StageMarker status={stage.status} />
-                      ) : (
-                        stage.sequence
-                      )}
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block text-sm font-semibold">
-                        {stage.name}
-                      </span>
-                      <span
-                        className={`block text-xs ${statusTextColors[stage.status]}`}
-                      >
-                        {stageStatusLabel(stage)}
-                        {stage.iterationNumber && stage.iterationNumber > 1
-                          ? ` · Run ${stage.iterationNumber}`
-                          : ""}
-                      </span>
-                    </span>
-                  </button>
-                </li>
-              );
-            })}
-          </ol>
-        </nav>
+      <div
+        className={cn(
+          "mt-5 grid min-w-0 grid-cols-1 gap-4",
+          funnel
+            ? "xl:grid-cols-[420px_minmax(0,1fr)]"
+            : "xl:grid-cols-[300px_minmax(0,1fr)]",
+        )}
+      >
+        <WorkflowStageNavigation
+          stages={currentStages}
+          selectedStageKey={selected.stableKey}
+          onSelect={(stage) => setSelectedKey(stageKey(stage))}
+          funnel={funnel}
+        />
         <div className="min-w-0">
-          <PreviousStageRuns
-            stages={progress.stages.filter(
-              (stage) =>
-                stageKey(stage) !== stageKey(latestRuns.get(stage.stableKey)!),
-            )}
-            onSelect={setSelectedKey}
-          />
-          <SelectedStageDetails
-            selected={selected}
-            isHistorical={
-              stageKey(selected) !==
-              stageKey(latestRuns.get(selected.stableKey)!)
-            }
-          />
+          {stageApplications ?? (
+            <>
+              <PreviousStageRuns
+                stages={progress.stages.filter(
+                  (stage) =>
+                    stageKey(stage) !==
+                    stageKey(latestRuns.get(stage.stableKey)!),
+                )}
+                onSelect={setSelectedKey}
+              />
+              <SelectedStageDetails
+                selected={selected}
+                isHistorical={
+                  stageKey(selected) !==
+                  stageKey(latestRuns.get(selected.stableKey)!)
+                }
+              />
+            </>
+          )}
         </div>
       </div>
     </>
@@ -337,8 +315,12 @@ function SelectedStageDetails({
 
 export function WorkflowProgressPanel({
   progress,
+  funnel,
+  stageApplications,
 }: {
   progress: WorkflowProgressView | null;
+  funnel?: WorkflowStageFunnelControls;
+  stageApplications?: ReactNode;
 }) {
   if (!progress) {
     return (
@@ -382,7 +364,11 @@ export function WorkflowProgressPanel({
         {completed} completed · {active} active · {currentStages.length} stages
         shown
       </p>
-      <StageFlow progress={progress} />
+      <StageFlow
+        progress={progress}
+        funnel={funnel}
+        stageApplications={stageApplications}
+      />
     </section>
   );
 }

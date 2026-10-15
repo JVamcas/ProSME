@@ -43,7 +43,6 @@ export const actionEditorSteps = [
   { id: "details", label: "Action details" },
   { id: "behaviour", label: "Behaviour" },
   { id: "routing", label: "Routing" },
-  { id: "notifications", label: "Notifications" },
   { id: "review", label: "Review" },
 ] as const;
 

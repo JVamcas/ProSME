@@ -1,0 +1,50 @@
+.pipeSegment {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  align-self: stretch;
+  min-height: 5.25rem;
+  color: white;
+  background: linear-gradient(
+    90deg,
+    var(--color-brand-navy),
+    #23365c 48%,
+    var(--color-brand-navy)
+  );
+}
+
+.pipeSegment::after {
+  position: absolute;
+  right: 0;
+  bottom: -0.375rem;
+  left: 0;
+  z-index: 1;
+  height: 0.75rem;
+  content: "";
+  pointer-events: none;
+  border-bottom: 1px solid rgb(255 255 255 / 25%);
+  border-radius: 50%;
+}
+
+.first::before {
+  position: absolute;
+  top: -0.5rem;
+  right: 0;
+  left: 0;
+  height: 1rem;
+  content: "";
+  pointer-events: none;
+  background: #344b78;
+  border: 1px solid var(--color-brand-navy);
+  border-radius: 50%;
+}
+
+.last {
+  border-radius: 0 0 50% 50% / 0 0 0.5rem 0.5rem;
+}
+
+.last::after {
+  content: none;
+}

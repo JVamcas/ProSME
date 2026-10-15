@@ -9,10 +9,16 @@ vi.mock(
   "@/modules/notifications/infrastructure/NotificationTemplateRepository",
   () => ({
     findNotificationChannel: vi.fn(),
-    listNotificationTemplateTargets: vi.fn(),
   }),
 );
 
+vi.mock(
+  "@/modules/notifications/infrastructure/NotificationTemplateTargetReadRepository",
+  () => ({
+    listNotificationTemplateTargets: vi.fn(),
+  }),
+);
+import { listNotificationTemplateTargets } from "@/modules/notifications/infrastructure/NotificationTemplateTargetReadRepository";
 import { PermissionDeniedError } from "@/auth/authorization/policy";
 import { permissionCodes } from "@/auth/authorization/permissions";
 import type { AuthenticatedUser } from "@/auth/types";
@@ -22,10 +28,7 @@ import {
   updateNotificationChannel,
 } from "@/modules/notifications/application/ServerNotificationTemplateService";
 import { updateNotificationChannelRecord } from "@/modules/notifications/infrastructure/NotificationAdministrationRepository";
-import {
-  findNotificationChannel,
-  listNotificationTemplateTargets,
-} from "@/modules/notifications/infrastructure/NotificationTemplateRepository";
+import { findNotificationChannel } from "@/modules/notifications/infrastructure/NotificationTemplateRepository";
 
 function user(permissions: string[]): AuthenticatedUser {
   return {
@@ -54,6 +57,26 @@ beforeEach(() => {
 });
 
 describe("notification channel service", () => {
+  it("denies catalog searches before querying without configuration read permission", async () => {
+    await expect(
+      getNotificationChannel(user([]), "EMAIL", { search: "Workflow" }),
+    ).rejects.toBeInstanceOf(PermissionDeniedError);
+    expect(findNotificationChannel).not.toHaveBeenCalled();
+    expect(listNotificationTemplateTargets).not.toHaveBeenCalled();
+  });
+
+  it("rejects oversized searches before reading the database", async () => {
+    await expect(
+      getNotificationChannel(
+        user([permissionCodes.notificationConfigurationRead]),
+        "EMAIL",
+        { search: "x".repeat(201) },
+      ),
+    ).rejects.toThrow();
+    expect(findNotificationChannel).not.toHaveBeenCalled();
+    expect(listNotificationTemplateTargets).not.toHaveBeenCalled();
+  });
+
   it("returns presentation data for catalog and event template targets", async () => {
     vi.mocked(findNotificationChannel).mockResolvedValue({
       channelType: "EMAIL",
@@ -64,31 +87,40 @@ describe("notification channel service", () => {
       targetCount: 1,
       updatedAt: "2026-09-28T10:00:00.123456Z",
     });
-    vi.mocked(listNotificationTemplateTargets).mockResolvedValue([{
-      catalogKey: "WORKFLOW",
-      catalogName: "Workflow",
-      defaultSubjectTemplate: "Workflow update for application {{applicationReference}}",
-      description: "Workflow runtime notification events.",
-      displayName: null,
-      eventKey: null,
-      id: "00000000-0000-4000-8000-000000000503",
-      isEnabled: true,
-      lastVersionCreatedAt: new Date("2026-09-28T10:02:00.000Z"),
-      publishedVersionNumber: 2,
-      scope: "CATALOG",
-      targetUpdatedAt: new Date("2026-09-28T10:01:00.000Z"),
-      versionCount: 2,
-    }]);
+    vi.mocked(listNotificationTemplateTargets).mockResolvedValue([
+      {
+        catalogKey: "WORKFLOW",
+        catalogName: "Workflow",
+        defaultSubjectTemplate:
+          "Workflow update for application {{applicationReference}}",
+        description: "Workflow runtime notification events.",
+        displayName: null,
+        eventKey: null,
+        id: "00000000-0000-4000-8000-000000000503",
+        isEnabled: true,
+        lastVersionCreatedAt: new Date("2026-09-28T10:02:00.000Z"),
+        publishedVersionNumber: 2,
+        scope: "CATALOG",
+        targetUpdatedAt: new Date("2026-09-28T10:01:00.000Z"),
+        versionCount: 2,
+      },
+    ]);
 
     const result = await getNotificationChannel(
       user([permissionCodes.notificationConfigurationRead]),
       "EMAIL",
+      { search: "  Workflow  " },
+    );
+    expect(listNotificationTemplateTargets).toHaveBeenCalledWith(
+      "EMAIL",
+      "Workflow",
     );
 
     expect(result.targets[0]).toMatchObject({
       catalogKey: "WORKFLOW",
       catalogName: "Workflow",
-      defaultSubjectTemplate: "Workflow update for application {{applicationReference}}",
+      defaultSubjectTemplate:
+        "Workflow update for application {{applicationReference}}",
       label: "Workflow Catalog Template",
       lastUpdatedAt: "2026-09-28T10:02:00.000Z",
       publishedVersionNumber: 2,
@@ -96,18 +128,22 @@ describe("notification channel service", () => {
   });
 
   it("denies updates without the configuration update permission", async () => {
-    await expect(updateNotificationChannel(
-      user([]),
-      "EMAIL",
-      update,
-      "correlation-denied",
-    )).rejects.toBeInstanceOf(PermissionDeniedError);
+    await expect(
+      updateNotificationChannel(
+        user([]),
+        "EMAIL",
+        update,
+        "correlation-denied",
+      ),
+    ).rejects.toBeInstanceOf(PermissionDeniedError);
 
     expect(updateNotificationChannelRecord).not.toHaveBeenCalled();
   });
 
   it("updates a channel for an authorized administrator", async () => {
-    vi.mocked(updateNotificationChannelRecord).mockResolvedValue({ code: "EMAIL" });
+    vi.mocked(updateNotificationChannelRecord).mockResolvedValue({
+      code: "EMAIL",
+    });
     vi.mocked(findNotificationChannel).mockResolvedValue({
       channelType: "EMAIL",
       code: "EMAIL",
@@ -118,12 +154,14 @@ describe("notification channel service", () => {
       updatedAt: "2026-09-28T10:01:00.123456Z",
     });
 
-    await expect(updateNotificationChannel(
-      user([permissionCodes.notificationConfigurationUpdate]),
-      "EMAIL",
-      update,
-      "correlation-allowed",
-    )).resolves.toMatchObject({
+    await expect(
+      updateNotificationChannel(
+        user([permissionCodes.notificationConfigurationUpdate]),
+        "EMAIL",
+        update,
+        "correlation-allowed",
+      ),
+    ).resolves.toMatchObject({
       code: "EMAIL",
       isEnabled: false,
       updatedAt: "2026-09-28T10:01:00.123456Z",
@@ -149,11 +187,13 @@ describe("notification channel service", () => {
       updatedAt: "2026-09-28T10:01:00.123456Z",
     });
 
-    await expect(updateNotificationChannel(
-      user([permissionCodes.notificationConfigurationUpdate]),
-      "EMAIL",
-      update,
-      "correlation-stale",
-    )).rejects.toBeInstanceOf(ResourceConflictError);
+    await expect(
+      updateNotificationChannel(
+        user([permissionCodes.notificationConfigurationUpdate]),
+        "EMAIL",
+        update,
+        "correlation-stale",
+      ),
+    ).rejects.toBeInstanceOf(ResourceConflictError);
   });
 });

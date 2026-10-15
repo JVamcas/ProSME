@@ -17,11 +17,13 @@ export function StaffApplicationDetailWorkspace({
   canReadWorkflow,
   initialTab,
   taskId,
+  funnelAccess,
 }: {
   applicationId: string;
   canReadWorkflow: boolean;
   initialTab: "overview" | "workflow-progress";
   taskId?: string;
+  funnelAccess?: { canInspect: boolean; canExport: boolean };
 }) {
   const query = useAdminApplicationDetail(applicationId);
   useApplicationAccessCleanup(applicationId, "staff", query.error);
@@ -56,6 +58,7 @@ export function StaffApplicationDetailWorkspace({
           <WorkflowProgressQueryPanel
             applicationId={applicationId}
             taskId={taskId}
+            funnelAccess={funnelAccess}
           />
         ) : undefined
       }

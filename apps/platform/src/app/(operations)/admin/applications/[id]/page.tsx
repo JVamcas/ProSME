@@ -44,6 +44,17 @@ export default async function ApplicationPage({
     <StaffApplicationDetailWorkspace
       applicationId={applicationId}
       canReadWorkflow={allWorkflowAccess || assignedWorkflowAccess}
+      funnelAccess={
+        allWorkflowAccess &&
+        can(user, permissionCodes.fundingApplicationAllRead)
+          ? {
+              canInspect: can(user, permissionCodes.workflowTaskAllRead),
+              canExport:
+                can(user, permissionCodes.workflowTaskAllRead) &&
+                can(user, permissionCodes.fundingApplicationExport),
+            }
+          : undefined
+      }
       initialTab={
         query?.tab === "workflow-progress" ? "workflow-progress" : "overview"
       }
