@@ -1,3 +1,7 @@
+import {
+  applicationAppealEventCatalogue,
+  type ApplicationAppealEvent,
+} from "./NotificationApplicationAppealEvent";
 import { applicationSubmittedContextSchema } from "./NotificationApplicationSubmittedEvent";
 export { applicationSubmittedContextSchema } from "./NotificationApplicationSubmittedEvent";
 import { authenticationEventContextSchema } from "./NotificationAuthenticationEvent";
@@ -93,6 +97,8 @@ export type NotificationRuleEligibility = "CONFIGURABLE" | "SYSTEM_ONLY";
 
 export const notificationEventKeys = [
   ...eventEmailKeys,
+  "application.appeal.received",
+  "application.appeal.acknowledged",
   ...reportingEventKeys,
   "chatbot.case.created",
   "auth.email.verification",
@@ -157,6 +163,8 @@ export type FundingCallLifecycleContext = z.infer<
 >;
 
 export type NotificationEventContextByKey = {
+  "application.appeal.received": ApplicationAppealEvent;
+  "application.appeal.acknowledged": ApplicationAppealEvent;
   "event.registration.confirmed": z.infer<typeof eventEmailContextSchema>;
   "event.registration.reminder": z.infer<typeof eventEmailContextSchema>;
   "chatbot.case.created": ChatbotCaseEvent;
@@ -204,6 +212,7 @@ type NotificationEventDefinition<Key extends NotificationEventKey> = {
 
 export const notificationEventCatalogue = {
   ...eventEmailCatalogue,
+  ...applicationAppealEventCatalogue,
   ...reportingEventCatalogue,
   "chatbot.case.created": {
     catalogKey: "CHATBOT",

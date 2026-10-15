@@ -6,10 +6,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { formListSchema } from "@/modules/forms/api/FormSchemas";
 import { DraggableDialog } from "@/shared/ui/DraggableDialog";
 import {
-  useCloneForm,
   useCreateForm,
   useFormEditor,
-  useFormLifecycle,
   useForms,
   useUpdateForm,
 } from "@/modules/forms/FormHooks";
@@ -18,7 +16,8 @@ import type { FormListInput } from "@/modules/forms/api/FormTransportTypes";
 import { FormPreviewDialog } from "@/modules/forms/ui/renderer/FormPreviewDialog";
 import { FormsSearchForm } from "./FormsSearchForm";
 import { FormDefinitionDialogForm } from "./FormDefinitionDialogForm";
-import { FormsTable, type FormTablePendingAction } from "./FormsTable";
+import { FormsTable } from "./FormsTable";
+import { useFormVersionActions } from "./useFormVersionActions";
 
 const searchSchema = formListSchema.pick({ search: true });
 
@@ -41,41 +40,13 @@ export function FormsWorkspace({
     defaultValues: { search: "" },
     resolver: zodResolver(searchSchema),
   });
-  const [previewing, setPreviewing] = useState<FormDefinitionSummary>();
   const [selected, setSelected] = useState<FormDefinitionSummary>();
   const query = useForms({ page, pageSize, search: search || undefined });
-  const clone = useCloneForm();
+  const versionActions = useFormVersionActions();
   const create = useCreateForm();
   const editor = useFormEditor(selected?.id ?? "");
-  const preview = useFormEditor(previewing?.id ?? "");
-  const publish = useFormLifecycle("publish");
-  const retire = useFormLifecycle("retire");
   const update = useUpdateForm(selected?.id ?? "");
   const closeEdit = () => setSelected(undefined);
-  let pendingAction: FormTablePendingAction | undefined;
-  if (preview.isPending && previewing) {
-    pendingAction = { action: "preview", definitionId: previewing.id };
-  } else if (publish.isPending && publish.variables) {
-    pendingAction = {
-      action: "publish",
-      definitionId: publish.variables.definitionId,
-    };
-  } else if (retire.isPending && retire.variables) {
-    pendingAction = {
-      action: "retire",
-      definitionId: retire.variables.definitionId,
-    };
-  } else if (clone.isPending && clone.variables) {
-    pendingAction = {
-      action: "clone",
-      definitionId: clone.variables.definitionId,
-    };
-  }
-  const actionError =
-    preview.error?.message ??
-    publish.error?.message ??
-    retire.error?.message ??
-    clone.error?.message;
   const applySearch = (values: Pick<FormListInput, "search">) => {
     setSearch(values.search ?? "");
     setPage(1);
@@ -94,19 +65,6 @@ export function FormsWorkspace({
     emptyMessage = "No forms match your search.";
   }
 
-  function runLifecycle(action: typeof publish, form: FormDefinitionSummary) {
-    if (!form.latestVersionId || form.latestVersionRowVersion === null) return;
-    setPreviewing(undefined);
-    clone.reset();
-    publish.reset();
-    retire.reset();
-    action.mutate({
-      definitionId: form.id,
-      expectedRowVersion: form.latestVersionRowVersion,
-      versionId: form.latestVersionId,
-    });
-  }
-
   return (
     <>
       <FormsTable
@@ -115,22 +73,10 @@ export function FormsWorkspace({
         canRetire={canRetire}
         canUpdate={canUpdate}
         emptyMessage={emptyMessage}
-        errorMessage={actionError}
+        errorMessage={versionActions.errorMessage}
         items={query.data?.items ?? []}
         loading={query.isFetching}
-        onClone={(form) => {
-          if (!form.latestVersionId) return;
-          setPreviewing(undefined);
-          publish.reset();
-          retire.reset();
-          clone.mutate(
-            {
-              definitionId: form.id,
-              sourceVersionId: form.latestVersionId,
-            },
-            { onSuccess: () => setSelected(form) },
-          );
-        }}
+        onClone={versionActions.onClone}
         onCreate={() => setCreating(true)}
         onEdit={setSelected}
         onPageChange={setPage}
@@ -138,17 +84,12 @@ export function FormsWorkspace({
           setPageSize(nextPageSize);
           setPage(1);
         }}
-        onPreview={(form) => {
-          clone.reset();
-          publish.reset();
-          retire.reset();
-          setPreviewing(form);
-        }}
-        onPublish={(form) => runLifecycle(publish, form)}
-        onRetire={(form) => runLifecycle(retire, form)}
+        onPreview={versionActions.onPreview}
+        onPublish={versionActions.onPublish}
+        onRetire={versionActions.onRetire}
         page={query.data?.page ?? page}
         pageSize={query.data?.pageSize ?? pageSize}
-        pendingAction={pendingAction}
+        pendingAction={versionActions.pendingAction}
         searchForm={
           <FormsSearchForm
             form={searchForm}
@@ -159,11 +100,11 @@ export function FormsWorkspace({
         total={query.data?.total ?? 0}
         totalPages={query.data?.totalPages ?? 0}
       />
-      {preview.data ? (
+      {versionActions.preview ? (
         <FormPreviewDialog
-          editor={preview.data}
-          isOpen={Boolean(previewing)}
-          onClose={() => setPreviewing(undefined)}
+          editor={versionActions.preview}
+          isOpen
+          onClose={versionActions.closePreview}
         />
       ) : null}
       <DraggableDialog

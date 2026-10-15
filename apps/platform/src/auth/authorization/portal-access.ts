@@ -30,6 +30,7 @@ export const applicantScopePermissions = [
 ] as const;
 
 export const operationsScopePermissions = [
+  permissionCodes.applicationAppealReadAll,
   permissionCodes.eventRegistrationsReadAll,
   permissionCodes.eventRegistrationSettingsReadAll,
   permissionCodes.eventEmailDeliveryReadAll,

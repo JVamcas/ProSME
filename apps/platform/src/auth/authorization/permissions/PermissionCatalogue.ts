@@ -1,3 +1,4 @@
+import { applicationAppealPermissionCatalogue } from "./ApplicationAppealPermissionCatalogue";
 import { eventPermissionCatalogue } from "./EventPermissionCatalogue";
 import { reportingPermissionCatalogue } from "./ReportingPermissionCatalogue";
 import { chatbotPermissionCatalogue } from "./ChatbotPermissionCatalogue";
@@ -32,6 +33,7 @@ function define(
 
 const staticPermissionCatalogue: readonly PermissionDefinition[] = [
   ...eventPermissionCatalogue,
+  ...applicationAppealPermissionCatalogue,
   ...chatbotPermissionCatalogue,
   ...reportingPermissionCatalogue,
   define(

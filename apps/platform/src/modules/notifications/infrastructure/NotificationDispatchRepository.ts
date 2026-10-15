@@ -139,6 +139,7 @@ export async function loadClaimedNotificationDeliveries(input: {
           OR target.scope = 'GLOBAL'
         )
         AND (occurrence_event.rule_eligibility = 'CONFIGURABLE' OR target.scope IN ('EVENT', 'CATALOG'))
+        AND (occurrence.event_key <> 'application.appeal.acknowledged' OR target.scope = 'EVENT')
       ORDER BY CASE target.scope
         WHEN 'EVENT' THEN 1 WHEN 'CATALOG' THEN 2 ELSE 3 END
       LIMIT 1

@@ -88,6 +88,21 @@ afterEach(() => {
 });
 
 describe("form preview dialog", () => {
+  it("hides the completeness summary when disabled on the selected version", async () => {
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+    const editor = editorView();
+    editor.version.showCompleteness = false;
+    await act(async () => {
+      root.render(<FormPreviewDialog editor={editor} isOpen onClose={vi.fn()} />);
+    });
+    const dialog = document.querySelector('[role="dialog"]');
+    expect(dialog?.querySelector('[aria-label="Form completeness"]')).toBeNull();
+    expect(dialog?.querySelector('[name="root_NAME"]')).not.toBeNull();
+    await act(async () => root.unmount());
+  });
+
   it("renders the current editor version through the runtime renderer", async () => {
     const container = document.createElement("div");
     document.body.append(container);

@@ -57,6 +57,7 @@ async function readBoundForm(
   ]);
   return {
     displayMode: version.displayMode,
+    showCompleteness: version.showCompleteness,
     fields,
     instructions: version.instructions,
     sections,

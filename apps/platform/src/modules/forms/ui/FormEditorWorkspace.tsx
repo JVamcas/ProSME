@@ -117,6 +117,8 @@ function LoadedFormEditorWorkspace({
         fieldToRemove={controller.fieldToRemove}
         fields={editor.fields}
         displayMode={editor.version.displayMode}
+        showCompleteness={editor.version.showCompleteness ?? true}
+        onShowCompletenessChange={controller.updateShowCompleteness}
         isPending={controller.update.isPending}
         onAddField={controller.openNewField}
         onAddSection={controller.openNewSection}

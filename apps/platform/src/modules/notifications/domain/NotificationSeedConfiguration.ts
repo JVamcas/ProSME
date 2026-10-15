@@ -1,4 +1,8 @@
 import {
+  applicationAppealEventSeeds,
+  applicationAppealTemplateSeeds,
+} from "./NotificationApplicationAppealEvent";
+import {
   chatbotCaseEventSeed,
   chatbotCaseTemplateSeed,
 } from "./NotificationChatbotEvent";
@@ -51,6 +55,7 @@ export type NotificationEventSeed = {
 
 export const notificationEventSeeds: readonly NotificationEventSeed[] = [
   chatbotCaseEventSeed,
+  ...applicationAppealEventSeeds,
   workflowEscalationEventSeed,
   workflowHoldResumedEventSeed,
   ...workflowDeadlineEventSeeds,
@@ -305,6 +310,7 @@ export const notificationTemplateTargetSeeds: readonly NotificationTemplateTarge
     },
     applicationTerminalStatusTemplateSeed,
     chatbotCaseTemplateSeed,
+    ...applicationAppealTemplateSeeds,
     workflowEscalationTemplateSeed,
     workflowHoldResumedTemplateSeed,
     ...workflowDeadlineTemplateSeeds,

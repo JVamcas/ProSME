@@ -11,22 +11,10 @@ import { formatLocalDateTime24 } from "@/lib/dateUtils";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { FormVersionsTable } from "@/modules/forms/ui/FormVersionsTable";
 import { ActionMenu, type ActionMenuItem } from "@/shared/ui/ActionMenu";
+import type { FormVersionActionOptions } from "./FormVersionActions";
 
-export type FormTablePendingAction = {
-  action: "clone" | "preview" | "publish" | "retire";
-  definitionId: string;
-};
-
-type FormTableOptions = {
-  canPublish: boolean;
-  canRetire: boolean;
-  canUpdate: boolean;
-  onClone: (form: FormDefinitionSummary) => void;
+type FormTableOptions = FormVersionActionOptions & {
   onEdit: (form: FormDefinitionSummary) => void;
-  onPreview: (form: FormDefinitionSummary) => void;
-  onPublish: (form: FormDefinitionSummary) => void;
-  onRetire: (form: FormDefinitionSummary) => void;
-  pendingAction?: FormTablePendingAction;
 };
 
 function FormTableActions({
@@ -36,66 +24,18 @@ function FormTableActions({
   form: FormDefinitionSummary;
   options: FormTableOptions;
 }) {
-  const pending =
-    options.pendingAction?.definitionId === form.id
-      ? options.pendingAction.action
-      : undefined;
-  const hasVersion = Boolean(
-    form.latestVersionId && form.latestVersionRowVersion !== null,
-  );
-  const actionPending = Boolean(options.pendingAction);
   const actions: ActionMenuItem[] = [
     {
       id: "edit",
       label: "Edit",
       disabled:
-        !options.canUpdate || form.latestStatus !== "DRAFT" || actionPending,
+        !options.canUpdate ||
+        form.latestStatus !== "DRAFT" ||
+        Boolean(options.pendingAction),
       onAction: () => options.onEdit(form),
     },
-    {
-      id: "preview",
-      label: pending === "preview" ? "Previewing…" : "Preview",
-      disabled: actionPending,
-      onAction: () => options.onPreview(form),
-    },
-    {
-      id: "publish",
-      label: pending === "publish" ? "Publishing…" : "Publish",
-      disabled:
-        !options.canPublish ||
-        form.latestStatus !== "DRAFT" ||
-        !hasVersion ||
-        actionPending,
-      onAction: () => options.onPublish(form),
-    },
-    {
-      id: "retire",
-      label: pending === "retire" ? "Retiring…" : "Retire",
-      disabled:
-        !options.canRetire ||
-        form.latestStatus !== "PUBLISHED" ||
-        !hasVersion ||
-        actionPending,
-      destructive: true,
-      onAction: () => options.onRetire(form),
-    },
-    {
-      id: "clone",
-      label: pending === "clone" ? "Cloning…" : "Clone",
-      disabled:
-        !options.canUpdate ||
-        form.latestStatus === "DRAFT" ||
-        !hasVersion ||
-        actionPending,
-      onAction: () => options.onClone(form),
-    },
   ];
-
-  return (
-    <div className="flex justify-start">
-      <ActionMenu items={actions} label={`Actions for ${form.name}`} />
-    </div>
-  );
+  return <ActionMenu items={actions} label={`Actions for ${form.name}`} />;
 }
 
 function formColumns(
@@ -127,7 +67,17 @@ function formColumns(
     {
       accessorKey: "latestVersion",
       header: "Latest version",
-      cell: ({ row }) => `v${row.original.latestVersion}`,
+      cell: ({ row }) =>
+        row.original.latestVersionId ? (
+          <Link
+            className="text-brand-orange underline"
+            href={`/admin/settings/forms/${row.original.id}?versionId=${row.original.latestVersionId}`}
+          >
+            v{row.original.latestVersion}
+          </Link>
+        ) : (
+          "—"
+        ),
     },
     {
       accessorKey: "latestStatus",
@@ -176,26 +126,17 @@ export function FormsTable({
   searchForm,
   total,
   totalPages,
-}: {
+}: FormTableOptions & {
   canCreate: boolean;
-  canPublish: boolean;
-  canRetire: boolean;
-  canUpdate: boolean;
   emptyMessage: string;
   errorMessage?: string;
   items: FormDefinitionSummary[];
   loading: boolean;
-  onClone: (form: FormDefinitionSummary) => void;
   onCreate: () => void;
-  onEdit: (form: FormDefinitionSummary) => void;
   onPageChange: (page: number) => void;
   onPageSizeChange: (pageSize: number) => void;
-  onPreview: (form: FormDefinitionSummary) => void;
-  onPublish: (form: FormDefinitionSummary) => void;
-  onRetire: (form: FormDefinitionSummary) => void;
   page: number;
   pageSize: number;
-  pendingAction?: FormTablePendingAction;
   searchForm: ReactNode;
   total: number;
   totalPages: number;
@@ -215,7 +156,21 @@ export function FormsTable({
       })}
       data={items}
       emptyMessage={emptyMessage}
-      renderExpandedRow={(form) => <FormVersionsTable definitionId={form.id} />}
+      renderExpandedRow={(form) => (
+        <FormVersionsTable
+          definitionId={form.id}
+          actions={{
+            canPublish,
+            canRetire,
+            canUpdate,
+            onClone,
+            onPreview,
+            onPublish,
+            onRetire,
+            pendingAction,
+          }}
+        />
+      )}
       rowKey={(form) => form.id}
       footer={
         <div className="space-y-3">
@@ -239,7 +194,12 @@ export function FormsTable({
       toolbar={{
         filters: searchForm,
         actions: (
-          <GeneralButton disabled={!canCreate} onClick={onCreate} type="button">
+          <GeneralButton
+            size="compact"
+            disabled={!canCreate}
+            onClick={onCreate}
+            type="button"
+          >
             Create form
           </GeneralButton>
         ),

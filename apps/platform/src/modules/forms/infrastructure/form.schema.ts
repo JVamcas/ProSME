@@ -75,6 +75,7 @@ export const formVersions = pgTable(
       .$type<FormDisplayMode>()
       .notNull()
       .default("SINGLE_PAGE"),
+    showCompleteness: boolean("show_completeness").notNull().default(true),
     instructions: text("instructions"),
     submissionMode: text("submission_mode")
       .$type<FormSubmissionMode>()

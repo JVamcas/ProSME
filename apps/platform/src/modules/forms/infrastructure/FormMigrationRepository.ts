@@ -25,6 +25,7 @@ export async function readMigrationForms(
       rowVersion: formVersions.rowVersion,
       versionNumber: formVersions.versionNumber,
       displayMode: formVersions.displayMode,
+      showCompleteness: formVersions.showCompleteness,
       submissionMode: formVersions.submissionMode,
       instructions: formVersions.instructions,
       submitLabel: formVersions.submitLabel,
@@ -95,6 +96,7 @@ export type MigrationSourceForm = {
   displayMode: import("../FormTypes").FormDisplayMode;
   submissionMode: import("../FormTypes").FormSubmissionMode;
   instructions: string | null;
+  showCompleteness?: boolean;
   submitLabel: string;
   sections: import("../FormTypes").FormSection[];
   fields: FormField[];
@@ -131,6 +133,7 @@ export async function insertConvertedTaskForm(
       sourceVersionId: input.source?.id ?? null,
       displayMode: input.source?.displayMode ?? "STEPS",
       submissionMode: input.source?.submissionMode ?? "WITH_TASK_ACTION",
+      showCompleteness: input.source?.showCompleteness ?? true,
       submitLabel: input.source?.submitLabel ?? "Complete task",
       instructions: input.source?.instructions ?? null,
       metadata: {

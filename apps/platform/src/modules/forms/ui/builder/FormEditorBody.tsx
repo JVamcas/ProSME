@@ -21,6 +21,8 @@ export function FormEditorBody({
   fieldToRemove,
   fields,
   displayMode,
+  showCompleteness,
+  onShowCompletenessChange,
   isPending,
   onAddField,
   onAddSection,
@@ -52,6 +54,8 @@ export function FormEditorBody({
   fieldToRemove?: FormField;
   fields: FormField[];
   displayMode: FormDisplayMode;
+  showCompleteness: boolean;
+  onShowCompletenessChange: (show: boolean) => void;
   isPending: boolean;
   onAddField: (sectionId: string) => void;
   onAddSection: () => void;
@@ -99,6 +103,8 @@ export function FormEditorBody({
         canEdit={canEdit && !isPending}
         displayMode={displayMode}
         onChange={onDisplayModeChange}
+        showCompleteness={showCompleteness}
+        onShowCompletenessChange={onShowCompletenessChange}
       />
       <FormSectionBuilder
         canEdit={canEdit && !isPending}

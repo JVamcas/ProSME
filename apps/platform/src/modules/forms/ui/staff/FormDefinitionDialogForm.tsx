@@ -52,6 +52,7 @@ function defaultValues(props: Props): CreateFormInput {
     code: props.editor.definition.code,
     description: props.editor.definition.description,
     displayMode: props.editor.version.displayMode,
+    showCompleteness: props.editor.version.showCompleteness ?? true,
     instructions: props.editor.version.instructions ?? "",
     name: props.editor.definition.name,
     purpose: props.editor.definition.purpose,

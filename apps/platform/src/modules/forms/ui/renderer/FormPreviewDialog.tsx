@@ -11,6 +11,7 @@ import { FormRenderer, type DynamicFormValues } from "./FormRenderer";
 function runtimeDefinition(editor: FormEditorView): FormRuntimeSchema {
   return {
     displayMode: editor.version.displayMode,
+    showCompleteness: editor.version.showCompleteness ?? true,
     fields: editor.fields,
     instructions: editor.version.instructions,
     sections: editor.sections,

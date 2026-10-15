@@ -1,3 +1,4 @@
+import { applicationAppealFields } from "./NotificationApplicationAppealEvent";
 import { eventEmailFields } from "./NotificationEventRegistration";
 import { chatbotNotificationFields } from "./NotificationChatbotEvent";
 import { reportingNotificationFields } from "./NotificationReportingEvent";
@@ -39,6 +40,8 @@ export const notificationCatalogTemplateFields = {
 } as const satisfies Record<NotificationCatalogKey, readonly string[]>;
 
 export const notificationEventTemplateFields = {
+  "application.appeal.received": applicationAppealFields,
+  "application.appeal.acknowledged": applicationAppealFields,
   "event.registration.confirmed": eventEmailFields,
   "event.registration.reminder": eventEmailFields,
   "chatbot.case.created": chatbotNotificationFields,

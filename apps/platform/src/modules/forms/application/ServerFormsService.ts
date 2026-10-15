@@ -88,6 +88,7 @@ function versionView(version: {
   displayMode: FormVersionSummary["displayMode"];
   instructions: string | null;
   submissionMode: FormVersionSummary["submissionMode"];
+  showCompleteness?: boolean;
   submitLabel: string;
   rowVersion: number;
   createdAt: Date;
@@ -98,6 +99,7 @@ function versionView(version: {
   return {
     formDefinitionId: version.formDefinitionId,
     displayMode: version.displayMode,
+    showCompleteness: version.showCompleteness,
     id: version.id,
     instructions: version.instructions,
     rowVersion: version.rowVersion,
