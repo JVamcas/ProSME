@@ -1,9 +1,21 @@
 vi.mock(
+  "@/modules/workflows/application/runtime/ServerWorkflowActionNotificationService",
+  () => ({
+    prepareWorkflowActionNotifications: vi.fn().mockResolvedValue([]),
+    captureWorkflowActionNotifications: vi.fn(),
+  }),
+);
+import {
+  prepareWorkflowActionNotifications,
+  captureWorkflowActionNotifications,
+} from "@/modules/workflows/application/runtime/ServerWorkflowActionNotificationService";
+vi.mock(
   "@/modules/workflows/infrastructure/WorkflowReviewThresholdRepository",
   () => ({
     recordReviewThresholdEvaluations: vi.fn(),
   }),
 );
+import { resetWorkflowActionExecutionMocks } from "./WorkflowActionExecutionMockSetup";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
@@ -62,8 +74,6 @@ import { evaluateStageQuorum } from "@/modules/workflows/infrastructure/Workflow
 import { PermissionDeniedError } from "@/auth/authorization/policy";
 import { WorkflowActionExecutionError } from "@/modules/workflows/domain/actions/WorkflowActionExecution";
 import { executeWorkflowAction } from "@/modules/workflows/application/runtime/ServerWorkflowActionExecutionService";
-import { buildWorkflowActionConditionContext } from "@/modules/workflows/application/runtime/ServerWorkflowActionContextService";
-import { loadSequentialTransitions } from "@/modules/workflows/infrastructure/TransitionExecutionRepository";
 import {
   claimWorkflowActionRuntimeVersion,
   completeActionTask,
@@ -71,11 +81,7 @@ import {
   lockWorkflowActionExecutionTarget,
   recordWorkflowActionExecution,
 } from "@/modules/workflows/infrastructure/WorkflowActionExecutionRepository";
-import {
-  withWorkflowActionExecutionTransaction,
-  workflowActionExecutionDatabase,
-} from "@/modules/workflows/infrastructure/WorkflowActionExecutionConnection";
-import { configuredActionTargetsAreValid } from "@/modules/workflows/infrastructure/WorkflowActionTargetRepository";
+import { withWorkflowActionExecutionTransaction } from "@/modules/workflows/infrastructure/WorkflowActionExecutionConnection";
 import { recordWorkflowDecision } from "@/modules/workflows/infrastructure/WorkflowDecisionRepository";
 import { executeSequentialTransitionInTransaction } from "@/modules/workflows/application/runtime/ServerSequentialTransitionService";
 
@@ -89,46 +95,7 @@ import {
   workflowInstanceId,
 } from "./WorkflowActionExecutionFixtures";
 
-beforeEach(() => {
-  vi.clearAllMocks();
-  vi.mocked(evaluateStageQuorum).mockResolvedValue(true);
-  vi.mocked(readWorkflowActionTaskReadiness).mockResolvedValue({
-    hasOpenRfi: false,
-    workReady: true,
-  });
-  vi.mocked(workflowActionExecutionDatabase).mockReturnValue({} as never);
-  vi.mocked(findWorkflowActionExecution).mockResolvedValue(null);
-  vi.mocked(withWorkflowActionExecutionTransaction).mockImplementation(
-    async (work) => work({} as never),
-  );
-  vi.mocked(lockWorkflowActionExecutionTarget).mockResolvedValue(target);
-  vi.mocked(buildWorkflowActionConditionContext).mockResolvedValue({
-    application: {},
-    eligibility: {},
-    fundingCall: {},
-    stages: [],
-  });
-  vi.mocked(loadSequentialTransitions).mockResolvedValue({
-    actionExists: true,
-    transitions: [],
-  });
-  vi.mocked(claimWorkflowActionRuntimeVersion).mockResolvedValue(3);
-  vi.mocked(completeActionTask).mockResolvedValue({ id: taskId });
-  vi.mocked(configuredActionTargetsAreValid).mockResolvedValue(true);
-  vi.mocked(executeSequentialTransitionInTransaction).mockResolvedValue({
-    executionId: "f0000000-0000-4000-8000-000000000001",
-    kind: "transitioned",
-    targets: [
-      {
-        outcome: "ACTIVATED",
-        targetStageDefinitionId: "f0000000-0000-4000-8000-000000000003",
-        targetStageInstanceId: "f0000000-0000-4000-8000-000000000002",
-        targetStageName: "Next stage",
-      },
-    ],
-    workflowStatus: "ACTIVE",
-  });
-});
+beforeEach(resetWorkflowActionExecutionMocks);
 
 describe("server workflow action execution", () => {
   it("rejects approval on the server when screening cannot support it", async () => {
@@ -164,6 +131,17 @@ describe("server workflow action execution", () => {
       }),
     );
     expect(recordWorkflowActionExecution).toHaveBeenCalledOnce();
+    expect(captureWorkflowActionNotifications).toHaveBeenCalledWith(
+      {},
+      input,
+      result.actionExecutionId,
+      [],
+    );
+    expect(
+      vi.mocked(recordWorkflowActionExecution).mock.invocationCallOrder[0],
+    ).toBeLessThan(
+      vi.mocked(captureWorkflowActionNotifications).mock.invocationCallOrder[0],
+    );
     expect(recordWorkflowDecision).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({
@@ -227,6 +205,8 @@ describe("server workflow action execution", () => {
       replayResult,
     );
     expect(withWorkflowActionExecutionTransaction).not.toHaveBeenCalled();
+    expect(prepareWorkflowActionNotifications).not.toHaveBeenCalled();
+    expect(captureWorkflowActionNotifications).not.toHaveBeenCalled();
   });
 
   it("denies permission and assignment context before mutation", async () => {
@@ -243,6 +223,17 @@ describe("server workflow action execution", () => {
       code: "INVALID_RUNTIME_CONTEXT",
     });
     expect(claimWorkflowActionRuntimeVersion).not.toHaveBeenCalled();
+    expect(prepareWorkflowActionNotifications).not.toHaveBeenCalled();
+    expect(captureWorkflowActionNotifications).not.toHaveBeenCalled();
+  });
+
+  it("propagates queue failure through the action transaction", async () => {
+    vi.mocked(captureWorkflowActionNotifications).mockRejectedValue(
+      new Error("Queue unavailable"),
+    );
+    await expect(executeWorkflowAction(user(), input)).rejects.toThrow(
+      "Queue unavailable",
+    );
   });
 
   it("raises an explicit stale-version error before mutation", async () => {

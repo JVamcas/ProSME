@@ -54,6 +54,17 @@ export type NotificationEventSeed = {
 };
 
 export const notificationEventSeeds: readonly NotificationEventSeed[] = [
+  {
+    catalogKey: "WORKFLOW",
+    key: "workflow.action.notification",
+    displayName: "Workflow action notification",
+    description:
+      "Conditional messages configured on a versioned workflow action.",
+    id: "00000000-0000-4000-8000-000000000290",
+    ruleId: "00000000-0000-4000-8000-000000000390",
+    ruleRecipientId: "00000000-0000-4000-8000-000000000490",
+    ruleChannelId: "00000000-0000-4000-8000-000000000690",
+  },
   chatbotCaseEventSeed,
   ...applicationAppealEventSeeds,
   workflowEscalationEventSeed,

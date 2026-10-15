@@ -55,6 +55,32 @@ const save = () =>
   saveWorkflowAction(actor, record.definition.id, input, "correlation");
 
 describe("targeted workflow action save", () => {
+  it("saves notification rows and allows removing the last row", async () => {
+    const notification = {
+      id: record.definition.id,
+      condition: null,
+      recipientType: "APPLICATION_OWNER" as const,
+      recipientId: null,
+      subject: "Decision {{fundingcalltitle}}",
+      body: "<p>Hello {{recipientname}}</p>",
+    };
+    input.action.notifications = [notification];
+    await save();
+    expect(saveDraftWorkflowAction).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        action: expect.objectContaining({ notifications: [notification] }),
+      }),
+    );
+    record.graph.stages[0].actions[0].notifications = [notification];
+    input.action.notifications = [];
+    await save();
+    expect(saveDraftWorkflowAction).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        action: expect.objectContaining({ notifications: [] }),
+      }),
+    );
+  });
+
   it("writes the selected action and reuses the graph without a second editor read", async () => {
     expect(workflowActionSaveSchema.safeParse(input).success).toBe(true);
     await save();

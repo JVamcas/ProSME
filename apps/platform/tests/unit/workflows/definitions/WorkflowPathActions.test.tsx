@@ -134,6 +134,7 @@ describe("workflow path label actions", () => {
       await clickDialogButton("Continue");
       await clickDialogButton("Continue");
       await clickDialogButton("Continue");
+      await clickDialogButton("Continue");
       expect(
         document.querySelector('[aria-label="Review action"]'),
       ).not.toBeNull();

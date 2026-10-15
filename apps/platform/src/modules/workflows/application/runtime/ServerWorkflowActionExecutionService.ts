@@ -1,3 +1,7 @@
+import {
+  prepareWorkflowActionNotifications,
+  captureWorkflowActionNotifications,
+} from "./ServerWorkflowActionNotificationService";
 import { recordReviewThresholdEvaluations } from "../../infrastructure/WorkflowReviewThresholdRepository";
 import "server-only";
 import { readApplicableWorkflowHolds } from "../../infrastructure/WorkflowHoldRepository";
@@ -172,151 +176,14 @@ export async function executeWorkflowAction(
   }
 
   try {
-    return await withWorkflowActionExecutionTransaction(async (transaction) => {
-      const target = await lockWorkflowActionExecutionTarget(transaction, {
-        actionKey: input.actionKey,
-        actorId: actor.id,
-        sourceStageInstanceId: input.sourceStageInstanceId,
-        taskId: input.taskId,
-      });
-      if (!target) {
-        const concurrentReplay = await findWorkflowActionExecution(
-          transaction,
-          input.idempotencyKey,
-          replayCommand,
-        );
-        if (concurrentReplay?.matchesCommand) return concurrentReplay.result;
-        if (concurrentReplay) {
-          throw new IdempotencyConflictError(
-            "That idempotency key was already used for another workflow action.",
-          );
-        }
-        fail(
-          "ACTION_NOT_CONFIGURED",
-          "The action is not configured for this workflow stage and task.",
-        );
-      }
-      if (target.action.actionType === "REQUEST_INFORMATION") {
-        requirePermission(
-          actor,
-          permissionCodes.fundingApplicationInformationRequestCreate,
-        );
-      }
-      assertRuntimeIdentityAndVersion(target, input);
-      await assertHoldScope(transaction, actor, target, input);
-      const parsedAction = workflowActionDefinitionSchema.safeParse(
-        target.action,
-      );
-      if (parsedAction.success) {
-        target.action = { ...parsedAction.data, id: target.action.id };
-      }
-      enforceWorkflowActionPolicy(
-        actor,
-        target,
-        evaluateWorkflowActionPolicy(actor, policyTarget(target), {
-          conditionsPass: true,
-          configurationValid: parsedAction.success,
-          targetsValid: true,
-        }),
-      );
-      const inputError = validateActionInputAgainstConfiguration(
-        target.action,
-        input.input,
-        target.stage.stageKey,
-      );
-      if (inputError) fail("INVALID_ACTION_INPUT", inputError);
-      const {
-        targetsValid,
-        conditionContext,
-        configuredTransitions,
-        conditions,
-        runtimeDestination,
-      } = await prepareWorkflowActionRouting(transaction, target, input.input);
-      enforceWorkflowActionPolicy(
-        actor,
-        target,
-        evaluateWorkflowActionPolicy(actor, policyTarget(target), {
-          conditionsPass: conditions.available,
-          configurationValid: true,
-          targetsValid,
-        }),
-      );
-      const readiness = await readWorkflowActionReadiness(transaction, {
-        actionTypes: [target.action.actionType],
-        actorId: actor.id,
-        recordQuorumEvaluation: true,
-        stageDefinitionId: target.stage.stageDefinitionId,
-        stageInstanceId: target.stage.stageInstanceId,
-        taskId: target.task?.id,
-      });
-      const readinessReason = workflowActionReadinessReason(
-        target.action.actionType,
-        readiness,
-      );
-      if (readinessReason) fail("ACTION_UNAVAILABLE", readinessReason);
-      const requestInformation =
-        target.action.actionType === "REQUEST_INFORMATION" &&
-        input.input.actionType === "REQUEST_INFORMATION"
-          ? await createRequestInformation(
-              transaction,
-              buildRequestInformationCreationRequest({
-                actorId: actor.id,
-                command: { ...input, input: input.input },
-                target: { ...target, action: target.action },
-              }),
-            )
-          : null;
-      const resultingRuntimeVersion = await claimWorkflowActionRuntimeVersion(
+    return await withWorkflowActionExecutionTransaction((transaction) =>
+      executeWorkflowActionInTransaction(
         transaction,
-        target.stage.stageInstanceId,
-        input.expectedRuntimeVersion,
-        ["RESUME", "PUT_ON_HOLD"].includes(target.action.actionType)
-          ? ["ACTIVE", "BLOCKED"]
-          : ["ACTIVE"],
-      );
-      if (!resultingRuntimeVersion) {
-        fail(
-          "STALE_RUNTIME_VERSION",
-          "The workflow changed. Refresh and try again.",
-        );
-      }
-      if (
-        target.task &&
-        workflowActionCompletesTask(target.action.actionType)
-      ) {
-        const completed = await completeActionTask(transaction, {
-          normalizedInput: input.input,
-          task: target.task,
-        });
-        if (!completed) {
-          fail(
-            "ACTION_UNAVAILABLE",
-            "The task changed before the action completed.",
-          );
-        }
-        const requirements = await loadRequiredTaskCompletions(
-          transaction,
-          target.stage.stageInstanceId,
-        );
-        await recordReviewThresholdEvaluations(transaction, {
-          actorId: actor.id,
-          requirements,
-          stageInstanceId: target.stage.stageInstanceId,
-          triggerTaskId: target.task.id,
-        });
-      }
-      return executeConfiguredWorkflowActionOutcome(transaction, {
-        actorId: actor.id,
-        command: input,
-        conditions,
-        conditionContext,
-        configuredTransitions,
-        resultingRuntimeVersion,
-        runtimeDestination,
-        requestInformation,
-        target,
-      });
-    });
+        actor,
+        input,
+        replayCommand,
+      ),
+    );
   } catch (error) {
     if (!isIdempotencyConstraint(error)) throw error;
     const racedReplay = await findWorkflowActionExecution(
@@ -329,4 +196,163 @@ export async function executeWorkflowAction(
       "That idempotency key was already used for another workflow action.",
     );
   }
+}
+
+async function executeWorkflowActionInTransaction(
+  transaction: WorkflowActionExecutionTransaction,
+  actor: AuthenticatedUser,
+  input: ExecuteWorkflowActionInput,
+  replayCommand: Parameters<typeof findWorkflowActionExecution>[2],
+): Promise<WorkflowActionExecutionResult> {
+  const target = await lockWorkflowActionExecutionTarget(transaction, {
+    actionKey: input.actionKey,
+    actorId: actor.id,
+    sourceStageInstanceId: input.sourceStageInstanceId,
+    taskId: input.taskId,
+  });
+  if (!target) {
+    const concurrentReplay = await findWorkflowActionExecution(
+      transaction,
+      input.idempotencyKey,
+      replayCommand,
+    );
+    if (concurrentReplay?.matchesCommand) return concurrentReplay.result;
+    if (concurrentReplay) {
+      throw new IdempotencyConflictError(
+        "That idempotency key was already used for another workflow action.",
+      );
+    }
+    fail(
+      "ACTION_NOT_CONFIGURED",
+      "The action is not configured for this workflow stage and task.",
+    );
+  }
+  if (target.action.actionType === "REQUEST_INFORMATION") {
+    requirePermission(
+      actor,
+      permissionCodes.fundingApplicationInformationRequestCreate,
+    );
+  }
+  assertRuntimeIdentityAndVersion(target, input);
+  await assertHoldScope(transaction, actor, target, input);
+  const parsedAction = workflowActionDefinitionSchema.safeParse(target.action);
+  if (parsedAction.success) {
+    target.action = { ...parsedAction.data, id: target.action.id };
+  }
+  enforceWorkflowActionPolicy(
+    actor,
+    target,
+    evaluateWorkflowActionPolicy(actor, policyTarget(target), {
+      conditionsPass: true,
+      configurationValid: parsedAction.success,
+      targetsValid: true,
+    }),
+  );
+  const inputError = validateActionInputAgainstConfiguration(
+    target.action,
+    input.input,
+    target.stage.stageKey,
+  );
+  if (inputError) fail("INVALID_ACTION_INPUT", inputError);
+  const {
+    targetsValid,
+    conditionContext,
+    configuredTransitions,
+    conditions,
+    runtimeDestination,
+  } = await prepareWorkflowActionRouting(transaction, target, input.input);
+  enforceWorkflowActionPolicy(
+    actor,
+    target,
+    evaluateWorkflowActionPolicy(actor, policyTarget(target), {
+      conditionsPass: conditions.available,
+      configurationValid: true,
+      targetsValid,
+    }),
+  );
+  const readiness = await readWorkflowActionReadiness(transaction, {
+    actionTypes: [target.action.actionType],
+    actorId: actor.id,
+    recordQuorumEvaluation: true,
+    stageDefinitionId: target.stage.stageDefinitionId,
+    stageInstanceId: target.stage.stageInstanceId,
+    taskId: target.task?.id,
+  });
+  const readinessReason = workflowActionReadinessReason(
+    target.action.actionType,
+    readiness,
+  );
+  if (readinessReason) fail("ACTION_UNAVAILABLE", readinessReason);
+  const preparedNotifications = await prepareWorkflowActionNotifications(
+    transaction,
+    actor,
+    target,
+    conditionContext,
+  );
+  const requestInformation =
+    target.action.actionType === "REQUEST_INFORMATION" &&
+    input.input.actionType === "REQUEST_INFORMATION"
+      ? await createRequestInformation(
+          transaction,
+          buildRequestInformationCreationRequest({
+            actorId: actor.id,
+            command: { ...input, input: input.input },
+            target: { ...target, action: target.action },
+          }),
+        )
+      : null;
+  const resultingRuntimeVersion = await claimWorkflowActionRuntimeVersion(
+    transaction,
+    target.stage.stageInstanceId,
+    input.expectedRuntimeVersion,
+    ["RESUME", "PUT_ON_HOLD"].includes(target.action.actionType)
+      ? ["ACTIVE", "BLOCKED"]
+      : ["ACTIVE"],
+  );
+  if (!resultingRuntimeVersion) {
+    fail(
+      "STALE_RUNTIME_VERSION",
+      "The workflow changed. Refresh and try again.",
+    );
+  }
+  if (target.task && workflowActionCompletesTask(target.action.actionType)) {
+    const completed = await completeActionTask(transaction, {
+      normalizedInput: input.input,
+      task: target.task,
+    });
+    if (!completed) {
+      fail(
+        "ACTION_UNAVAILABLE",
+        "The task changed before the action completed.",
+      );
+    }
+    const requirements = await loadRequiredTaskCompletions(
+      transaction,
+      target.stage.stageInstanceId,
+    );
+    await recordReviewThresholdEvaluations(transaction, {
+      actorId: actor.id,
+      requirements,
+      stageInstanceId: target.stage.stageInstanceId,
+      triggerTaskId: target.task.id,
+    });
+  }
+  const result = await executeConfiguredWorkflowActionOutcome(transaction, {
+    actorId: actor.id,
+    command: input,
+    conditions,
+    conditionContext,
+    configuredTransitions,
+    resultingRuntimeVersion,
+    runtimeDestination,
+    requestInformation,
+    target,
+  });
+  await captureWorkflowActionNotifications(
+    transaction,
+    input,
+    result.actionExecutionId,
+    preparedNotifications,
+  );
+  return result;
 }

@@ -19,22 +19,34 @@ export function appealTransaction<T>(
 ) {
   return getDatabase().transaction(operation);
 }
+type AppealApplication = {
+  id: string;
+  reference: string;
+  name: string;
+  email: string;
+  phone: string;
+};
+
 export async function findAppealApplication(
   transaction: DatabaseTransaction,
   reference: string,
-): Promise<{ id: string; reference: string } | undefined> {
-  const result = await transaction.execute<{
-    id: string;
-    reference: string;
-  }>(sql`
-    SELECT id, reference FROM app_applications WHERE reference = ${reference} LIMIT 1
+): Promise<AppealApplication | undefined> {
+  const result = await transaction.execute<AppealApplication>(sql`
+    SELECT application.id, application.reference,
+      COALESCE(NULLIF(applicant.display_name, ''), applicant.email) AS name,
+      applicant.email, COALESCE(profile.phone_number, '') AS phone
+    FROM app_applications application
+    JOIN app_users applicant ON applicant.id = application.owner_user_id
+    LEFT JOIN app_applicant_profiles profile ON profile.user_id = applicant.id
+    WHERE application.reference = ${reference} LIMIT 1
   `);
   return result.rows[0];
 }
 export async function createApplicationAppeal(
   transaction: DatabaseTransaction,
   applicationId: string,
-  input: ApplicationAppealInput,
+  input: ApplicationAppealInput &
+    Pick<AppealApplication, "name" | "email" | "phone">,
 ) {
   const result = await transaction.execute<{
     id: string;

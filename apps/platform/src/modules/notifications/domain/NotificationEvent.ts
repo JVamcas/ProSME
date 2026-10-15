@@ -1,4 +1,8 @@
 import {
+  workflowActionEmailCatalogue,
+  workflowActionEmailContextSchema,
+} from "./NotificationWorkflowActionEvent";
+import {
   applicationAppealEventCatalogue,
   type ApplicationAppealEvent,
 } from "./NotificationApplicationAppealEvent";
@@ -38,64 +42,29 @@ import {
   workflowDeadlineContextSchema,
   workflowDeadlineEventCatalogue,
 } from "./NotificationWorkflowDeadlineEvent";
-import {
-  applicationOwnerSnapshotSchema,
-  identifierSchema,
-  timestampSchema,
-  uuidSchema,
-} from "./NotificationEventSchemaFields";
 
 import {
   notificationErrorCodes,
   NotificationValidationError,
 } from "./NotificationErrors";
 
-const informationRequestContextSchema = z.object({
-  applicationId: uuidSchema,
-  applicationReference: z.string().trim().min(1).max(100),
-  assignees: z.array(applicationOwnerSnapshotSchema),
-  correlationId: identifierSchema,
-  fundingOpportunityTitle: z.string().trim().min(1).max(300),
-  owner: applicationOwnerSnapshotSchema,
-  question: z.string().trim().min(1).max(2_000),
-  requestInformationId: uuidSchema,
-  sourceIdempotencyKey: identifierSchema,
-  workflowInstanceId: uuidSchema,
-});
-
-export const informationRequestCreatedContextSchema =
-  informationRequestContextSchema
-    .extend({
-      createdAt: timestampSchema,
-      deadlineAt: timestampSchema,
-    })
-    .strict();
-
-export const informationRequestRespondedContextSchema =
-  informationRequestContextSchema
-    .extend({
-      respondedAt: timestampSchema,
-    })
-    .strict();
-
-export const informationRequestClosedContextSchema =
-  informationRequestContextSchema
-    .extend({
-      closedAt: timestampSchema,
-    })
-    .strict();
-
-export const informationRequestExpiredContextSchema =
-  informationRequestContextSchema
-    .extend({
-      deadlineAt: timestampSchema,
-      expiredAt: timestampSchema,
-    })
-    .strict();
+import {
+  informationRequestCreatedContextSchema,
+  informationRequestRespondedContextSchema,
+  informationRequestClosedContextSchema,
+  informationRequestExpiredContextSchema,
+} from "./NotificationInformationRequestEvent";
+export {
+  informationRequestCreatedContextSchema,
+  informationRequestRespondedContextSchema,
+  informationRequestClosedContextSchema,
+  informationRequestExpiredContextSchema,
+} from "./NotificationInformationRequestEvent";
 
 export type NotificationRuleEligibility = "CONFIGURABLE" | "SYSTEM_ONLY";
 
 export const notificationEventKeys = [
+  "workflow.action.notification",
   ...eventEmailKeys,
   "application.appeal.received",
   "application.appeal.acknowledged",
@@ -163,6 +132,9 @@ export type FundingCallLifecycleContext = z.infer<
 >;
 
 export type NotificationEventContextByKey = {
+  "workflow.action.notification": z.infer<
+    typeof workflowActionEmailContextSchema
+  >;
   "application.appeal.received": ApplicationAppealEvent;
   "application.appeal.acknowledged": ApplicationAppealEvent;
   "event.registration.confirmed": z.infer<typeof eventEmailContextSchema>;
@@ -211,6 +183,7 @@ type NotificationEventDefinition<Key extends NotificationEventKey> = {
 };
 
 export const notificationEventCatalogue = {
+  ...workflowActionEmailCatalogue,
   ...eventEmailCatalogue,
   ...applicationAppealEventCatalogue,
   ...reportingEventCatalogue,

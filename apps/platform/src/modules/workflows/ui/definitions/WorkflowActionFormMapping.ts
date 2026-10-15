@@ -19,6 +19,7 @@ export function workflowActionFormDefaults(
   const defaults: WorkflowActionFormValues = {
     stableKey: action?.stableKey ?? "",
     label: action?.label ?? "",
+    notifications: action?.notifications ?? [],
     taskStableKeys,
     actionType: action?.actionType ?? "APPROVE_ADVANCE",
     enabled: action?.enabled ?? true,
@@ -225,6 +226,7 @@ export function toWorkflowActionDefinition(
         ? false
         : values.reasonRequired,
     displayOrder: values.displayOrder,
+    notifications: values.notifications,
     configuration: configuration(values),
   });
 }

@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
+import { Scale } from "lucide-react";
 import { ArrowLink } from "@/shared/ui/Links";
 
-import { ContactForm } from "@/components/public/contact-form";
-import { PublicPageHeader } from "@/modules/content/ui/public/PublicPageHeader";
+import { ContactForm } from "@/modules/engagement/ui/public/ContactForm";
 import { ContactDetailsCards } from "@/modules/content/ui/public/ContactDetailsCards";
+import { PublicPageHeader } from "@/modules/content/ui/public/PublicPageHeader";
 import {
   getContactDetails,
   getPage,
@@ -16,38 +17,50 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function ContactPage() {
-  const [contact, page] = await Promise.all([
-    getContactDetails(),
-    getPage("contact"),
-  ]);
+  const contact = await getContactDetails();
   return (
-    <>
-      <PublicPageHeader
-        eyebrow="Get in touch"
-        image={page?.image}
-        title={page?.title ?? ""}
-        summary={page?.summary ?? ""}
-      />
-      <section className="section bg-brand-cream/30">
-        <div className="container grid gap-8 lg:grid-cols-[320px_1fr]">
-          <ContactDetailsCards contact={contact} />
-          <div className="space-y-6">
-            <div className="rounded-xl border border-brand-blue/25 bg-white p-6">
-              <h2 className="text-xl font-bold text-brand-navy">
+    <section className="bg-[#fdfbf7] py-8 sm:py-10">
+      <div className="mx-auto w-[min(1440px,calc(100%-2rem))] sm:w-[min(1440px,calc(100%-5rem))]">
+        <PublicPageHeader
+          eyebrow="Get in touch"
+          title="Let’s talk"
+          summary="Have a question about the SME Fund? Get in touch with our team."
+          variant="centered"
+        />
+        <div className="grid overflow-hidden rounded-2xl border border-brand-navy/15 bg-brand-white shadow-[0_8px_28px_rgba(10,24,59,0.05)] lg:grid-cols-[36%_64%]">
+          <aside
+            aria-labelledby="contact-details-heading"
+            className="flex min-w-0 flex-col bg-[#fff7ea] p-6 sm:p-9 lg:p-11"
+          >
+            <h2
+              id="contact-details-heading"
+              className="mb-7 text-3xl font-bold tracking-tight text-brand-navy lg:text-4xl"
+            >
+              Contact details
+            </h2>
+            <ContactDetailsCards contact={contact} />
+            <div className="mt-8 rounded-2xl bg-brand-navy p-6">
+              <Scale
+                className="mb-3 size-9 text-brand-orange"
+                aria-hidden="true"
+              />
+              <h2 className="text-xl font-bold text-brand-white">
                 Application appeals
               </h2>
-              <p className="my-3 text-brand-navy/75">
-                Lodge an appeal using your application reference. No portal
-                account required.
+              <p className="my-3 text-base leading-6 text-brand-white/90">
+                Lodge an appeal using your application reference.
               </p>
-              <ArrowLink href="/contact/appeal">
+              <ArrowLink
+                href="/contact/appeal"
+                className="whitespace-normal underline underline-offset-2"
+              >
                 Lodge an application appeal
               </ArrowLink>
             </div>
-            <ContactForm />
-          </div>
+          </aside>
+          <ContactForm />
         </div>
-      </section>
-    </>
+      </div>
+    </section>
   );
 }

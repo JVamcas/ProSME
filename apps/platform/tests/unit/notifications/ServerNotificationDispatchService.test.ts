@@ -90,6 +90,45 @@ beforeEach(() => {
 });
 
 describe("notification dispatch service", () => {
+  it("sends captured action content without a published catalogue template", async () => {
+    const delivery = {
+      ...applicationDelivery(),
+      eventKey: "workflow.action.notification" as const,
+      templateVersionId: null,
+      subjectTemplate: null,
+      htmlTemplate: null,
+      plainTextTemplate: null,
+      context: {
+        applicationId: "10000000-0000-4000-8000-000000000001",
+        applicationReference: "SME-001",
+        fundingOpportunityTitle: "Growth Fund",
+        stageName: "Review",
+        actionLabel: "Approve",
+        actorName: "Reviewer",
+        subjectTemplate: "Decision: {{fundingcalltitle}}",
+        htmlTemplate: "<p>Hello {{recipientname}}</p>",
+        plainTextTemplate: "Hello {{recipientname}}",
+      },
+    };
+    vi.mocked(loadClaimedNotificationDeliveries).mockResolvedValue([delivery]);
+    const emailSender = sender();
+    const result = await processNotificationBatch({
+      batchSize: 25,
+      emailSender,
+      executionTimeoutMs: 45_000,
+      lockTimeoutMs: 300_000,
+      now: () => now,
+      owner: "processor-1",
+    });
+    expect(result.sent).toBe(1);
+    expect(emailSender.send).toHaveBeenCalledWith(
+      expect.objectContaining({
+        subject: "Decision: Growth Fund",
+        html: `<p>Hello ${delivery.recipientName}</p>`,
+      }),
+    );
+    expect(recordNotificationDeliverySuccess).toHaveBeenCalledOnce();
+  });
   it("processes both initial event types end-to-end through a fake sender", async () => {
     const deliveries = [applicationDelivery(), workflowDelivery()];
     vi.mocked(claimDueNotificationOccurrences).mockResolvedValue(

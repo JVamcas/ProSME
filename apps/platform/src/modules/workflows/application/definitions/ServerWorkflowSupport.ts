@@ -74,6 +74,21 @@ async function validateReferences(
       });
     }
     stage.actions.forEach((action, actionIndex) => {
+      action.notifications?.forEach((notification, notificationIndex) => {
+        const invalidUser =
+          notification.recipientType === "SPECIFIC_USER" &&
+          references.users.get(notification.recipientId!) !== "active";
+        const invalidRole =
+          notification.recipientType === "SPECIFIC_ROLE" &&
+          !references.roles.has(notification.recipientId!);
+        if (invalidUser || invalidRole) {
+          validation.errors.push({
+            code: "INVALID_NOTIFICATION_RECIPIENT",
+            message: "Select an active notification recipient.",
+            path: `stages.${index}.actions.${actionIndex}.notifications.${notificationIndex}.recipientId`,
+          });
+        }
+      });
       if (action.actionType !== "ESCALATE") return;
       const path = `stages.${index}.actions.${actionIndex}.configuration.targetId`;
       if (

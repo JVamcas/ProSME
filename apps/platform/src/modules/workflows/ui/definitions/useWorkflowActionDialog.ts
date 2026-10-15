@@ -43,6 +43,7 @@ export const actionEditorSteps = [
   { id: "details", label: "Action details" },
   { id: "behaviour", label: "Behaviour" },
   { id: "routing", label: "Routing" },
+  { id: "notifications", label: "Notifications" },
   { id: "review", label: "Review" },
 ] as const;
 
@@ -144,57 +145,17 @@ export function useWorkflowActionDialog({
     control: form.control,
     name: "rejectionOutcomeType",
   });
-  const previousActionType = useRef(actionType);
-  const previousEscalationTargetType = useRef(escalationTargetType);
   const currentIndex = actionEditorSteps.findIndex(
     (step) => step.id === currentStep,
   );
-
-  useEffect(() => {
-    form.setValue("stableKey", stableKey, { shouldValidate: true });
-  }, [form, stableKey]);
-
-  useEffect(() => {
-    if (previousActionType.current === actionType) return;
-    previousActionType.current = actionType;
-    const decisionTask = stage.tasks.find(
-      (task) => task.taskType === "STAGE_DECISION",
-    );
-    form.setValue(
-      "taskStableKeys",
-      isWorkflowStageDecisionAction(actionType)
-        ? decisionTask
-          ? [decisionTask.stableKey]
-          : []
-        : stage.tasks.map((task) => task.stableKey),
-      { shouldDirty: true, shouldValidate: true },
-    );
-  }, [actionType, form, stage.tasks]);
-
-  useEffect(() => {
-    if (previousEscalationTargetType.current === escalationTargetType) return;
-    previousEscalationTargetType.current = escalationTargetType;
-    form.setValue("escalationTargetId", "", { shouldValidate: true });
-  }, [escalationTargetType, form]);
-
-  useEffect(() => {
-    if (actionType !== "REJECT" || routes.length === 0) return;
-    const route = routes.find((item) => item.terminalOutcome);
-    if (route?.terminalOutcome) {
-      const mapping = terminalOutcomeApplicantStatus(
-        route.terminalOutcome,
-        route.terminalApplicantStatus,
-      );
-      form.setValue("rejectionPublicStatus", mapping.status);
-      form.setValue("rejectionPublicLabel", mapping.label);
-      form.setValue("rejectionPublicDescription", mapping.description);
-    }
-    form.setValue(
-      "rejectionOutcomeType",
-      routes[0].terminalOutcome ? "TERMINAL" : "TRANSITION",
-      { shouldValidate: true },
-    );
-  }, [actionType, form, routes]);
+  useWorkflowActionFormEffects(
+    form,
+    stage,
+    routes,
+    stableKey,
+    actionType,
+    escalationTargetType,
+  );
 
   async function continueToNextStep() {
     const valid =
@@ -283,4 +244,62 @@ export function useWorkflowActionDialog({
     save,
     taskStableKeys,
   };
+}
+
+function useWorkflowActionFormEffects(
+  form: UseFormReturn<WorkflowActionFormValues>,
+  stage: WorkflowStageInput,
+  routes: WorkflowTransitionDefinition[],
+  stableKey: string,
+  actionType: WorkflowActionDefinition["actionType"],
+  escalationTargetType: WorkflowActionFormValues["escalationTargetType"],
+) {
+  const previousActionType = useRef(actionType);
+  const previousEscalationTargetType = useRef(escalationTargetType);
+
+  useEffect(() => {
+    form.setValue("stableKey", stableKey, { shouldValidate: true });
+  }, [form, stableKey]);
+
+  useEffect(() => {
+    if (previousActionType.current === actionType) return;
+    previousActionType.current = actionType;
+    const decisionTask = stage.tasks.find(
+      (task) => task.taskType === "STAGE_DECISION",
+    );
+    form.setValue(
+      "taskStableKeys",
+      isWorkflowStageDecisionAction(actionType)
+        ? decisionTask
+          ? [decisionTask.stableKey]
+          : []
+        : stage.tasks.map((task) => task.stableKey),
+      { shouldDirty: true, shouldValidate: true },
+    );
+  }, [actionType, form, stage.tasks]);
+
+  useEffect(() => {
+    if (previousEscalationTargetType.current === escalationTargetType) return;
+    previousEscalationTargetType.current = escalationTargetType;
+    form.setValue("escalationTargetId", "", { shouldValidate: true });
+  }, [escalationTargetType, form]);
+
+  useEffect(() => {
+    if (actionType !== "REJECT" || routes.length === 0) return;
+    const route = routes.find((item) => item.terminalOutcome);
+    if (route?.terminalOutcome) {
+      const mapping = terminalOutcomeApplicantStatus(
+        route.terminalOutcome,
+        route.terminalApplicantStatus,
+      );
+      form.setValue("rejectionPublicStatus", mapping.status);
+      form.setValue("rejectionPublicLabel", mapping.label);
+      form.setValue("rejectionPublicDescription", mapping.description);
+    }
+    form.setValue(
+      "rejectionOutcomeType",
+      routes[0].terminalOutcome ? "TERMINAL" : "TRANSITION",
+      { shouldValidate: true },
+    );
+  }, [actionType, form, routes]);
 }

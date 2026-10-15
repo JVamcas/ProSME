@@ -61,7 +61,7 @@ describe("request information deadline overrides", () => {
     const action = definition(flags);
     expect(
       toWorkflowActionDefinition(workflowActionFormDefaults(action, 1)),
-    ).toEqual(action);
+    ).toEqual({ ...action, notifications: [] });
     expect(
       workflowActionInputMetadata(action).requestInformationDeadline,
     ).toEqual({

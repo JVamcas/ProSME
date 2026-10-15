@@ -73,7 +73,7 @@ databaseTests("application appeals PostgreSQL flow", () => {
       ).rows[0].count,
     ).toBe(0);
   });
-  it("stores sanitized rich text, acknowledges the public sender, and exposes narrow queue projections", async () => {
+  it("stores sanitized text with linked applicant contact, acknowledges the applicant, and exposes narrow queue projections", async () => {
     const submitted = await submitApplicationAppeal({
       ...input,
       details: '<p onclick="bad()">Review details</p><script>bad()</script>',
@@ -88,7 +88,12 @@ databaseTests("application appeals PostgreSQL flow", () => {
     expect(queue.items[0]).not.toHaveProperty("email");
     expect(queue.items[0]).not.toHaveProperty("grounds");
     const detail = await getApplicationAppeal(actor, queue.items[0].id);
-    expect(detail.details).toBe("<p>Review details</p>");
+    expect(detail).toMatchObject({
+      details: "<p>Review details</p>",
+      name: "Application Owner",
+      email: "application-owner@example.test",
+      phone: "",
+    });
     const deliveries = await query(
       `SELECT occurrence.event_key, delivery.recipient_email, delivery.recipient_user_id
       FROM app_notification_deliveries delivery JOIN app_notification_outbox occurrence ON occurrence.id = delivery.outbox_id
@@ -98,7 +103,7 @@ databaseTests("application appeals PostgreSQL flow", () => {
     expect(deliveries.rows).toEqual([
       {
         event_key: "application.appeal.acknowledged",
-        recipient_email: input.email,
+        recipient_email: "application-owner@example.test",
         recipient_user_id: null,
       },
     ]);

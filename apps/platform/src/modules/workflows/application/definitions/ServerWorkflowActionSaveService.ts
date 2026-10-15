@@ -43,6 +43,9 @@ export async function saveWorkflowAction(
     ...input.action,
     id: previous?.id,
     condition: input.action.condition ?? null,
+    ...(input.action.notifications || previous?.notifications
+      ? { notifications: input.action.notifications ?? previous?.notifications }
+      : {}),
   };
   const change = { ...input, action };
   const nextStage = changedWorkflowActionStage(stage, change);

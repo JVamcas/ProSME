@@ -1,4 +1,4 @@
-import { Mail, MapPin, Phone, type LucideIcon } from "lucide-react";
+import { Clock3, Mail, MapPin, Phone, type LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
 import type { ContactContent } from "../../ContentTypes";
@@ -13,10 +13,14 @@ function ContactCard({
   children: ReactNode;
 }) {
   return (
-    <div className="min-w-0 rounded-2xl border border-brand-blue/25 bg-brand-white p-5 shadow-[0_12px_35px_rgba(10,24,59,0.08)]">
-      <Icon className="size-6 text-brand-orange" aria-hidden="true" />
-      <h2 className="mt-3 font-bold text-brand-navy">{title}</h2>
-      {children}
+    <div className="flex min-w-0 items-start gap-5">
+      <div className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-brand-orange/10">
+        <Icon className="size-7 text-brand-orange" aria-hidden="true" />
+      </div>
+      <div className="min-w-0 pt-1">
+        <h3 className="font-bold text-brand-navy">{title}</h3>
+        {children}
+      </div>
     </div>
   );
 }
@@ -26,11 +30,11 @@ export function ContactDetailsCards({ contact }: { contact: ContactContent }) {
   const officeHours = contact.officeHours?.trim();
 
   return (
-    <aside className="min-w-0 space-y-4">
+    <div className="min-w-0 space-y-6">
       <ContactCard icon={Mail} title="Email">
         <a
           href={`mailto:${contact.email}`}
-          className="mt-1 block text-sm font-semibold text-brand-navy underline wrap-break-word"
+          className="mt-1 block text-base text-brand-navy wrap-break-word hover:underline focus-visible:underline"
         >
           {contact.email}
         </a>
@@ -39,22 +43,24 @@ export function ContactDetailsCards({ contact }: { contact: ContactContent }) {
         <ContactCard icon={Phone} title="Telephone">
           <a
             href={`tel:${phone}`}
-            className="mt-1 block text-sm font-semibold text-brand-navy underline wrap-break-word"
+            className="mt-1 block text-base text-brand-navy wrap-break-word hover:underline focus-visible:underline"
           >
             {phone}
           </a>
         </ContactCard>
       ) : null}
       <ContactCard icon={MapPin} title="Programme office">
-        <p className="mt-1 whitespace-pre-line text-sm leading-6 text-brand-navy/75 wrap-break-word">
+        <p className="mt-1 whitespace-pre-line text-base leading-6 text-brand-navy wrap-break-word">
           {contact.address}
         </p>
-        {officeHours ? (
-          <p className="mt-2 text-xs text-brand-navy/65 wrap-break-word">
+      </ContactCard>
+      {officeHours ? (
+        <ContactCard icon={Clock3} title="Office hours">
+          <p className="mt-1 whitespace-pre-line text-base leading-6 text-brand-navy wrap-break-word">
             {officeHours}
           </p>
-        ) : null}
-      </ContactCard>
-    </aside>
+        </ContactCard>
+      ) : null}
+    </div>
   );
 }

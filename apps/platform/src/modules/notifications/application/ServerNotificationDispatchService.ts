@@ -1,3 +1,4 @@
+import { renderWorkflowActionEmail } from "./WorkflowActionEmailContent";
 import {
   renderAppealAcknowledgement,
   requireAppealDeliveryRecipient,
@@ -20,6 +21,7 @@ import {
   type NotificationErrorCode,
 } from "../domain/NotificationErrors";
 import {
+  type NotificationEventKey,
   isNotificationEventKey,
   notificationEventCatalogue,
   parseNotificationContext,
@@ -86,6 +88,9 @@ async function renderDeliveryEmail(
   context: ReturnType<typeof parseNotificationContext>,
   systemOnly: boolean,
 ) {
+  if (delivery.eventKey === "workflow.action.notification") {
+    return renderWorkflowActionEmail(context, delivery.recipientName);
+  }
   if (delivery.eventKey === "application.appeal.acknowledged") {
     return renderAppealAcknowledgement(delivery);
   }
@@ -105,7 +110,7 @@ async function renderDeliveryEmail(
       subjectTemplate: delivery.subjectTemplate!,
     },
     notificationEventTemplateFields[delivery.eventKey],
-    buildServerNotificationRenderValues({
+    buildServerNotificationRenderValues<NotificationEventKey>({
       context,
       eventKey: delivery.eventKey,
       recipient: {

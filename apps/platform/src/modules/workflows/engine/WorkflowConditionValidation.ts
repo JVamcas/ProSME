@@ -40,35 +40,50 @@ export function validateWorkflowConditions(
 ): WorkflowValidationIssue[] {
   const errors: WorkflowValidationIssue[] = [];
   graph.stages.forEach((stage, stageIndex) => {
-    errors.push(...validateCondition(
-      stage.entryCondition,
-      workflowConditionFields(graph, forms, stage, false),
-      `stages.${stageIndex}.entryCondition`,
-    ));
-    errors.push(...validateCondition(
-      stage.exitCondition,
-      workflowConditionFields(graph, forms, stage, true),
-      `stages.${stageIndex}.exitCondition`,
-    ));
-    stage.actions.forEach((action, actionIndex) => {
-      errors.push(...validateCondition(
-        action.condition ?? null,
+    errors.push(
+      ...validateCondition(
+        stage.entryCondition,
+        workflowConditionFields(graph, forms, stage, false),
+        `stages.${stageIndex}.entryCondition`,
+      ),
+    );
+    errors.push(
+      ...validateCondition(
+        stage.exitCondition,
         workflowConditionFields(graph, forms, stage, true),
-        `stages.${stageIndex}.actions.${actionIndex}.condition`,
-      ));
+        `stages.${stageIndex}.exitCondition`,
+      ),
+    );
+    stage.actions.forEach((action, actionIndex) => {
+      action.notifications?.forEach((notification, index) => {
+        errors.push(
+          ...validateCondition(
+            notification.condition,
+            workflowConditionFields(graph, forms, stage, true),
+            `stages.${stageIndex}.actions.${actionIndex}.notifications.${index}.condition`,
+          ),
+        );
+      });
+      errors.push(
+        ...validateCondition(
+          action.condition ?? null,
+          workflowConditionFields(graph, forms, stage, true),
+          `stages.${stageIndex}.actions.${actionIndex}.condition`,
+        ),
+      );
     });
   });
-  const stages = new Map(
-    graph.stages.map((stage) => [stage.stableKey, stage]),
-  );
+  const stages = new Map(graph.stages.map((stage) => [stage.stableKey, stage]));
   graph.transitions.forEach((transition, transitionIndex) => {
     const source = stages.get(transition.sourceStageKey);
     if (!source) return;
-    errors.push(...validateCondition(
-      transition.condition,
-      workflowConditionFields(graph, forms, source, true),
-      `transitions.${transitionIndex}.condition`,
-    ));
+    errors.push(
+      ...validateCondition(
+        transition.condition,
+        workflowConditionFields(graph, forms, source, true),
+        `transitions.${transitionIndex}.condition`,
+      ),
+    );
   });
   return errors;
 }

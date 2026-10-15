@@ -137,6 +137,10 @@ describe("workflow action dialog", () => {
       await clickButton("Continue");
       await clickButton("Continue");
       expect(
+        document.querySelector('[aria-label="Action notifications"]'),
+      ).not.toBeNull();
+      await clickButton("Continue");
+      expect(
         document.querySelector('[aria-label="Review action"]')?.textContent,
       ).toContain("ADVANCE_2");
       expect(view.update).not.toHaveBeenCalled();
@@ -164,6 +168,7 @@ describe("workflow action dialog", () => {
       await changeLabel("Approve review!");
       await clickButton("Continue");
       await clickButton("Continue");
+      await clickButton("Continue");
       const review = document.querySelector<HTMLButtonElement>(
         'button[aria-label="Review, not complete"]',
       )!;
@@ -185,9 +190,14 @@ describe("workflow action dialog", () => {
       await clickButton("Back");
       await clickButton("Back");
       await clickButton("Back");
+      await clickButton("Back");
       await changeLabel("Advance");
       await clickButton("Continue");
       await clickButton("Continue");
+      await clickButton("Continue");
+      expect(
+        document.querySelector('[aria-label="Action notifications"]'),
+      ).not.toBeNull();
       await clickButton("Continue");
       expect(
         document.querySelector('[aria-label="Review action"]')?.textContent,
@@ -225,6 +235,7 @@ describe("workflow action dialog", () => {
         expect(
           document.querySelector('select[name="rejectionPublicStatus"]'),
         ).toBeNull();
+        await clickButton("Continue");
         await clickButton("Continue");
         await clickButton("Save action");
         const saved = view.update.mock.calls[0][1].action;
@@ -268,6 +279,7 @@ describe("workflow action dialog", () => {
       expect(
         document.querySelector('input[name="rejectionPublicLabel"]'),
       ).toBeNull();
+      await clickButton("Continue");
       await clickButton("Continue");
       await clickButton("Save action");
       const saved = view.update.mock.calls[0][1].action;

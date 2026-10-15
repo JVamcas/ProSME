@@ -4,8 +4,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Send } from "lucide-react";
 import { FormProvider, useForm } from "react-hook-form";
 
-import { GeneralButton } from "@/components/ui/button";
-import { CheckboxField, HoneypotField } from "@/components/ui/form-field";
+import { GeneralButton } from "@/shared/ui/Button";
+import { CheckboxField, HoneypotField } from "@/shared/ui/FormField";
 import { FormInput, FormTextarea } from "@/components/ui/form-fields";
 import {
   contactSubmissionSchema,
@@ -14,8 +14,9 @@ import {
 import { useContactSubmission } from "@/modules/engagement/EngagementHooks";
 
 const fieldClassName =
-  "border-brand-blue/40 bg-brand-white text-base text-brand-navy focus:border-brand-orange focus:ring-brand-orange/20";
-const labelClassName = "font-bold text-brand-navy";
+  "rounded-[10px] border-brand-navy/20 bg-[#faf9f7] text-base text-brand-navy focus:border-brand-orange focus:ring-brand-orange/20";
+const inputClassName = `${fieldClassName} lg:h-16`;
+const labelClassName = "font-bold text-base text-brand-navy lg:text-lg";
 
 function useContactForm() {
   const submission = useContactSubmission();
@@ -53,7 +54,7 @@ function ContactIdentityFields() {
         name="name"
         autoComplete="name"
         labelClassName={labelClassName}
-        className={fieldClassName}
+        className={inputClassName}
       />
       <FormInput
         label="Email"
@@ -61,21 +62,25 @@ function ContactIdentityFields() {
         type="email"
         autoComplete="email"
         labelClassName={labelClassName}
-        className={fieldClassName}
+        className={inputClassName}
       />
       <FormInput
-        label="Phone (optional)"
+        label={
+          <>
+            Phone <span className="font-normal">(optional)</span>
+          </>
+        }
         name="phone"
         type="tel"
         autoComplete="tel"
         labelClassName={labelClassName}
-        className={fieldClassName}
+        className={inputClassName}
       />
       <FormInput
         label="Subject"
         name="subject"
         labelClassName={labelClassName}
-        className={fieldClassName}
+        className={inputClassName}
       />
     </>
   );
@@ -89,28 +94,30 @@ function ContactMessageFields() {
         containerClassName="sm:col-span-2"
         label="Message"
         name="message"
-        rows={6}
+        rows={4}
         labelClassName={labelClassName}
         className={fieldClassName}
       />
-      <CheckboxField
-        name="consent"
-        containerClassName="sm:col-span-2 text-sm leading-5 text-brand-navy/75"
-        controlClassName="accent-brand-orange"
-        label={
-          <>
-            I consent to the SME Fund using this information to respond to my
-            enquiry. See the{" "}
-            <a
-              href="/privacy"
-              className="font-bold text-brand-navy underline"
-            >
-              privacy policy
-            </a>
-            .
-          </>
-        }
-      />
+      <div className="sm:col-span-2">
+        <CheckboxField
+          name="consent"
+          containerClassName="text-sm leading-6 text-brand-navy"
+          controlClassName="size-5 accent-brand-orange"
+          label={
+            <>
+              I consent to the SME Fund using this information to respond to my
+              enquiry. See the{" "}
+              <a
+                href="/privacy"
+                className="text-brand-navy underline underline-offset-2"
+              >
+                privacy policy
+              </a>
+              .
+            </>
+          }
+        />
+      </div>
     </>
   );
 }
@@ -135,10 +142,10 @@ function ContactActions({
         variant="primary"
         size="lg"
         disabled={pending}
-        className="min-h-12 shadow-[0_8px_20px_rgba(10,24,59,0.18)]"
+        className="min-h-12 w-full px-7 text-base sm:w-auto"
       >
         {pending ? "Sending…" : "Send message"}
-        <Send className="size-4" />
+        <Send className="size-5" aria-hidden="true" />
       </GeneralButton>
       <p
         id="contact-status"
@@ -160,10 +167,22 @@ export function ContactForm() {
     <FormProvider {...contact.form}>
       <form
         onSubmit={contact.form.handleSubmit(contact.submit)}
-        className="grid gap-5 rounded-2xl border border-brand-blue/25 bg-brand-white p-6 shadow-[0_12px_35px_rgba(10,24,59,0.08)] sm:grid-cols-2"
+        className="grid min-w-0 gap-x-6 gap-y-6 p-6 sm:grid-cols-2 sm:p-9 lg:gap-x-8 lg:p-12"
+        aria-labelledby="contact-form-heading"
         aria-describedby="contact-status"
         noValidate
       >
+        <div className="mb-1 border-b border-brand-navy/20 pb-6 sm:col-span-2">
+          <h2
+            id="contact-form-heading"
+            className="text-3xl font-bold tracking-tight text-brand-navy lg:text-4xl"
+          >
+            Send us a message
+          </h2>
+          <p className="mt-2 text-base text-brand-navy/75 lg:text-lg">
+            For general questions and enquiries.
+          </p>
+        </div>
         <ContactIdentityFields />
         <ContactMessageFields />
         <ContactActions

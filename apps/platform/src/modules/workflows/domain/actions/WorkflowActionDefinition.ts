@@ -1,3 +1,4 @@
+import type { WorkflowActionNotification } from "./WorkflowActionNotification";
 import type { WorkflowActionConfigurationByType } from "./WorkflowActionConfiguration";
 import type { ConditionGroup } from "@/modules/conditions/domain/ConditionGroup";
 
@@ -41,6 +42,7 @@ export function isWorkflowStageDecisionAction(
 }
 
 type WorkflowActionDefinitionCommon = {
+  notifications?: WorkflowActionNotification[];
   condition?: ConditionGroup | null;
   id?: string;
   stableKey: string;

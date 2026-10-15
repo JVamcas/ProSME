@@ -156,9 +156,7 @@ export async function findConfigurationReferences(
   forms: Map<string, string>;
   formPurposes: Map<string, FormPurpose>;
 }> {
-  const references = collectConfigurationReferences(
-    graph,
-  );
+  const references = collectConfigurationReferences(graph);
   const [foundUsers, foundRoles, foundForms, fieldsByVersion] =
     await Promise.all([
       references.userIds.length
@@ -223,13 +221,18 @@ export async function findWorkflowConditionFormFields(
   return fieldsByVersion;
 }
 
-function collectConfigurationReferences(
-  graph: WorkflowGraphInput,
-) {
+function collectConfigurationReferences(graph: WorkflowGraphInput) {
   const userIds = uniqueTaskValues(graph, "namedUserOverrideId");
   const roleIds = uniqueTaskValues(graph, "roleId");
   graph.stages.forEach((stage) => {
     stage.actions.forEach((action) => {
+      for (const notification of action.notifications ?? []) {
+        if (!notification.recipientId) continue;
+        if (notification.recipientType === "SPECIFIC_USER")
+          userIds.push(notification.recipientId);
+        if (notification.recipientType === "SPECIFIC_ROLE")
+          roleIds.push(notification.recipientId);
+      }
       if (action.actionType !== "ESCALATE") return;
       const targets =
         action.configuration.targetType === "ROLE" ? roleIds : userIds;
@@ -237,14 +240,12 @@ function collectConfigurationReferences(
     });
   });
   const formVersionIds = [
-    ...new Set(
-      [
-        ...graph.stages.flatMap((stage) =>
-          stage.coiFormVersionId ? [stage.coiFormVersionId] : [],
-        ),
-        ...collectTaskFormVersionIds(graph),
-      ],
-    ),
+    ...new Set([
+      ...graph.stages.flatMap((stage) =>
+        stage.coiFormVersionId ? [stage.coiFormVersionId] : [],
+      ),
+      ...collectTaskFormVersionIds(graph),
+    ]),
   ];
   return {
     formVersionIds,
@@ -255,11 +256,13 @@ function collectConfigurationReferences(
 
 function collectTaskFormVersionIds(graph: WorkflowGraphInput) {
   return [
-    ...new Set(graph.stages.flatMap((stage) =>
-      stage.tasks.flatMap((task) =>
-        task.formBinding ? [task.formBinding.formVersionId] : [],
-      )
-    )),
+    ...new Set(
+      graph.stages.flatMap((stage) =>
+        stage.tasks.flatMap((task) =>
+          task.formBinding ? [task.formBinding.formVersionId] : [],
+        ),
+      ),
+    ),
   ];
 }
 
