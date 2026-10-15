@@ -1,4 +1,8 @@
 import {
+  renderAppealAcknowledgement,
+  requireAppealDeliveryRecipient,
+} from "./ApplicationAppealNotifications";
+import {
   dispatchCurrentEventEmail,
   prepareEventEmailDeliveries,
   renderEventEmail,
@@ -77,6 +81,41 @@ function controlledFailure(error: unknown): {
   };
 }
 
+async function renderDeliveryEmail(
+  delivery: ClaimedNotificationDelivery,
+  context: ReturnType<typeof parseNotificationContext>,
+  systemOnly: boolean,
+) {
+  if (delivery.eventKey === "application.appeal.acknowledged") {
+    return renderAppealAcknowledgement(delivery);
+  }
+  if (delivery.eventKey.startsWith("event.registration.")) {
+    return renderEventEmail(delivery);
+  }
+  if (systemOnly) {
+    return renderAuthenticationEmail(
+      delivery,
+      context as { firebaseUid: string; recipientEmail: string },
+    );
+  }
+  return renderNotificationTemplate(
+    {
+      htmlTemplate: delivery.htmlTemplate!,
+      plainTextTemplate: delivery.plainTextTemplate!,
+      subjectTemplate: delivery.subjectTemplate!,
+    },
+    notificationEventTemplateFields[delivery.eventKey],
+    buildServerNotificationRenderValues({
+      context,
+      eventKey: delivery.eventKey,
+      recipient: {
+        displayName: delivery.recipientName,
+        userId: delivery.recipientUserId!,
+      },
+    }),
+  );
+}
+
 async function dispatchDelivery(input: {
   brandingAttachment: ReturnType<typeof loadNotificationBrandingLogoAttachment>;
   delivery: ClaimedNotificationDelivery;
@@ -136,29 +175,14 @@ async function dispatchDelivery(input: {
         input.delivery.ruleId ?? null,
       );
     }
-    const rendered = input.delivery.eventKey.startsWith("event.registration.")
-      ? await renderEventEmail(input.delivery)
-      : systemOnly
-        ? await renderAuthenticationEmail(
-            input.delivery,
-            context as { firebaseUid: string; recipientEmail: string },
-          )
-        : renderNotificationTemplate(
-            {
-              htmlTemplate: input.delivery.htmlTemplate!,
-              plainTextTemplate: input.delivery.plainTextTemplate!,
-              subjectTemplate: input.delivery.subjectTemplate!,
-            },
-            notificationEventTemplateFields[input.delivery.eventKey],
-            buildServerNotificationRenderValues({
-              context,
-              eventKey: input.delivery.eventKey,
-              recipient: {
-                displayName: input.delivery.recipientName,
-                userId: input.delivery.recipientUserId!,
-              },
-            }),
-          );
+    if (input.delivery.eventKey === "application.appeal.received") {
+      await requireAppealDeliveryRecipient(input.delivery);
+    }
+    const rendered = await renderDeliveryEmail(
+      input.delivery,
+      context,
+      systemOnly,
+    );
     const result = await input.emailSender.send({
       ...rendered,
       attachments: [

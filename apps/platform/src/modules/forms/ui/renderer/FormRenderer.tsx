@@ -230,7 +230,7 @@ export function FormRenderer({
       {parsed.instructions ? (
         <p className="text-sm text-brand-navy/70">{parsed.instructions}</p>
       ) : null}
-      {showCompleteness ? (
+      {showCompleteness && definition.showCompleteness !== false ? (
         <FormCompletenessSummary
           completeness={completeness}
           supplementalCompletion={supplementalCompletion}

@@ -148,6 +148,7 @@ export type FormRuntimeSchema = {
   versionNumber: number;
   instructions: string | null;
   submissionMode?: FormSubmissionMode;
+  showCompleteness?: boolean;
   submitLabel: string;
   sections: FormSection[];
   fields: FormField[];

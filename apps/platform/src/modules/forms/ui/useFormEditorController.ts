@@ -14,8 +14,25 @@ import {
   removeFormField,
   removeFormSectionFields,
 } from "@/modules/forms/domain/FormFieldOrdering";
-import type { FormField, FormSection } from "@/modules/forms/FormTypes";
-import type { FormDisplayMode } from "@/modules/forms/FormTypes";
+import type {
+  FormDisplayMode,
+  FormEditorView,
+  FormField,
+  FormSection,
+} from "@/modules/forms/FormTypes";
+
+function draftInput(editor: FormEditorView) {
+  return {
+    versionId: editor.version.id,
+    expectedRowVersion: editor.version.rowVersion,
+    displayMode: editor.version.displayMode,
+    showCompleteness: editor.version.showCompleteness ?? true,
+    instructions: editor.version.instructions,
+    submitLabel: editor.version.submitLabel,
+    fields: editor.fields,
+    sections: editor.sections,
+  };
+}
 
 export function useFormEditorController(id: string, versionId?: string) {
   const router = useRouter();
@@ -56,33 +73,26 @@ export function useFormEditorController(id: string, versionId?: string) {
   const saveField = useCallback(
     async (next: FormField) => {
       if (!editor) return;
-      const fields = editor.fields.some((item) => item.id === field?.id)
-        ? editor.fields.map((item) =>
-            item.id === field?.id ? { ...next, id: item.id } : item,
-          )
-        : [...editor.fields, next];
+      const fields =
+        next.id && editor.fields.some((item) => item.id === next.id)
+          ? editor.fields.map((item) =>
+              item.id === next.id ? { ...next, id: item.id } : item,
+            )
+          : [...editor.fields, next];
       await update.mutateAsync({
-        versionId: editor.version.id,
-        expectedRowVersion: editor.version.rowVersion,
-        displayMode: editor.version.displayMode,
+        ...draftInput(editor),
         fields,
-        instructions: editor.version.instructions,
         sections: editor.sections,
-        submitLabel: editor.version.submitLabel,
       });
     },
-    [editor, field?.id, update],
+    [editor, update],
   );
   const removeField = useCallback(() => {
     if (!editor || !fieldToRemove) return;
     update.mutate({
-      versionId: editor.version.id,
-      expectedRowVersion: editor.version.rowVersion,
-      displayMode: editor.version.displayMode,
+      ...draftInput(editor),
       fields: removeFormField(editor.fields, formFieldIdentity(fieldToRemove)),
-      instructions: editor.version.instructions,
       sections: editor.sections,
-      submitLabel: editor.version.submitLabel,
     });
     setFieldToRemove(undefined);
   }, [editor, fieldToRemove, update]);
@@ -95,13 +105,9 @@ export function useFormEditorController(id: string, versionId?: string) {
           )
         : [...editor.sections, next];
       await update.mutateAsync({
-        versionId: editor.version.id,
-        expectedRowVersion: editor.version.rowVersion,
-        displayMode: editor.version.displayMode,
+        ...draftInput(editor),
         fields: editor.fields,
-        instructions: editor.version.instructions,
         sections,
-        submitLabel: editor.version.submitLabel,
       });
     },
     [editor, section, update],
@@ -112,13 +118,9 @@ export function useFormEditorController(id: string, versionId?: string) {
       .filter((item) => item.id !== sectionToRemove.id)
       .map((item, index) => ({ ...item, order: index + 1 }));
     update.mutate({
-      versionId: editor.version.id,
-      expectedRowVersion: editor.version.rowVersion,
-      displayMode: editor.version.displayMode,
+      ...draftInput(editor),
       fields: removeFormSectionFields(editor.fields, sectionToRemove.id ?? ""),
-      instructions: editor.version.instructions,
       sections,
-      submitLabel: editor.version.submitLabel,
     });
     setSectionToRemove(undefined);
   }, [editor, sectionToRemove, update]);
@@ -126,13 +128,9 @@ export function useFormEditorController(id: string, versionId?: string) {
     (sections: FormSection[]) => {
       if (!editor) return;
       update.mutate({
-        versionId: editor.version.id,
-        expectedRowVersion: editor.version.rowVersion,
-        displayMode: editor.version.displayMode,
+        ...draftInput(editor),
         fields: editor.fields,
-        instructions: editor.version.instructions,
         sections,
-        submitLabel: editor.version.submitLabel,
       });
     },
     [editor, update],
@@ -142,13 +140,9 @@ export function useFormEditorController(id: string, versionId?: string) {
       if (!editor) return;
       update.mutate(
         {
-          versionId: editor.version.id,
-          expectedRowVersion: editor.version.rowVersion,
-          displayMode: editor.version.displayMode,
+          ...draftInput(editor),
           fields,
-          instructions: editor.version.instructions,
           sections: editor.sections,
-          submitLabel: editor.version.submitLabel,
         },
         { onError },
       );
@@ -159,13 +153,20 @@ export function useFormEditorController(id: string, versionId?: string) {
     (displayMode: FormDisplayMode) => {
       if (!editor || displayMode === editor.version.displayMode) return;
       update.mutate({
+        ...draftInput(editor),
         displayMode,
-        versionId: editor.version.id,
-        expectedRowVersion: editor.version.rowVersion,
         fields: editor.fields,
-        instructions: editor.version.instructions,
         sections: editor.sections,
-        submitLabel: editor.version.submitLabel,
+      });
+    },
+    [editor, update],
+  );
+  const updateShowCompleteness = useCallback(
+    (showCompleteness: boolean) => {
+      if (!editor) return;
+      update.mutate({
+        ...draftInput(editor),
+        showCompleteness,
       });
     },
     [editor, update],
@@ -215,5 +216,6 @@ export function useFormEditorController(id: string, versionId?: string) {
     setSectionToRemove,
     update,
     updateDisplayMode,
+    updateShowCompleteness,
   };
 }

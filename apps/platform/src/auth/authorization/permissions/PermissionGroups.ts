@@ -5,6 +5,7 @@ import {
 } from "./PermissionCodes";
 
 export type PermissionGroupId =
+  | "application-appeals"
   | "events"
   | "user"
   | "business"
@@ -34,6 +35,15 @@ export type PermissionGroup = {
 };
 
 export const permissionGroups: readonly PermissionGroup[] = [
+  {
+    id: "application-appeals",
+    label: "Application appeals",
+    permissionCodes: [
+      permissionCodes.applicationAppealReadAll,
+      permissionCodes.applicationAppealAssignAll,
+      permissionCodes.applicationAppealResolveAll,
+    ],
+  },
   {
     id: "events",
     label: "Events and registrations",

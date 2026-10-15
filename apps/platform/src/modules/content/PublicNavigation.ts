@@ -11,5 +11,5 @@ export const primaryNavigation: readonly NavigationItem[] = [
   { href: "/resources", label: "Resources" },
   { href: "/events", label: "Events & Programmes" },
   { href: "/faq", label: "FAQs" },
-  { href: "/contact", label: "Contact" },
+  { href: "/contact", label: "Contact Us" },
 ];

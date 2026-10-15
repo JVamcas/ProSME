@@ -233,6 +233,7 @@ export const formDefinitionSchema = z.object({
 });
 
 export const formVersionSchema = z.object({
+  showCompleteness: z.boolean().optional(),
   displayMode: z.enum(formDisplayModes),
   instructions: z.string().trim().max(4000).nullable().optional(),
   submitLabel: z.string().trim().min(1).max(80),

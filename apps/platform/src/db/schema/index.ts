@@ -53,3 +53,5 @@ export * from "@/modules/content/infrastructure/event-registration.schema";
 export * from "@/modules/notifications/infrastructure/event-notification-intent.schema";
 
 export * from "@/modules/workflows/infrastructure/workflow-form-migration.schema";
+
+export * from "@/modules/applications/infrastructure/application-appeal.schema";

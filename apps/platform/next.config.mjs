@@ -49,6 +49,7 @@ const nextConfig = {
     ],
     "/api/internal/notifications/process": [
       "./src/modules/notifications/templates/email/auth-*.html",
+      "./src/modules/notifications/templates/email/application-appeal-acknowledged.html",
     ],
   },
   reactStrictMode: true,

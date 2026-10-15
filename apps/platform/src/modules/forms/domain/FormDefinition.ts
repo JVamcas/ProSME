@@ -28,6 +28,7 @@ export type FormVersionSummary = {
   instructions: string | null;
   displayMode: FormDisplayMode;
   submissionMode: FormSubmissionMode;
+  showCompleteness?: boolean;
   submitLabel: string;
   rowVersion: number;
   createdAt: string;

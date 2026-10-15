@@ -1,3 +1,4 @@
+import { authorizedAppealRecipientIds } from "./ApplicationAppealNotificationRepository";
 import { authorizedChatbotRecipientIds } from "./ChatbotNotificationRecipientRepository";
 import "server-only";
 
@@ -216,6 +217,17 @@ export async function insertNotificationOccurrence<
         binding.targetUserId &&
         allowed.has(binding.targetUserId) &&
         (!configured.length || configured.includes(binding.targetUserId)),
+    );
+  }
+  if (input.eventKey === "application.appeal.received") {
+    const allowed = await authorizedAppealRecipientIds(
+      bindings.flatMap((binding) =>
+        binding.targetUserId ? [binding.targetUserId] : [],
+      ),
+      transaction,
+    );
+    bindings = bindings.filter(
+      (binding) => binding.targetUserId && allowed.has(binding.targetUserId),
     );
   }
   const excludedRecipientUserIds = new Set(

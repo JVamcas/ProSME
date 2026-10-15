@@ -27,6 +27,7 @@ export async function createForm(input: {
   instructions?: string | null;
   name: string;
   purpose: FormPurpose;
+  showCompleteness?: boolean;
   submitLabel: string;
 }) {
   return getDatabase().transaction(async (transaction) => {
@@ -47,6 +48,7 @@ export async function createForm(input: {
         displayMode: input.displayMode ?? "SINGLE_PAGE",
         formDefinitionId: definition.id,
         instructions: input.instructions ?? null,
+        showCompleteness: input.showCompleteness,
         submitLabel: input.submitLabel,
         metadata: {
           code: input.code,
@@ -118,6 +120,7 @@ export async function cloneFormVersion(input: {
         instructions: source.instructions,
         metadata: source.metadata,
         submissionMode: source.submissionMode,
+        showCompleteness: source.showCompleteness,
         submitLabel: source.submitLabel,
         versionNumber: Number(latest.versionNumber) + 1,
       })
@@ -139,6 +142,7 @@ export async function saveFormDraft(input: {
   name?: string;
   purpose?: FormPurpose;
   sections: FormSection[];
+  showCompleteness?: boolean;
   submitLabel: string;
   versionId?: string;
 }) {
@@ -197,6 +201,7 @@ export async function saveFormDraft(input: {
             : {}),
         })}::jsonb`,
         rowVersion: input.expectedRowVersion + 1,
+        showCompleteness: input.showCompleteness,
         submitLabel: input.submitLabel,
         updatedAt: new Date(),
       })

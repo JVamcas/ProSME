@@ -25,6 +25,9 @@ export type CmsPermissionCode =
   `cms.${CmsPermissionResource}.${CmsPermissionAction}`;
 
 export const permissionCodes = {
+  applicationAppealReadAll: "application.appeal.read.all",
+  applicationAppealAssignAll: "application.appeal.assign.all",
+  applicationAppealResolveAll: "application.appeal.resolve.all",
   eventRegistrationsReadAll: "events.registrations.read.all",
   eventRegistrationSettingsReadAll: "events.registration-settings.read.all",
   eventRegistrationSettingsUpdateAll: "events.registration-settings.update.all",

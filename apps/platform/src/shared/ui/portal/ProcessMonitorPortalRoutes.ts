@@ -1,4 +1,9 @@
-import { BadgeQuestionMark, CalendarDays, ListTodo, ShieldCheck } from "lucide-react";
+import {
+  BadgeQuestionMark,
+  CalendarDays,
+  ListTodo,
+  ShieldCheck,
+} from "lucide-react";
 
 import { permissionCodes } from "@/auth/authorization/permissions";
 import type { PortalRoute } from "./portal-navigation";
@@ -17,7 +22,7 @@ export const processMonitorPortalRoutes: readonly PortalRoute[] = [
     id: "monitor-conflict-reviews",
     section: "process-monitor",
     href: "/admin/process-monitor/conflict-reviews",
-    label: "Conflict reviews",
+    label: "Conflict of Interest reviews",
     icon: ShieldCheck,
     space: "operations",
     requiredPermission: permissionCodes.workflowCoiAllReview,
@@ -26,10 +31,19 @@ export const processMonitorPortalRoutes: readonly PortalRoute[] = [
     id: "monitor-escalated-reviews",
     section: "process-monitor",
     href: "/admin/chatbot/cases",
-    label: "Escalated reviews",
+    label: "ChatBot Escalated reviews",
     icon: BadgeQuestionMark,
     space: "operations",
     requiredPermission: permissionCodes.chatbotEscalationReadAll,
+  },
+  {
+    id: "monitor-application-appeals",
+    section: "process-monitor",
+    href: "/admin/process-monitor/application-appeals",
+    label: "Application Appeals Queue",
+    icon: BadgeQuestionMark,
+    space: "operations",
+    requiredPermission: permissionCodes.applicationAppealReadAll,
   },
   {
     id: "admin-events",
