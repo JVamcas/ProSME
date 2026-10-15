@@ -136,7 +136,18 @@ export const deferConfigurationSchema = z.discriminatedUnion("targetType", [
     .strict(),
 ]);
 
+import { workflowActionNotificationSchema } from "./WorkflowActionNotification";
+
 const commonShape = {
+  notifications: z
+    .array(workflowActionNotificationSchema)
+    .max(100)
+    .optional()
+    .refine(
+      (rows) =>
+        !rows || new Set(rows.map((row) => row.id)).size === rows.length,
+      "Notification IDs must be unique.",
+    ),
   condition: conditionGroupSchema.nullable().optional(),
   id: z.string().uuid().optional(),
   stableKey: stableKeySchema,

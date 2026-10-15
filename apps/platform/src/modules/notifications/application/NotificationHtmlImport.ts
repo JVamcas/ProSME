@@ -5,9 +5,7 @@ import {
   notificationErrorCodes,
   NotificationValidationError,
 } from "../domain/NotificationErrors";
-import {
-  validateNotificationPlaceholders,
-} from "./NotificationTemplateRenderer";
+import { validateNotificationPlaceholders } from "./NotificationTemplateRenderer";
 
 export const maximumNotificationTemplateBytes = 256 * 1024;
 
@@ -87,6 +85,7 @@ export function sanitizeNotificationHtml(html: string): string {
       "li",
       "ol",
       "p",
+      "s",
       "span",
       "strong",
       "table",

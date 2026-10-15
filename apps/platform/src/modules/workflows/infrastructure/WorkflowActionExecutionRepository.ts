@@ -85,25 +85,28 @@ export async function findWorkflowActionExecution(
     WHERE idempotency_key = ${idempotencyKey}
     LIMIT 1
   `);
-  const row = found.rows[0] as ({
-    result: WorkflowActionExecutionResult;
-    sameAction: boolean;
-    sameActor: boolean;
-    sameInput: boolean;
-    sameStage: boolean;
-    sameTask: boolean;
-    sameVersion: boolean;
-    sameWorkflow: boolean;
-  } | undefined);
+  const row = found.rows[0] as
+    | {
+        result: WorkflowActionExecutionResult;
+        sameAction: boolean;
+        sameActor: boolean;
+        sameInput: boolean;
+        sameStage: boolean;
+        sameTask: boolean;
+        sameVersion: boolean;
+        sameWorkflow: boolean;
+      }
+    | undefined;
   if (!row) return null;
   return {
-    matchesCommand: row.sameAction
-      && row.sameActor
-      && row.sameInput
-      && row.sameStage
-      && row.sameTask
-      && row.sameVersion
-      && row.sameWorkflow,
+    matchesCommand:
+      row.sameAction &&
+      row.sameActor &&
+      row.sameInput &&
+      row.sameStage &&
+      row.sameTask &&
+      row.sameVersion &&
+      row.sameWorkflow,
     result: row.result,
   };
 }
@@ -190,11 +193,13 @@ async function lockTask(
         eq(stageTaskActionBindings.actionKey, input.actionKey),
       ),
     )
-    .where(and(
-      eq(workflowTasks.id, input.taskId),
-      eq(workflowTasks.stageInstanceId, input.stageInstanceId),
-      sql`app_workflow_task_coi_cleared(${workflowTasks.id}, ${input.actorId}::uuid)`,
-    ))
+    .where(
+      and(
+        eq(workflowTasks.id, input.taskId),
+        eq(workflowTasks.stageInstanceId, input.stageInstanceId),
+        sql`app_workflow_task_coi_cleared(${workflowTasks.id}, ${input.actorId}::uuid)`,
+      ),
+    )
     .for("update", { of: workflowTasks })
     .limit(1);
   return task ?? null;
@@ -249,11 +254,13 @@ export async function lockWorkflowActionExecutionTarget(
   const [action] = await transaction
     .select()
     .from(workflowActionDefinitions)
-    .where(and(
-      eq(workflowActionDefinitions.stageId, stage.stageDefinitionId),
-      eq(workflowActionDefinitions.stableKey, input.actionKey),
-      eq(workflowActionDefinitions.enabled, true),
-    ))
+    .where(
+      and(
+        eq(workflowActionDefinitions.stageId, stage.stageDefinitionId),
+        eq(workflowActionDefinitions.stableKey, input.actionKey),
+        eq(workflowActionDefinitions.enabled, true),
+      ),
+    )
     .limit(1);
   if (!action) return null;
   const task = input.taskId
@@ -270,6 +277,7 @@ export async function lockWorkflowActionExecutionTarget(
     action: {
       actionType: action.actionType,
       condition: action.condition,
+      notifications: action.notifications,
       configuration: action.configuration,
       displayOrder: action.displayOrder,
       enabled: action.enabled,
@@ -292,11 +300,13 @@ export async function claimWorkflowActionRuntimeVersion(
   const [stage] = await transaction
     .update(stageInstances)
     .set({ rowVersion: expectedRuntimeVersion + 1 })
-    .where(and(
-      eq(stageInstances.id, stageInstanceId),
-      eq(stageInstances.rowVersion, expectedRuntimeVersion),
-      inArray(stageInstances.status, allowedStatuses),
-    ))
+    .where(
+      and(
+        eq(stageInstances.id, stageInstanceId),
+        eq(stageInstances.rowVersion, expectedRuntimeVersion),
+        inArray(stageInstances.status, allowedStatuses),
+      ),
+    )
     .returning({ rowVersion: stageInstances.rowVersion });
   return stage?.rowVersion ?? null;
 }

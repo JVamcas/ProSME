@@ -16,9 +16,6 @@ export const actor = {
 };
 export const input = {
   applicationReference: "APPEAL-TEST-2026-000001",
-  name: "Public sender",
-  email: "sender@example.test",
-  phone: "",
   grounds: "<p><strong>Review grounds</strong></p>",
   details: "<p>Review details</p>",
   consent: true,

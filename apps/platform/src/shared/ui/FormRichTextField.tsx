@@ -11,6 +11,7 @@ type FormRichTextFieldProps = {
   label: string;
   name: string;
   placeholder?: string;
+  parameters?: readonly { label: string; value: string }[];
   required?: boolean;
 };
 
@@ -20,6 +21,7 @@ export function FormRichTextField({
   label,
   name,
   placeholder,
+  parameters,
   required = false,
 }: FormRichTextFieldProps) {
   const form = useFormContext();
@@ -35,6 +37,7 @@ export function FormRichTextField({
       onBlur={field.onBlur}
       onChange={field.onChange}
       placeholder={placeholder}
+      parameters={parameters}
       required={required}
       value={typeof field.value === "string" ? field.value : ""}
     />

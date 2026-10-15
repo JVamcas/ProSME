@@ -44,9 +44,6 @@ export function PublicApplicationAppealForm() {
     mode: "onChange",
     defaultValues: {
       applicationReference: "",
-      name: "",
-      email: "",
-      phone: "",
       grounds: "",
       details: "",
       consent: false,
@@ -75,26 +72,11 @@ export function PublicApplicationAppealForm() {
           required
           containerClassName="sm:col-span-2"
         />
-        <FormInput name="name" label="Name" autoComplete="name" required />
-        <FormInput
-          name="email"
-          label="Email"
-          type="email"
-          autoComplete="email"
-          required
-        />
-        <FormInput
-          name="phone"
-          label="Phone (optional)"
-          type="tel"
-          autoComplete="tel"
-        />
         <HoneypotField />
         <AppealRichText name="grounds" label="Appeal grounds" />
         <AppealRichText name="details" label="Appeal details" />
         <CheckboxField
           name="consent"
-          containerClassName="sm:col-span-2"
           label={
             <>
               I consent to my information being used to respond to this appeal.
@@ -122,7 +104,7 @@ export function PublicApplicationAppealForm() {
           >
             {mutation.error?.message ??
               (mutation.data
-                ? `Appeal received. Reference ${mutation.data.reference}. An acknowledgement will be sent to your email.`
+                ? `Appeal received. Reference ${mutation.data.reference}. An acknowledgement will be sent to the email linked to your application.`
                 : "")}
           </p>
         </div>

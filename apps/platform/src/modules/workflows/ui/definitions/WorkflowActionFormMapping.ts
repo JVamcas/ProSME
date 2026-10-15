@@ -1,10 +1,4 @@
 import { parseWorkflowRfiReminderOffsets } from "../../domain/actions/WorkflowRequestInformationDeadline";
-import type {
-  WorkflowEditorView,
-  WorkflowStageInput,
-} from "@/modules/workflows/domain/definitions/WorkflowTypes";
-import type { WorkflowTransitionDefinition } from "@/modules/workflows/domain/transitions/WorkflowTransitionDefinition";
-import { replaceWorkflowActionRoutes } from "./WorkflowActionEditorRoutes";
 import { workflowActionDefinitionSchema } from "@/modules/workflows/domain/actions/WorkflowActionSchemas";
 import type { WorkflowActionDefinition } from "@/modules/workflows/domain/actions/WorkflowActionDefinition";
 import type { WorkflowActionFormValues } from "./WorkflowActionFormSchema";
@@ -25,6 +19,7 @@ export function workflowActionFormDefaults(
   const defaults: WorkflowActionFormValues = {
     stableKey: action?.stableKey ?? "",
     label: action?.label ?? "",
+    notifications: action?.notifications ?? [],
     taskStableKeys,
     actionType: action?.actionType ?? "APPROVE_ADVANCE",
     enabled: action?.enabled ?? true,
@@ -231,50 +226,7 @@ export function toWorkflowActionDefinition(
         ? false
         : values.reasonRequired,
     displayOrder: values.displayOrder,
+    notifications: values.notifications,
     configuration: configuration(values),
   });
-}
-
-export function workflowActionUpdatedGraph(
-  editor: WorkflowEditorView,
-  stage: WorkflowStageInput,
-  action: WorkflowActionDefinition | undefined,
-  nextAction: WorkflowActionDefinition,
-  taskStableKeys: readonly string[],
-  routes: WorkflowTransitionDefinition[],
-) {
-  const selectedTasks = new Set(taskStableKeys);
-  return {
-    stages: editor.graph.stages.map((item) =>
-      item.stableKey === stage.stableKey
-        ? {
-            ...item,
-            actions: action
-              ? item.actions.map((current) =>
-                  current.stableKey === action.stableKey ? nextAction : current,
-                )
-              : [...item.actions, nextAction],
-            tasks: item.tasks.map((task) => {
-              const actionKeys = task.actionKeys.filter(
-                (key) =>
-                  key !== action?.stableKey && key !== nextAction.stableKey,
-              );
-              return {
-                ...task,
-                actionKeys: selectedTasks.has(task.stableKey)
-                  ? [...actionKeys, nextAction.stableKey]
-                  : actionKeys,
-              };
-            }),
-          }
-        : item,
-    ),
-    transitions: replaceWorkflowActionRoutes(
-      editor.graph.transitions,
-      stage.stableKey,
-      action?.stableKey,
-      nextAction.stableKey,
-      routes,
-    ),
-  };
 }

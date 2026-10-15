@@ -1,3 +1,4 @@
+import type { WorkflowActionNotification } from "../domain/actions/WorkflowActionNotification";
 import {
   boolean,
   check,
@@ -260,6 +261,10 @@ export const workflowActionDefinitions = pgTable(
     enabled: boolean("enabled").notNull().default(true),
     reasonRequired: boolean("reason_required").notNull().default(false),
     displayOrder: integer("display_order").notNull(),
+    notifications: jsonb("notifications")
+      .$type<WorkflowActionNotification[]>()
+      .notNull()
+      .default([]),
     configuration: jsonb("configuration")
       .$type<WorkflowActionConfiguration>()
       .notNull(),

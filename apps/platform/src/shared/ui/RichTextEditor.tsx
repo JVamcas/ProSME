@@ -17,6 +17,8 @@ import {
 } from "lucide-react";
 import { useEffect } from "react";
 
+import { GeneralButton } from "./Button";
+import { DropdownButton } from "./DropdownButton";
 import { FormField } from "@/components/ui/form-field";
 import { cn } from "@/lib/utils";
 
@@ -31,7 +33,8 @@ type ToolbarAction = {
 function ToolbarButton({ action }: { action: ToolbarAction }) {
   const Icon = action.icon;
   return (
-    <button
+    <GeneralButton
+      variant="ghost"
       aria-label={action.label}
       aria-pressed={action.active}
       className={cn(
@@ -46,7 +49,7 @@ function ToolbarButton({ action }: { action: ToolbarAction }) {
       type="button"
     >
       <Icon aria-hidden="true" className="size-4" />
-    </button>
+    </GeneralButton>
   );
 }
 
@@ -126,6 +129,7 @@ export function RichTextEditor({
   onBlur,
   onChange,
   placeholder,
+  parameters = [],
   required = false,
   value,
 }: {
@@ -137,6 +141,7 @@ export function RichTextEditor({
   onBlur?: () => void;
   onChange: (value: string) => void;
   placeholder?: string;
+  parameters?: readonly { label: string; value: string }[];
   required?: boolean;
   value: string;
 }) {
@@ -202,6 +207,23 @@ export function RichTextEditor({
           className="flex flex-wrap gap-1 border-b border-brand-navy/15 bg-brand-white p-1.5"
           role="toolbar"
         >
+          {parameters.length ? (
+            <DropdownButton
+              disabled={disabled || !editor}
+              label="Insert body parameter"
+              items={parameters.map((parameter) => ({
+                id: parameter.value,
+                label: parameter.label,
+                onAction: () => {
+                  editor
+                    ?.chain()
+                    .focus()
+                    .insertContent(`{{${parameter.value}}}`)
+                    .run();
+                },
+              }))}
+            />
+          ) : null}
           {actions.map((action) => (
             <ToolbarButton
               action={{ ...action, disabled: disabled || action.disabled }}

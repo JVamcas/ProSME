@@ -51,6 +51,9 @@ async function mount(canEdit = true) {
   const update = vi
     .spyOn(clientWorkflowService, "updateDraft")
     .mockResolvedValue(editor);
+  const save = vi
+    .spyOn(clientWorkflowService, "saveAction")
+    .mockResolvedValue(editor);
   const deletion = vi
     .spyOn(clientWorkflowService, "deleteAction")
     .mockResolvedValue(editor);
@@ -74,6 +77,7 @@ async function mount(canEdit = true) {
     editor,
     client,
     update,
+    save,
     deletion,
     container,
     cleanup: async () => {
@@ -130,23 +134,28 @@ describe("workflow path label actions", () => {
       await clickDialogButton("Continue");
       await clickDialogButton("Continue");
       await clickDialogButton("Continue");
+      await clickDialogButton("Continue");
       expect(
         document.querySelector('[aria-label="Review action"]'),
       ).not.toBeNull();
       expect(view.update).not.toHaveBeenCalled();
       await clickDialogButton("Save action");
-      expect(view.update).toHaveBeenCalledTimes(1);
-      const savedGraph = view.update.mock.calls[0][1].graph;
-      expect(savedGraph.stages[1].actions[0].label).toBe("Updated path action");
-      expect(savedGraph.stages[1].actions[0].stableKey).toBe(
+      expect(view.save).toHaveBeenCalledTimes(1);
+      expect(view.update).not.toHaveBeenCalled();
+      const saved = view.save.mock.calls[0][1];
+      expect(saved.stageKey).toBe(view.editor.graph.stages[1].stableKey);
+      expect(saved.action.label).toBe("Updated path action");
+      expect(saved.actionKey).toBe(
         view.editor.graph.stages[1].actions[0].stableKey,
       );
-      expect(savedGraph.stages[0]).toEqual(view.editor.graph.stages[0]);
-      expect(savedGraph.transitions).toHaveLength(
-        view.editor.graph.transitions.length,
-      );
-      expect(savedGraph.transitions).toEqual(
-        expect.arrayContaining(view.editor.graph.transitions),
+      expect(saved.action.stableKey).toBe(saved.actionKey);
+      expect(saved).not.toHaveProperty("graph");
+      expect(saved.routes).toEqual(
+        view.editor.graph.transitions.filter(
+          (route) =>
+            route.sourceStageKey === saved.stageKey &&
+            route.actionKey === saved.actionKey,
+        ),
       );
       expect(document.querySelector('[role="dialog"]')).toBeNull();
     } finally {

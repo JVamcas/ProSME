@@ -9,11 +9,15 @@ import type {
   WorkflowEditorView,
   WorkflowStageInput,
 } from "@/modules/workflows/domain/definitions/WorkflowTypes";
+import { WorkflowActionNotificationsStep } from "./WorkflowActionNotificationsStep";
 import { WorkflowActionBehaviourStep } from "./WorkflowActionBehaviourStep";
 import { WorkflowActionDetailsStep } from "./WorkflowActionDetailsStep";
 import { WorkflowActionReviewStep } from "./WorkflowActionReviewStep";
 import { WorkflowActionRoutingStep } from "./WorkflowActionRoutingStep";
-import { actionEditorSteps, useWorkflowActionDialog } from "./useWorkflowActionDialog";
+import {
+  actionEditorSteps,
+  useWorkflowActionDialog,
+} from "./useWorkflowActionDialog";
 
 type Props = {
   action?: WorkflowActionDefinition;
@@ -61,9 +65,9 @@ export function WorkflowActionDialog(props: Props) {
             event.preventDefault();
             const submitter = (event.nativeEvent as SubmitEvent).submitter;
             if (
-              currentStep === "review"
-              && submitter instanceof HTMLButtonElement
-              && submitter.name === "saveAction"
+              currentStep === "review" &&
+              submitter instanceof HTMLButtonElement &&
+              submitter.name === "saveAction"
             ) {
               void submit(event);
             }
@@ -80,14 +84,11 @@ export function WorkflowActionDialog(props: Props) {
             steps={actionEditorSteps.map((step, index) => ({
               ...step,
               disabled:
-                index > currentIndex + 1
-                && !completedSteps.includes(step.id),
+                index > currentIndex + 1 && !completedSteps.includes(step.id),
             }))}
           />
           <div className="min-h-80 py-6">
-            {currentStep === "details" ? (
-              <WorkflowActionDetailsStep />
-            ) : null}
+            {currentStep === "details" ? <WorkflowActionDetailsStep /> : null}
             {currentStep === "behaviour" ? (
               <WorkflowActionBehaviourStep
                 actionExists={Boolean(action)}
@@ -123,6 +124,9 @@ export function WorkflowActionDialog(props: Props) {
                 routes={routes}
                 stage={stage}
               />
+            ) : null}
+            {currentStep === "notifications" ? (
+              <WorkflowActionNotificationsStep editor={editor} stage={stage} />
             ) : null}
             {currentStep === "review" && actionPreview ? (
               <WorkflowActionReviewStep

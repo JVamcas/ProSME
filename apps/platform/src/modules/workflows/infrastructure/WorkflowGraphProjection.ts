@@ -58,6 +58,7 @@ export const workflowGraphSelection = {
     label: workflowActionDefinitions.label,
     actionType: workflowActionDefinitions.actionType,
     condition: workflowActionDefinitions.condition,
+    notifications: workflowActionDefinitions.notifications,
     configuration: workflowActionDefinitions.configuration,
     enabled: workflowActionDefinitions.enabled,
     reasonRequired: workflowActionDefinitions.reasonRequired,

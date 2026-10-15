@@ -8,7 +8,7 @@ export default function ApplicationAppealPage() {
       <PublicPageHeader
         title="Lodge an application appeal"
         eyebrow="Contact Us"
-        summary="Submit an appeal using your application reference. No portal account required."
+        summary="Submit an appeal using your application reference."
       />
       <section className="section bg-brand-cream/30">
         <div className="container max-w-4xl">

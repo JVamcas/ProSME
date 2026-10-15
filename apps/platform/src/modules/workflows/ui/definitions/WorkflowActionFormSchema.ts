@@ -8,6 +8,8 @@ import { workflowPublicStatuses } from "@/modules/workflows/domain/definitions/W
 
 import { workflowActionTypes } from "@/modules/workflows/domain/actions/WorkflowActionDefinition";
 
+import { workflowActionNotificationSchema } from "../../domain/actions/WorkflowActionNotification";
+
 const stableKeyPattern = /^[A-Z][A-Z0-9_]*$/;
 const fieldPathPattern = /^[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z][A-Za-z0-9_]*)*$/;
 
@@ -46,6 +48,15 @@ export const workflowActionFormSchema = z
         "Use uppercase letters, numbers and underscores.",
       ),
     label: z.string().trim().min(2).max(160),
+    notifications: z
+      .array(
+        workflowActionNotificationSchema.transform((row) => ({
+          ...row,
+          // Conditions are edited as one value; RHF must not expand recursive paths.
+          condition: row.condition as unknown,
+        })),
+      )
+      .max(100),
     taskStableKeys: z.array(z.string().min(1)).max(100),
     actionType: z.enum(workflowActionTypes),
     enabled: z.boolean(),

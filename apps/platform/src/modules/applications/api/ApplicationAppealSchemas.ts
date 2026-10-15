@@ -16,9 +16,6 @@ const appealRichText = z
 export const applicationAppealSchema = z
   .object({
     applicationReference: z.string().trim().min(1).max(100).toUpperCase(),
-    name: z.string().trim().min(2).max(100),
-    email: z.email().max(254),
-    phone: z.string().trim().max(40),
     grounds: appealRichText,
     details: appealRichText,
     consent: z.boolean().refine(Boolean, "Consent is required."),

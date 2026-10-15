@@ -54,19 +54,22 @@ import { resolveUserFromHeaders } from "@/auth/authorization/current-user";
 import { canAccessOperationsPortal } from "@/auth/authorization/portal-access";
 const input = {
   applicationReference: "CALL-2026-000001",
-  name: "Appeal sender",
-  email: "sender@example.test",
-  phone: "",
   grounds: "<p>Grounds for review</p>",
   details: "<p>Decision details</p>",
   consent: true,
   company: "",
+};
+const applicantContact = {
+  name: "Application owner",
+  email: "owner@example.test",
+  phone: "+264000000000",
 };
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(findAppealApplication).mockResolvedValue({
     id: chatbotId(10),
     reference: input.applicationReference,
+    ...applicantContact,
   });
   vi.mocked(createApplicationAppeal).mockResolvedValue({
     id: chatbotId(20),
@@ -74,6 +77,14 @@ beforeEach(() => {
   });
 });
 describe("application appeal intake", () => {
+  it("accepts the application reference without contact fields and rejects supplied contact overrides", async () => {
+    expect(applicationAppealSchema.safeParse(input).success).toBe(true);
+    await expect(
+      submitApplicationAppeal({ ...input, ...applicantContact }),
+    ).rejects.toThrow();
+    expect(findAppealApplication).not.toHaveBeenCalled();
+    expect(createApplicationAppeal).not.toHaveBeenCalled();
+  });
   it("counts text rather than formatting and enforces 1000 characters on both fields", () => {
     for (const field of ["grounds", "details"]) {
       expect(
@@ -118,7 +129,10 @@ describe("application appeal intake", () => {
     expect(createApplicationAppeal).toHaveBeenCalledWith(
       {},
       chatbotId(10),
-      expect.objectContaining({ grounds: "<p>Grounds</p>" }),
+      expect.objectContaining({
+        grounds: "<p>Grounds</p>",
+        ...applicantContact,
+      }),
     );
     expect(captureApplicationAppealNotifications).toHaveBeenCalledWith(
       {},
@@ -126,7 +140,7 @@ describe("application appeal intake", () => {
         appealId: chatbotId(20),
         applicationId: chatbotId(10),
       }),
-      { name: input.name, email: input.email },
+      { name: applicantContact.name, email: applicantContact.email },
     );
   });
   it("rejects text that is empty after sanitization", async () => {

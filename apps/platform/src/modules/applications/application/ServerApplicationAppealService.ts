@@ -42,11 +42,12 @@ export async function submitApplicationAppeal(values: unknown) {
       throw new RequestValidationError(
         "No application was found for this reference.",
       );
-    const appeal = await createApplicationAppeal(
-      transaction,
-      application.id,
-      input,
-    );
+    const appeal = await createApplicationAppeal(transaction, application.id, {
+      ...input,
+      name: application.name,
+      email: application.email,
+      phone: application.phone,
+    });
     await auditApplicationAppeal(transaction, appeal.id, null, "CREATED");
     await captureApplicationAppealNotifications(
       transaction,
@@ -57,7 +58,7 @@ export async function submitApplicationAppeal(values: unknown) {
         applicationReference: application.reference,
         occurredAt: new Date().toISOString(),
       },
-      { name: input.name, email: input.email },
+      { name: application.name, email: application.email },
     );
     return { reference: appeal.reference };
   });

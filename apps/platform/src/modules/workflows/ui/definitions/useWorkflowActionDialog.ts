@@ -15,18 +15,16 @@ import {
   type WorkflowActionDefinition,
 } from "@/modules/workflows/domain/actions/WorkflowActionDefinition";
 import { terminalOutcomeApplicantStatus } from "../../domain/transitions/WorkflowTerminalOutcome";
-import { reconcileWorkflowActionBindings } from "@/modules/workflows/domain/actions/WorkflowActionBindingPolicy";
 import type {
   WorkflowEditorView,
   WorkflowStageInput,
 } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 import type { WorkflowTransitionDefinition } from "@/modules/workflows/domain/transitions/WorkflowTransitionDefinition";
-import { useSaveWorkflowGraph } from "@/modules/workflows/WorkflowHooks";
+import { useSaveWorkflowAction } from "./useSaveWorkflowAction";
 import { workflowActionRoutesForEditor } from "./WorkflowActionEditorRoutes";
 import {
   toWorkflowActionDefinition,
   workflowActionFormDefaults,
-  workflowActionUpdatedGraph,
 } from "./WorkflowActionFormMapping";
 import {
   type WorkflowActionFormValues,
@@ -45,6 +43,7 @@ export const actionEditorSteps = [
   { id: "details", label: "Action details" },
   { id: "behaviour", label: "Behaviour" },
   { id: "routing", label: "Routing" },
+  { id: "notifications", label: "Notifications" },
   { id: "review", label: "Review" },
 ] as const;
 
@@ -95,7 +94,7 @@ export function useWorkflowActionDialog({
   onClose,
   stage,
 }: Props) {
-  const mutation = useSaveWorkflowGraph(editor);
+  const mutation = useSaveWorkflowAction(editor);
   const assignedTaskKeys = action
     ? stage.tasks
         .filter((task) => task.actionKeys.includes(action.stableKey))
@@ -146,11 +145,117 @@ export function useWorkflowActionDialog({
     control: form.control,
     name: "rejectionOutcomeType",
   });
-  const previousActionType = useRef(actionType);
-  const previousEscalationTargetType = useRef(escalationTargetType);
   const currentIndex = actionEditorSteps.findIndex(
     (step) => step.id === currentStep,
   );
+  useWorkflowActionFormEffects(
+    form,
+    stage,
+    routes,
+    stableKey,
+    actionType,
+    escalationTargetType,
+  );
+
+  async function continueToNextStep() {
+    const valid =
+      currentStep === "details"
+        ? await validateDetails(form, stage, action)
+        : currentStep === "behaviour" && actionType === "REJECT"
+          ? await form.trigger("taskStableKeys", { shouldFocus: true })
+          : await form.trigger(undefined, { shouldFocus: true });
+    if (!valid || currentIndex === actionEditorSteps.length - 1) return;
+    setCompletedSteps((steps) =>
+      steps.includes(currentStep) ? steps : [...steps, currentStep],
+    );
+    setCurrentStep(actionEditorSteps[currentIndex + 1].id);
+  }
+
+  async function changeStep(step: ActionEditorStep, index: number) {
+    if (index <= currentIndex || completedSteps.includes(step)) {
+      setCurrentStep(step);
+      return;
+    }
+    if (index === currentIndex + 1) await continueToNextStep();
+  }
+
+  const save = async (values: WorkflowActionFormValues) => {
+    if (currentStep !== "review" || mutation.isPending) return;
+    setRouteError(null);
+    if (actionType === "REJECT" && routes.length > 1) {
+      const targetTypes = new Set(
+        routes.map((route) => (route.terminalOutcome ? "TERMINAL" : "STAGE")),
+      );
+      if (targetTypes.size > 1) {
+        setRouteError(
+          "Rejection routes must all use the same destination type.",
+        );
+        setCurrentStep("routing");
+        return;
+      }
+    }
+
+    const nextAction = toWorkflowActionDefinition(
+      values,
+      action?.id,
+      action?.condition,
+    );
+    await mutation.mutateAsync({
+      stageKey: stage.stableKey,
+      actionKey: action?.stableKey ?? null,
+      action: nextAction,
+      taskStableKeys: values.taskStableKeys,
+      routes: routes.map((route) => ({
+        ...route,
+        actionKey: nextAction.stableKey,
+        sourceStageKey: stage.stableKey,
+      })),
+    });
+    onClose();
+  };
+
+  const actionPreview =
+    currentStep === "review"
+      ? toWorkflowActionDefinition(
+          form.getValues(),
+          action?.id,
+          action?.condition,
+        )
+      : null;
+
+  return {
+    actionPreview,
+    actionType,
+    changeStep,
+    completedSteps,
+    continueToNextStep,
+    currentIndex,
+    currentStep,
+    deferTargetType,
+    escalationTargetType,
+    form,
+    mutation,
+    rejectionOutcomeType,
+    routeError,
+    routes,
+    setCurrentStep,
+    setRoutes,
+    stableKey,
+    save,
+    taskStableKeys,
+  };
+}
+
+function useWorkflowActionFormEffects(
+  form: UseFormReturn<WorkflowActionFormValues>,
+  stage: WorkflowStageInput,
+  routes: WorkflowTransitionDefinition[],
+  stableKey: string,
+  actionType: WorkflowActionDefinition["actionType"],
+  escalationTargetType: WorkflowActionFormValues["escalationTargetType"],
+) {
+  const previousActionType = useRef(actionType);
+  const previousEscalationTargetType = useRef(escalationTargetType);
 
   useEffect(() => {
     form.setValue("stableKey", stableKey, { shouldValidate: true });
@@ -197,92 +302,4 @@ export function useWorkflowActionDialog({
       { shouldValidate: true },
     );
   }, [actionType, form, routes]);
-
-  async function continueToNextStep() {
-    const valid =
-      currentStep === "details"
-        ? await validateDetails(form, stage, action)
-        : currentStep === "behaviour" && actionType === "REJECT"
-          ? await form.trigger("taskStableKeys", { shouldFocus: true })
-          : await form.trigger(undefined, { shouldFocus: true });
-    if (!valid || currentIndex === actionEditorSteps.length - 1) return;
-    setCompletedSteps((steps) =>
-      steps.includes(currentStep) ? steps : [...steps, currentStep],
-    );
-    setCurrentStep(actionEditorSteps[currentIndex + 1].id);
-  }
-
-  async function changeStep(step: ActionEditorStep, index: number) {
-    if (index <= currentIndex || completedSteps.includes(step)) {
-      setCurrentStep(step);
-      return;
-    }
-    if (index === currentIndex + 1) await continueToNextStep();
-  }
-
-  const save = async (values: WorkflowActionFormValues) => {
-    if (currentStep !== "review" || mutation.isPending) return;
-    setRouteError(null);
-    if (actionType === "REJECT" && routes.length > 1) {
-      const targetTypes = new Set(
-        routes.map((route) => (route.terminalOutcome ? "TERMINAL" : "STAGE")),
-      );
-      if (targetTypes.size > 1) {
-        setRouteError(
-          "Rejection routes must all use the same destination type.",
-        );
-        setCurrentStep("routing");
-        return;
-      }
-    }
-
-    const nextAction = toWorkflowActionDefinition(
-      values,
-      action?.id,
-      action?.condition,
-    );
-    const nextGraph = workflowActionUpdatedGraph(
-      editor,
-      stage,
-      action,
-      nextAction,
-      values.taskStableKeys,
-      routes,
-    );
-    await mutation.mutateAsync(
-      reconcileWorkflowActionBindings(editor.graph, nextGraph),
-    );
-    onClose();
-  };
-
-  const actionPreview =
-    currentStep === "review"
-      ? toWorkflowActionDefinition(
-          form.getValues(),
-          action?.id,
-          action?.condition,
-        )
-      : null;
-
-  return {
-    actionPreview,
-    actionType,
-    changeStep,
-    completedSteps,
-    continueToNextStep,
-    currentIndex,
-    currentStep,
-    deferTargetType,
-    escalationTargetType,
-    form,
-    mutation,
-    rejectionOutcomeType,
-    routeError,
-    routes,
-    setCurrentStep,
-    setRoutes,
-    stableKey,
-    save,
-    taskStableKeys,
-  };
 }

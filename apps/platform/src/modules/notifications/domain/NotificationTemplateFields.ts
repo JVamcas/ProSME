@@ -40,6 +40,7 @@ export const notificationCatalogTemplateFields = {
 } as const satisfies Record<NotificationCatalogKey, readonly string[]>;
 
 export const notificationEventTemplateFields = {
+  "workflow.action.notification": [],
   "application.appeal.received": applicationAppealFields,
   "application.appeal.acknowledged": applicationAppealFields,
   "event.registration.confirmed": eventEmailFields,

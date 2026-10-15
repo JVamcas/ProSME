@@ -35,5 +35,5 @@ export async function deleteWorkflowAction(
     throw new WorkflowConflictError("The workflow action no longer exists.");
   }
   if (result.kind === "conflict") throw new WorkflowConflictError();
-  return workflowEditorView(result.versionId);
+  return workflowEditorView(result.versionId, false);
 }
