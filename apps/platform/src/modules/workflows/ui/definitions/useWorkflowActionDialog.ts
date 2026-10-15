@@ -15,18 +15,16 @@ import {
   type WorkflowActionDefinition,
 } from "@/modules/workflows/domain/actions/WorkflowActionDefinition";
 import { terminalOutcomeApplicantStatus } from "../../domain/transitions/WorkflowTerminalOutcome";
-import { reconcileWorkflowActionBindings } from "@/modules/workflows/domain/actions/WorkflowActionBindingPolicy";
 import type {
   WorkflowEditorView,
   WorkflowStageInput,
 } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 import type { WorkflowTransitionDefinition } from "@/modules/workflows/domain/transitions/WorkflowTransitionDefinition";
-import { useSaveWorkflowGraph } from "@/modules/workflows/WorkflowHooks";
+import { useSaveWorkflowAction } from "./useSaveWorkflowAction";
 import { workflowActionRoutesForEditor } from "./WorkflowActionEditorRoutes";
 import {
   toWorkflowActionDefinition,
   workflowActionFormDefaults,
-  workflowActionUpdatedGraph,
 } from "./WorkflowActionFormMapping";
 import {
   type WorkflowActionFormValues,
@@ -95,7 +93,7 @@ export function useWorkflowActionDialog({
   onClose,
   stage,
 }: Props) {
-  const mutation = useSaveWorkflowGraph(editor);
+  const mutation = useSaveWorkflowAction(editor);
   const assignedTaskKeys = action
     ? stage.tasks
         .filter((task) => task.actionKeys.includes(action.stableKey))
@@ -241,17 +239,17 @@ export function useWorkflowActionDialog({
       action?.id,
       action?.condition,
     );
-    const nextGraph = workflowActionUpdatedGraph(
-      editor,
-      stage,
-      action,
-      nextAction,
-      values.taskStableKeys,
-      routes,
-    );
-    await mutation.mutateAsync(
-      reconcileWorkflowActionBindings(editor.graph, nextGraph),
-    );
+    await mutation.mutateAsync({
+      stageKey: stage.stableKey,
+      actionKey: action?.stableKey ?? null,
+      action: nextAction,
+      taskStableKeys: values.taskStableKeys,
+      routes: routes.map((route) => ({
+        ...route,
+        actionKey: nextAction.stableKey,
+        sourceStageKey: stage.stableKey,
+      })),
+    });
     onClose();
   };
 

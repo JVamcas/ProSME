@@ -14,31 +14,6 @@ export function workflowActionRoutes(
   );
 }
 
-export function replaceWorkflowActionRoutes(
-  transitions: WorkflowGraphInput["transitions"],
-  stageKey: string,
-  previousActionKey: string | undefined,
-  nextActionKey: string,
-  routes: readonly WorkflowTransitionDefinition[],
-): WorkflowGraphInput["transitions"] {
-  const retained = previousActionKey
-    ? transitions.filter(
-        (transition) =>
-          transition.sourceStageKey !== stageKey ||
-          transition.actionKey !== previousActionKey,
-      )
-    : transitions;
-
-  return [
-    ...retained,
-    ...routes.map((route) => ({
-      ...route,
-      actionKey: nextActionKey,
-      sourceStageKey: stageKey,
-    })),
-  ];
-}
-
 export function workflowRouteDestination(
   route: WorkflowTransitionDefinition,
   graph: WorkflowGraphInput,

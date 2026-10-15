@@ -101,6 +101,7 @@ describe("generic workflow action deletion", () => {
       });
       expect(workflowEditorView).toHaveBeenCalledExactlyOnceWith(
         input.versionId,
+        false,
       );
       expect(
         vi.mocked(deleteDraftWorkflowAction).mock.invocationCallOrder[0],

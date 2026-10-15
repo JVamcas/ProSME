@@ -68,7 +68,7 @@ async function mount(rejectionOutcome?: "TERMINAL" | "TRANSITION") {
     });
   }
   const update = vi
-    .spyOn(clientWorkflowService, "updateDraft")
+    .spyOn(clientWorkflowService, "saveAction")
     .mockResolvedValue(editor);
   const close = vi.fn();
   const client = new QueryClient();
@@ -143,10 +143,15 @@ describe("workflow action dialog", () => {
       expect(view.close).not.toHaveBeenCalled();
       await clickButton("Save action");
       expect(view.update).toHaveBeenCalledTimes(1);
-      const graph = view.update.mock.calls[0][1].graph;
-      expect(graph.stages[0].actions.at(-1)?.stableKey).toBe("ADVANCE_2");
-      expect(graph.stages[0].tasks[0].actionKeys).toContain("ADVANCE_2");
-      expect(graph.transitions).toEqual(view.editor.graph.transitions);
+      const input = view.update.mock.calls[0][1];
+      expect(input.action.stableKey).toBe("ADVANCE_2");
+      expect(input.stageKey).toBe(view.editor.graph.stages[0].stableKey);
+      expect(input.actionKey).toBeNull();
+      expect(input.taskStableKeys).toContain(
+        view.editor.graph.stages[0].tasks[0].stableKey,
+      );
+      expect(input.routes).toEqual([]);
+      expect(input).not.toHaveProperty("graph");
       expect(view.close).toHaveBeenCalledTimes(1);
     } finally {
       await view.cleanup();
@@ -222,9 +227,7 @@ describe("workflow action dialog", () => {
         ).toBeNull();
         await clickButton("Continue");
         await clickButton("Save action");
-        const saved = view.update.mock.calls[0][1].graph.stages[0].actions.find(
-          (item) => item.stableKey === "REJECT",
-        );
+        const saved = view.update.mock.calls[0][1].action;
         expect(saved?.configuration).toMatchObject({
           outcome: { type: outcome },
         });
@@ -267,9 +270,7 @@ describe("workflow action dialog", () => {
       ).toBeNull();
       await clickButton("Continue");
       await clickButton("Save action");
-      const saved = view.update.mock.calls[0][1].graph.stages[0].actions.find(
-        (item) => item.stableKey === "REJECT",
-      );
+      const saved = view.update.mock.calls[0][1].action;
       expect(saved?.configuration).toMatchObject({
         outcome: { type: "TERMINAL" },
       });

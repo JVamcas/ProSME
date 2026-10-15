@@ -14,7 +14,10 @@ import type {
   WorkflowGraphInput,
   WorkflowValidation,
 } from "@/modules/workflows/domain/definitions/WorkflowTypes";
-import { formPurposes, type FormPurpose } from "@/modules/forms/domain/FormPurpose";
+import {
+  formPurposes,
+  type FormPurpose,
+} from "@/modules/forms/domain/FormPurpose";
 import { workflowTaskFormPurposes } from "@/modules/workflows/domain/definitions/WorkflowTaskDefinition";
 import { validateWorkflowGraph } from "@/modules/workflows/WorkflowValidation";
 import { validateWorkflowConditions } from "@/modules/workflows/engine/WorkflowConditionValidation";
@@ -59,15 +62,14 @@ async function validateReferences(
       });
     }
     if (
-      stage.coiFormVersionId
-      && (
-        references.forms.get(stage.coiFormVersionId) !== "PUBLISHED"
-        || references.formPurposes.get(stage.coiFormVersionId) !== "COI"
-      )
+      stage.coiFormVersionId &&
+      (references.forms.get(stage.coiFormVersionId) !== "PUBLISHED" ||
+        references.formPurposes.get(stage.coiFormVersionId) !== "COI")
     ) {
       validation.errors.push({
         code: "INVALID_COI_FORM_VERSION",
-        message: "The selected COI form must be an exact published COI version.",
+        message:
+          "The selected COI form must be an exact published COI version.",
         path: `stages.${index}.coiFormVersionId`,
       });
     }
@@ -96,28 +98,28 @@ async function validateReferences(
       }
     });
     stage.tasks.forEach((task, taskIndex) => {
-      if (
-        task.roleId &&
-        !references.roles.has(task.roleId)
-      ) {
+      if (task.roleId && !references.roles.has(task.roleId)) {
         validation.errors.push({
           code: "UNKNOWN_ROLE",
           message: "The assigned role is not active.",
           path: `stages.${index}.tasks.${taskIndex}.roleId`,
         });
       }
-      const configuredPurpose = task.config
-        && typeof task.config === "object"
-        && "formPurpose" in task.config
-        && formPurposes.includes(task.config.formPurpose as FormPurpose)
-          ? task.config.formPurpose as FormPurpose
+      const configuredPurpose =
+        task.config &&
+        typeof task.config === "object" &&
+        "formPurpose" in task.config &&
+        formPurposes.includes(task.config.formPurpose as FormPurpose)
+          ? (task.config.formPurpose as FormPurpose)
           : null;
-      const configuredFormBinding = configuredPurpose === "ELIGIBILITY_VERIFICATION"
-        ? null
-        : task.formBinding;
+      const configuredFormBinding =
+        configuredPurpose === "ELIGIBILITY_VERIFICATION"
+          ? null
+          : task.formBinding;
       if (
-        configuredFormBinding
-        && references.forms.get(configuredFormBinding.formVersionId) !== "PUBLISHED"
+        configuredFormBinding &&
+        references.forms.get(configuredFormBinding.formVersionId) !==
+          "PUBLISHED"
       ) {
         validation.errors.push({
           code: "INVALID_FORM_VERSION",
@@ -126,12 +128,16 @@ async function validateReferences(
           path: `stages.${index}.tasks.${taskIndex}.formBinding.formVersionId`,
         });
       }
-      if (configuredPurpose && !workflowTaskFormPurposes.some(
-        (purpose) => purpose === configuredPurpose,
-      )) {
+      if (
+        configuredPurpose &&
+        !workflowTaskFormPurposes.some(
+          (purpose) => purpose === configuredPurpose,
+        )
+      ) {
         validation.errors.push({
           code: "UNSUPPORTED_TASK_FORM_PURPOSE",
-          message: "Task forms must be for application review or eligibility verification.",
+          message:
+            "Task forms must be for application review or eligibility verification.",
           path: `stages.${index}.tasks.${taskIndex}.config.formPurpose`,
         });
       }
@@ -143,10 +149,10 @@ async function validateReferences(
         });
       }
       if (
-        configuredFormBinding
-        && configuredPurpose
-        && references.formPurposes.get(configuredFormBinding.formVersionId)
-          !== configuredPurpose
+        configuredFormBinding &&
+        configuredPurpose &&
+        references.formPurposes.get(configuredFormBinding.formVersionId) !==
+          configuredPurpose
       ) {
         validation.errors.push({
           code: "FORM_PURPOSE_MISMATCH",
@@ -166,17 +172,14 @@ async function validateReferences(
       }
     });
   });
-  validation.errors.push(...validateWorkflowConditions(
-    graph,
-    references.formFields,
-  ));
+  validation.errors.push(
+    ...validateWorkflowConditions(graph, references.formFields),
+  );
   validation.valid = validation.errors.length === 0;
   return validation;
 }
 
-export async function validateWorkflowConfiguration(
-  graph: WorkflowGraphInput,
-) {
+export async function validateWorkflowConfiguration(graph: WorkflowGraphInput) {
   return validateReferences(
     graph,
     validateWorkflowGraph(graph),
@@ -184,11 +187,26 @@ export async function validateWorkflowConfiguration(
   );
 }
 
-export async function workflowEditorView(versionId: string) {
-  const record = await loadWorkflowEditor(versionId);
+export async function workflowEditorView(
+  versionId: string,
+  includeAssignmentOptions = true,
+) {
+  return workflowEditorViewFromRecord(
+    await loadWorkflowEditor(versionId),
+    includeAssignmentOptions,
+  );
+}
+
+export async function workflowEditorViewFromRecord(
+  record: Awaited<ReturnType<typeof loadWorkflowEditor>>,
+  includeAssignmentOptions = true,
+) {
   const [validation, assignmentOptions] = await Promise.all([
     validateWorkflowConfiguration(record.graph),
-    listWorkflowAssignmentOptions(),
+    includeAssignmentOptions ? listWorkflowAssignmentOptions() : undefined,
   ]);
-  return { ...toWorkflowEditor(record, validation), assignmentOptions };
+  return {
+    ...toWorkflowEditor(record, validation),
+    ...(assignmentOptions ? { assignmentOptions } : {}),
+  };
 }
