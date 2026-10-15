@@ -53,7 +53,7 @@ export function validateFieldConstraints(field: FormField) {
       (field.maximum != null && field.maximum > 100))
   )
     return false;
-  if (hasLengthLimits && !["TEXT", "TEXTAREA"].includes(field.type)) {
+  if (hasLengthLimits && !["TEXT", "TEXTAREA", "COMMENT"].includes(field.type)) {
     return false;
   }
   if (

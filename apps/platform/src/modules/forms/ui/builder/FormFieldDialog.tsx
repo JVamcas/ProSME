@@ -91,7 +91,7 @@ function FormFieldDialogContent({
       form.setValue("minimum", undefined);
       form.setValue("maximum", undefined);
     }
-    if (type !== "TEXT" && type !== "TEXTAREA") {
+    if (!["TEXT", "TEXTAREA", "COMMENT"].includes(type)) {
       form.setValue("minLength", undefined);
       form.setValue("maxLength", undefined);
     }

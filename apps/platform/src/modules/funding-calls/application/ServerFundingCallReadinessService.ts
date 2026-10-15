@@ -77,6 +77,7 @@ function versionIssues(
       projection: form,
       statusCode: "FORM_VERSION_NOT_PUBLISHED" as const,
       title: "application form",
+      allowedStatuses: ["DRAFT", "PUBLISHED"],
     },
     {
       id: call.eligibilityRuleSetVersionId,
@@ -87,6 +88,7 @@ function versionIssues(
       projection: eligibility,
       statusCode: "ELIGIBILITY_VERSION_NOT_PUBLISHED" as const,
       title: "eligibility ruleset",
+      allowedStatuses: ["PUBLISHED"],
     },
     {
       id: call.workflowTemplateVersionId,
@@ -97,20 +99,21 @@ function versionIssues(
       projection: workflow,
       statusCode: "WORKFLOW_VERSION_NOT_PUBLISHED" as const,
       title: "workflow template",
+      allowedStatuses: ["DRAFT", "APPROVED", "PUBLISHED"],
     },
   ];
   for (const binding of bindings) {
     if (!binding.id) {
       issues.push(issue(
         binding.missingCode,
-        `Select an exact published ${binding.title} version.`,
+        `Select an exact ${binding.title} version.`,
         binding.location,
         owner("FUNDING_CALL", call.id),
       ));
-    } else if (!binding.projection || binding.projection.status !== "PUBLISHED") {
+    } else if (!binding.projection || !binding.allowedStatuses.includes(binding.projection.status)) {
       issues.push(issue(
         binding.statusCode,
-        `The selected ${binding.title} version is not published.`,
+        `The selected ${binding.title} version is unavailable for publication.`,
         binding.location,
         owner(binding.ownerKind, binding.id),
       ));

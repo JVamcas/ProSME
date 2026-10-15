@@ -3,7 +3,7 @@ import "server-only";
 
 import { and, eq, inArray } from "drizzle-orm";
 
-import { getDatabase } from "@/db/client";
+import { getDatabase, type DatabaseTransaction } from "@/db/client";
 import {
   fundingOpportunityWorkflowAssignments,
   workflowDefinitionVersions,
@@ -22,6 +22,7 @@ type LifecycleInput = {
   idempotencyKey: string;
   versionId: string;
   reason?: string;
+  preparePublication?: (transaction: DatabaseTransaction) => Promise<void>;
 };
 
 export async function findLifecycleReplay(idempotencyKey: string) {
@@ -40,6 +41,7 @@ export async function findLifecycleReplay(idempotencyKey: string) {
 export async function changeWorkflowTemplateLifecycle(
   input: LifecycleInput,
   command: WorkflowTemplateCommand,
+  existingTransaction?: DatabaseTransaction,
 ) {
   const transition = workflowTemplateTransitions[command];
   const sourceStatuses = workflowTemplateCommandSourceStatuses(command);
@@ -47,7 +49,7 @@ export async function changeWorkflowTemplateLifecycle(
   if (command === "RETURN" && !reason) {
     throw new Error("A reason is required to return a workflow to Draft.");
   }
-  return getDatabase().transaction(async (transaction) => {
+  const execute = async (transaction: DatabaseTransaction) => {
     const [lockedVersion] = await transaction
       .select()
       .from(workflowDefinitionVersions)
@@ -77,6 +79,7 @@ export async function changeWorkflowTemplateLifecycle(
       detachedAssignmentCount = detached.length;
     }
     if (command === "PUBLISH") {
+      await input.preparePublication?.(transaction);
       await refreshFormDocumentRequirements(transaction, input.versionId);
     }
     const now = new Date();
@@ -113,7 +116,10 @@ export async function changeWorkflowTemplateLifecycle(
       targetType: "WORKFLOW_VERSION",
     });
     return version;
-  });
+  };
+  return existingTransaction
+    ? execute(existingTransaction)
+    : getDatabase().transaction(execute);
 }
 
 export function publishWorkflowVersion(input: LifecycleInput) {

@@ -2,7 +2,7 @@ import "server-only";
 
 import { asc, eq } from "drizzle-orm";
 
-import { getDatabase } from "@/db/client";
+import { getDatabase, type DatabaseTransaction } from "@/db/client";
 import {
   workflowStageChecklistDefinitions,
   workflowStageCommentFields,
@@ -14,8 +14,11 @@ import {
 } from "@/db/schema";
 import type { WorkflowStageInput } from "@/modules/workflows/domain/definitions/WorkflowTypes";
 
-function loadChecklistRows(versionId: string) {
-  return getDatabase()
+function loadChecklistRows(
+  versionId: string,
+  database: Pick<DatabaseTransaction, "select"> = getDatabase(),
+) {
+  return database
     .select({
       id: workflowStageChecklistDefinitions.id,
       stageId: workflowStageChecklistDefinitions.stageId,
@@ -51,8 +54,11 @@ function loadChecklistRows(versionId: string) {
     );
 }
 
-function loadCommentRows(versionId: string) {
-  return getDatabase()
+function loadCommentRows(
+  versionId: string,
+  database: Pick<DatabaseTransaction, "select"> = getDatabase(),
+) {
+  return database
     .select({
       id: workflowStageCommentFields.id,
       stageId: workflowStageCommentFields.stageId,
@@ -79,8 +85,11 @@ function loadCommentRows(versionId: string) {
     );
 }
 
-function loadDocumentRows(versionId: string) {
-  return getDatabase()
+function loadDocumentRows(
+  versionId: string,
+  database: Pick<DatabaseTransaction, "select"> = getDatabase(),
+) {
+  return database
     .select({
       id: workflowStageDocumentRequirements.id,
       stageId: workflowStageDocumentRequirements.stageId,
@@ -121,8 +130,11 @@ function loadDocumentRows(versionId: string) {
     );
 }
 
-function loadScoringConfigurations(versionId: string) {
-  return getDatabase()
+function loadScoringConfigurations(
+  versionId: string,
+  database: Pick<DatabaseTransaction, "select"> = getDatabase(),
+) {
+  return database
     .select({
       stageId: workflowStageScoringConfigurations.stageId,
       taskDefinitionId: workflowStageScoringConfigurations.taskDefinitionId,
@@ -151,8 +163,11 @@ function loadScoringConfigurations(versionId: string) {
     );
 }
 
-function loadScoringCriteria(versionId: string) {
-  return getDatabase()
+function loadScoringCriteria(
+  versionId: string,
+  database: Pick<DatabaseTransaction, "select"> = getDatabase(),
+) {
+  return database
     .select({
       id: workflowStageScoringCriteria.id,
       stageId: workflowStageScoringCriteria.stageId,
@@ -177,7 +192,10 @@ function loadScoringCriteria(versionId: string) {
     );
 }
 
-export async function loadWorkflowStageRequirements(versionId: string) {
+export async function loadWorkflowStageRequirements(
+  versionId: string,
+  database: Pick<DatabaseTransaction, "select"> = getDatabase(),
+) {
   const [
     checklists,
     comments,
@@ -185,11 +203,11 @@ export async function loadWorkflowStageRequirements(versionId: string) {
     scoringConfigurations,
     scoringCriteria,
   ] = await Promise.all([
-    loadChecklistRows(versionId),
-    loadCommentRows(versionId),
-    loadDocumentRows(versionId),
-    loadScoringConfigurations(versionId),
-    loadScoringCriteria(versionId),
+    loadChecklistRows(versionId, database),
+    loadCommentRows(versionId, database),
+    loadDocumentRows(versionId, database),
+    loadScoringConfigurations(versionId, database),
+    loadScoringCriteria(versionId, database),
   ]);
   return {
     checklists,

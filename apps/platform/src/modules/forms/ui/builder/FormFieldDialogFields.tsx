@@ -32,6 +32,7 @@ const fieldTypeLabels: Record<FormFieldType, string> = {
   SINGLE_SELECT: "Single Select",
   TEXT: "Text",
   TEXTAREA: "Textarea",
+  COMMENT: "Comment",
   YES_NO: "Yes/No",
   CHECKBOX: "Checkbox",
   REPEATABLE_GROUP: "Repeatable Group",
@@ -88,7 +89,7 @@ export function FormFieldDialogFields({
           <FormInput label="Maximum" name="maximum" type="number" />
         </div>
       ) : null}
-      {type === "TEXT" || type === "TEXTAREA" ? (
+      {["TEXT", "TEXTAREA", "COMMENT"].includes(type) ? (
         <div className="grid gap-4 sm:grid-cols-2">
           <FormInput
             label="Minimum length"

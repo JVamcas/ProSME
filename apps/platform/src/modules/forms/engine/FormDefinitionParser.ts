@@ -224,7 +224,9 @@ function scalarFieldUiSchema(field: ValueField): UiSchema {
       },
     };
   if (field.type === "CHECKBOX") return { "ui:widget": "checkbox" };
-  if (field.type === "TEXTAREA") return { "ui:widget": "textarea" };
+  if (field.type === "TEXTAREA" || field.type === "COMMENT") {
+    return { "ui:widget": "textarea" };
+  }
   if (field.type === "RICH_TEXT") return { "ui:widget": "richText" };
   if (field.type === "YES_NO") {
     return {

@@ -150,7 +150,7 @@ export function convertTaskForm(
         });
         add(id, `SCORE_COMMENT_${criterion.stableKey}`, {
           label: `${criterion.criterion} — comment`,
-          type: "TEXTAREA",
+          type: "COMMENT",
           required: criterion.mandatoryComment,
           maxLength: 1000,
         });
@@ -176,7 +176,7 @@ export function convertTaskForm(
       )) {
         add(id, `COMMENT_${field.key}`, {
           label: field.label,
-          type: "TEXTAREA",
+          type: "COMMENT",
           required: field.mandatory,
           helpText: field.helpText,
           maxLength: 4000,

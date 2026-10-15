@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
+import { formQueryKeys } from "@/modules/forms/FormHooks";
 import { clientWorkflowService } from "./ClientWorkflowService";
 import type { WorkflowActionAvailabilityQuery } from "./ClientWorkflowService";
 import type {
@@ -130,6 +131,9 @@ function useRefreshWorkflow(id?: string) {
     void client.invalidateQueries({ queryKey: workflowQueryKeys.assignments });
     void client.invalidateQueries({ queryKey: workflowQueryKeys.published });
     void client.invalidateQueries({ queryKey: workflowQueryKeys.templates });
+    if (editor?.version.status === "PUBLISHED") {
+      void client.invalidateQueries({ queryKey: formQueryKeys.all });
+    }
   };
 }
 

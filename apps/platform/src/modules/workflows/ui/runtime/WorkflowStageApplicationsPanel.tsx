@@ -77,9 +77,9 @@ export function WorkflowStageApplicationsPanel({
         )}
       </QuerySection>
       <p className="mt-3 text-xs text-brand-navy/60">
-        Latest run per application. Average scores are percentages of the
-        available maximum, averaged across completed reviews. Unreleased peer
-        evidence is excluded.
+        Latest run per application. Scores average the configured aggregate results
+        of completed reviews on the same scale. Comments come from Comment fields.
+        Unreleased peer evidence is excluded.
       </p>
     </section>
   );

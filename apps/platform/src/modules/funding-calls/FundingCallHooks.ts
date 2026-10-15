@@ -1,5 +1,8 @@
 "use client";
 
+import { formQueryKeys } from "@/modules/forms/FormHooks";
+import { workflowQueryKeys } from "@/modules/workflows/WorkflowHooks";
+
 import {
   keepPreviousData,
   useMutation,
@@ -183,7 +186,15 @@ export function usePublishFundingCall(id: string) {
   return useMutation({
     mutationFn: (expectedRowVersion: number) =>
       clientFundingCallService.publish(id, expectedRowVersion),
-    onSuccess: () => refreshFundingCallViews(queryClient),
+    onSuccess: () =>
+      Promise.all([
+        refreshFundingCallViews(queryClient),
+        queryClient.invalidateQueries({ queryKey: formQueryKeys.all }),
+        queryClient.invalidateQueries({ queryKey: workflowQueryKeys.all }),
+        queryClient.invalidateQueries({
+          queryKey: workflowQueryKeys.templates,
+        }),
+      ]),
   });
 }
 

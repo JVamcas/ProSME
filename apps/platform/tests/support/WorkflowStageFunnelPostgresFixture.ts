@@ -181,13 +181,15 @@ export async function seedWorkflowStageFunnel(client: Client) {
         method: "WEIGHTED_AVERAGE",
         normalization: "RAW",
         missing: "REQUIRE_ALL",
+        precision: 2,
         sources: [
           { fieldKey: "A", weight: 1 },
           { fieldKey: "B", weight: 3 },
         ],
       },
     },
-    { key: "COMMENT", type: "TEXTAREA", label: "Recommendation" },
+    { key: "COMMENT", type: "COMMENT", label: "Recommendation" },
+    { key: "NARRATIVE", type: "TEXTAREA", label: "Findings" },
   ];
   await client.query(
     "UPDATE app_workflow_tasks SET form_version_id = $1 WHERE id = $2",
@@ -202,8 +204,9 @@ export async function seedWorkflowStageFunnel(client: Client) {
       JSON.stringify({
         A: 8,
         B: 2,
-        TOTAL: 9999,
+        TOTAL: 3.5,
         COMMENT: "Form recommendation",
+        NARRATIVE: "Ordinary textarea answer",
       }),
       JSON.stringify({ fields }),
     ],

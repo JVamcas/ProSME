@@ -1,6 +1,6 @@
 import "server-only";
 
-import { eq, sql } from "drizzle-orm";
+import { eq, inArray, sql } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
 import { draftFieldRow, draftSectionRow } from "./FormDraftRowMapping";
@@ -190,7 +190,7 @@ export async function replaceDraftContent(
 
 export async function readPublicationFields(
   transaction: FormTransaction,
-  versionId: string,
+  versionId: string | string[],
 ) {
   const [fields, options] = await Promise.all([
     transaction
@@ -217,14 +217,25 @@ export async function readPublicationFields(
         rules: formFields.rules,
         scoringAggregate: formFields.scoringAggregate,
         workflowDocument: formFields.workflowDocument,
+        formVersionId: formFields.formVersionId,
       })
       .from(formFields)
-      .where(eq(formFields.formVersionId, versionId)),
+      .where(
+        inArray(
+          formFields.formVersionId,
+          typeof versionId === "string" ? [versionId] : versionId,
+        ),
+      ),
     transaction
-      .select()
+      .select({ app_form_field_options: formFieldOptions })
       .from(formFieldOptions)
       .innerJoin(formFields, eq(formFields.id, formFieldOptions.fieldId))
-      .where(eq(formFields.formVersionId, versionId)),
+      .where(
+        inArray(
+          formFields.formVersionId,
+          typeof versionId === "string" ? [versionId] : versionId,
+        ),
+      ),
   ]);
   const optionsByField = new Map<string, FormField["options"]>();
   for (const item of options) {

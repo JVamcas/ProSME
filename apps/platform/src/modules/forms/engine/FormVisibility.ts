@@ -20,7 +20,7 @@ function conditionFieldType(
   }
   if (field.type === "YES_NO" || field.type === "CHECKBOX") return "BOOLEAN";
   if (field.type === "DATE") return "DATE";
-  if (["TEXT", "TEXTAREA", "SINGLE_SELECT"].includes(field.type)) {
+  if (["TEXT", "TEXTAREA", "COMMENT", "SINGLE_SELECT"].includes(field.type)) {
     return "TEXT";
   }
   return null;
