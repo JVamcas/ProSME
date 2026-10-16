@@ -71,6 +71,22 @@ async function render(readOnly = false) {
 }
 
 describe("CMS public page visibility", () => {
+  it("shows account creation by default and saves its toggle", async () => {
+    const { root, toggle } = await render();
+    expect(toggle("Account creation").getAttribute("aria-checked")).toBe("true");
+    await act(async () => toggle("Account creation").click());
+    expect(cms.submit).toHaveBeenCalledWith({
+      overrides: { visibility: { "account-creation": false } },
+      disableSuccessStatus: true,
+    });
+    await act(async () => toggle("Account creation").click());
+    expect(cms.submit).toHaveBeenLastCalledWith({
+      overrides: { visibility: { "account-creation": true } },
+      disableSuccessStatus: true,
+    });
+    await act(async () => root.unmount());
+  });
+
   it("displays disabled Off switches for descendants of a hidden parent", async () => {
     cms.value = { funding: false, "funding.overview.sectors": true };
     const { root, toggle } = await render();

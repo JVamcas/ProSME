@@ -58,6 +58,7 @@ export const publicPageTree: readonly PublicPageNode[] = [
   },
   { key: "faq", label: "FAQ", paths: ["/faq"] },
   { key: "contact", label: "Contact Us", paths: ["/contact"] },
+  { key: "account-creation", label: "Account creation", paths: ["/register"] },
 ];
 
 function flatten(nodes: readonly PublicPageNode[]): PublicPageNode[] {

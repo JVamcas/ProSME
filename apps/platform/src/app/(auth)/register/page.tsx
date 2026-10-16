@@ -1,3 +1,4 @@
+import { requirePublicPage } from "@/modules/content/application/ServerPublicPageVisibilityService";
 import type { Metadata } from "next";
 
 import { authReturnTo, type AuthNavigationQuery } from "@/platform/auth/AuthNavigation";
@@ -14,6 +15,7 @@ export default async function RegisterPage({
 }: {
   searchParams: Promise<AuthNavigationQuery>;
 }) {
+  await requirePublicPage("account-creation");
   const returnTo = authReturnTo(await searchParams);
   return (
     <AuthCard title="Create your account" description="">
