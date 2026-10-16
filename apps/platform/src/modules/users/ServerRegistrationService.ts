@@ -1,11 +1,20 @@
 import "server-only";
 
+import { getPublicPageVisibility } from "@/modules/content/application/ServerPublicPageVisibilityService";
+import { isPublicPageVisible } from "@/modules/content/domain/PublicPageVisibility";
+import { RegistrationUnavailableError } from "./domain/RegistrationUnavailableError";
+
 import { getFirebaseAdminAuth } from "@/auth/firebase/admin";
 import type { RegistrationValues } from "@/platform/auth/firebase/auth-form.schemas";
 import { provisionApplicant } from "@/modules/users/infrastructure/UserRepository";
 import { logger } from "@/integrations/monitoring/logger";
 
 export async function createAccount(input: RegistrationValues) {
+  const visibility = await getPublicPageVisibility();
+  if (!isPublicPageVisible(visibility, "account-creation")) {
+    throw new RegistrationUnavailableError();
+  }
+
   const auth = getFirebaseAdminAuth();
   const email = input.email.trim().toLowerCase();
   const displayName = `${input.firstName.trim()} ${input.surname.trim()}`;

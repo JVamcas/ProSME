@@ -19,9 +19,13 @@ import { useSignIn } from "./use-sign-in";
 
 type SignInFormProps = {
   returnTo?: string;
+  allowRegistration?: boolean;
 };
 
-export function SignInForm({ returnTo }: SignInFormProps) {
+export function SignInForm({
+  returnTo,
+  allowRegistration = true,
+}: SignInFormProps) {
   const form = useSignIn(returnTo);
 
   return (
@@ -49,15 +53,17 @@ export function SignInForm({ returnTo }: SignInFormProps) {
       >
         {form.busy ? "Please wait…" : "Sign in"}
       </GeneralButton>
-      <p className={authSupportingTextClassName}>
-        Don&apos;t have an account?{" "}
-        <Link
-          className={authLinkClassName}
-          href={authNavigationHref("/register", returnTo)}
-        >
-          Create an account
-        </Link>
-      </p>
+      {allowRegistration && (
+        <p className={authSupportingTextClassName}>
+          Don&apos;t have an account?{" "}
+          <Link
+            className={authLinkClassName}
+            href={authNavigationHref("/register", returnTo)}
+          >
+            Create an account
+          </Link>
+        </p>
+      )}
     </AuthForm>
   );
 }

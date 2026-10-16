@@ -7,6 +7,16 @@ import {
 import { visibleKnowledgeSelection } from "@/modules/chatbot/domain/PublicKnowledgeVisibility";
 
 describe("public page visibility", () => {
+  it("controls account creation independently of existing account access", () => {
+    const visibility = { "account-creation": false };
+    expect(publicPageVisibilitySchema.safeParse(visibility).success).toBe(true);
+    expect(isPublicPathVisible({}, "/register")).toBe(true);
+    expect(isPublicPathVisible(visibility, "/register?returnTo=/portal")).toBe(false);
+    expect(isPublicPathVisible(visibility, "/sign-in")).toBe(true);
+    expect(isPublicPathVisible(visibility, "/forgot-password")).toBe(true);
+    expect(isPublicPathVisible(visibility, "/portal")).toBe(true);
+  });
+
   it("keeps existing pages enabled and Home permanently visible", () => {
     expect(isPublicPageVisible({}, "home")).toBe(true);
     expect(isPublicPageVisible({}, "funding.overview.sectors")).toBe(true);

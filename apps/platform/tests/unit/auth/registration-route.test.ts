@@ -10,6 +10,7 @@ vi.mock("@/modules/users/ServerRegistrationService", () => ({
   createAccount: vi.fn(),
 }));
 
+import { RegistrationUnavailableError } from "@/modules/users/domain/RegistrationUnavailableError";
 import { POST } from "@/app/api/auth/registration/route";
 import { csrfTokensMatch } from "@/auth/csrf/verify-token";
 import { readCookie } from "@/auth/firebase/cookies";
@@ -35,12 +36,19 @@ function registrationRequest(csrfToken = "token") {
 }
 
 beforeEach(() => {
-  vi.clearAllMocks();
+  vi.resetAllMocks();
   vi.mocked(readCookie).mockReturnValue("token");
   vi.mocked(csrfTokensMatch).mockReturnValue(true);
 });
 
 describe("registration route", () => {
+  it("returns 403 when account creation is hidden", async () => {
+    vi.mocked(createAccount).mockRejectedValue(new RegistrationUnavailableError());
+    const response = await POST(registrationRequest());
+    expect(response.status).toBe(403);
+    expect(await response.json()).toEqual({ error: "Account creation is currently unavailable." });
+  });
+
   it("rejects a missing CSRF token before creating accounts", async () => {
     vi.mocked(csrfTokensMatch).mockReturnValue(false);
 

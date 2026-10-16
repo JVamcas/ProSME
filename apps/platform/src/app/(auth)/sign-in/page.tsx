@@ -1,3 +1,5 @@
+import { getPublicPageVisibility } from "@/modules/content/application/ServerPublicPageVisibilityService";
+import { isPublicPageVisible } from "@/modules/content/domain/PublicPageVisibility";
 import type { Metadata } from "next";
 
 import { authReturnTo, type AuthNavigationQuery } from "@/platform/auth/AuthNavigation";
@@ -14,14 +16,20 @@ type SignInPageProps = {
 };
 
 export default async function SignInPage({ searchParams }: SignInPageProps) {
-  const query = await searchParams;
+  const [query, visibility] = await Promise.all([
+    searchParams,
+    getPublicPageVisibility(),
+  ]);
 
   return (
     <AuthCard
       title="Welcome back"
       description="Sign in to access your account."
     >
-      <SignInForm returnTo={authReturnTo(query)} />
+      <SignInForm
+        returnTo={authReturnTo(query)}
+        allowRegistration={isPublicPageVisible(visibility, "account-creation")}
+      />
     </AuthCard>
   );
 }

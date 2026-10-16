@@ -1,8 +1,17 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
+const visibility = vi.hoisted(() => ({ require: vi.fn(), read: vi.fn(async (): Promise<Record<string, boolean>> => ({})) }));
+vi.mock("@/modules/content/application/ServerPublicPageVisibilityService", () => ({
+  requirePublicPage: visibility.require,
+  getPublicPageVisibility: visibility.read,
+}));
+
 vi.mock("@/modules/users/ui/auth/sign-in-form", () => ({
-  SignInForm: ({ returnTo }: { returnTo?: string }) => <div data-return-to={returnTo} />,
+  SignInForm: ({ returnTo, allowRegistration }: {
+    returnTo?: string;
+    allowRegistration?: boolean;
+  }) => <div data-return-to={returnTo} data-registration={allowRegistration} />,
 }));
 vi.mock("@/modules/users/ui/auth/registration-form", () => ({
   RegistrationForm: ({ returnTo }: { returnTo?: string }) => <div data-return-to={returnTo} />,
@@ -22,6 +31,20 @@ import ForgotPasswordPage from "@/app/(auth)/forgot-password/page";
 const returnTo = "/portal/businesses?page=2";
 
 describe("authentication page destination parsing", () => {
+  it("passes the account creation setting to the sign-in form", async () => {
+    visibility.read.mockResolvedValueOnce({ "account-creation": false });
+    const markup = renderToStaticMarkup(await SignInPage({
+      searchParams: Promise.resolve({}),
+    }));
+    expect(markup).toContain('data-registration="false"');
+  });
+
+  it("guards account creation before rendering registration", async () => {
+    visibility.require.mockRejectedValueOnce(new Error("404"));
+    await expect(RegisterPage({ searchParams: Promise.resolve({}) })).rejects.toThrow("404");
+    expect(visibility.require).toHaveBeenCalledWith("account-creation");
+  });
+
   it.each([SignInPage, RegisterPage, VerifyEmailPage, ForgotPasswordPage])(
     "passes the safe destination into %s",
     async (page) => {

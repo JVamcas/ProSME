@@ -1,5 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+vi.mock("@/modules/content/application/ServerPublicPageVisibilityService", () => ({
+  getPublicPageVisibility: vi.fn(),
+}));
+import { getPublicPageVisibility } from "@/modules/content/application/ServerPublicPageVisibilityService";
+
 vi.mock("server-only", () => ({}));
 vi.mock("@/auth/firebase/admin", () => ({
   getFirebaseAdminAuth: vi.fn(),
@@ -28,12 +33,27 @@ const registration = {
 };
 
 beforeEach(() => {
-  vi.clearAllMocks();
+  vi.resetAllMocks();
+  vi.mocked(getPublicPageVisibility).mockResolvedValue({});
   vi.mocked(getFirebaseAdminAuth).mockReturnValue(auth as never);
   auth.createUser.mockResolvedValue({ uid: "new-user" });
 });
 
 describe("account registration", () => {
+  it("rejects hidden account creation before any side effects", async () => {
+    vi.mocked(getPublicPageVisibility).mockResolvedValue({ "account-creation": false });
+    await expect(createAccount(registration)).rejects.toThrow("Account creation is currently unavailable.");
+    expect(getFirebaseAdminAuth).not.toHaveBeenCalled();
+    expect(provisionApplicant).not.toHaveBeenCalled();
+  });
+
+  it("does not create accounts if visibility cannot be read", async () => {
+    vi.mocked(getPublicPageVisibility).mockRejectedValue(new Error("unavailable"));
+    await expect(createAccount(registration)).rejects.toThrow("unavailable");
+    expect(getFirebaseAdminAuth).not.toHaveBeenCalled();
+    expect(provisionApplicant).not.toHaveBeenCalled();
+  });
+
   it("creates Firebase and PostgreSQL accounts", async () => {
     await createAccount(registration);
 

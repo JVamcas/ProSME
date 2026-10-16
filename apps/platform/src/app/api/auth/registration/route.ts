@@ -4,6 +4,7 @@ import { z } from "zod";
 import { csrfTokensMatch } from "@/auth/csrf/verify-token";
 import { registrationSchema } from "@/platform/auth/firebase/auth-form.schemas";
 import { csrfCookieName, readCookie } from "@/auth/firebase/cookies";
+import { RegistrationUnavailableError } from "@/modules/users/domain/RegistrationUnavailableError";
 import { createAccount } from "@/modules/users/ServerRegistrationService";
 
 const requestSchema = z.object({
@@ -29,6 +30,10 @@ export async function POST(request: Request) {
     await createAccount(parsed.data.registration);
     return NextResponse.json({ ok: true });
   } catch (error) {
+    if (error instanceof RegistrationUnavailableError) {
+      return NextResponse.json({ error: error.message }, { status: 403 });
+    }
+
     const emailExists =
       typeof error === "object" &&
       error !== null &&

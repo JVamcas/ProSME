@@ -77,6 +77,13 @@ async function submitSignIn(destination?: string) {
 }
 
 describe("returnTo through authentication", () => {
+  it("hides account creation while retaining sign-in and password recovery", async () => {
+    await mount(<SignInForm allowRegistration={false} returnTo={returnTo} />);
+    expect(container.querySelector('a[href^="/register"]')).toBeNull();
+    expect(container.querySelector('a[href^="/forgot-password"]')).not.toBeNull();
+    expect(container.querySelector('button[type="submit"]')?.textContent).toBe("Sign in");
+  });
+
   it("returns to the requested page after sign-in", async () => {
     await submitSignIn(returnTo);
     expect(mocks.replace).toHaveBeenCalledWith(returnTo);
